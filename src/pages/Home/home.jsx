@@ -1,4 +1,8 @@
+"use client"; 
+
+import { useState } from "react"
 
 export default function Home() {
-    return (<div>1111</div>)
+    const [name, setName] = useState(1)
+    return (<div>{name}</div>)
 }
