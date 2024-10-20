@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-## Getting Started
+# [Parsex-Frontend](https://github.com/intsig-textin/parsex-frontend.git)
 
-First, run the development server:
+- [Parsex-Frontend](#parsex-frontend)
+  - [项目简介](#项目简介)
+  - [安装依赖](#安装依赖)
+  - [启动项目](#启动项目)
+  - [QA](#qa)
+  - [脚本命令](#脚本命令)
+  - [项目结构](#项目结构)
+  - [贡献](#贡献)
+  - [许可证](#许可证)
+
+## 项目简介
+
+在解析结果审核校对、效果测评等场景，需要可视化展示文档解析后的结果。
+
+在 [TextIn.com](https://textin.com) 体验页上，我们提供丰富的可视化和交互功能，这部分前端组件现已开源！
+
+项目用ES6开发，基于React框架。
+
+目前前端组件已实现以下特性：
+
+1. **预览渲染主流图片格式和pdf文件**，提供缩放和旋转功能
+2. **markdown结果渲染**，支持各级标题、图片、公式渲染展示
+3. **各类解析元素提取展示**，支持查看表格、公式、图片，和原始 JSON 结果
+4. **解析元素文档位置溯源**，原文画框标注各元素位置，可以点击画框跳转解析结果，也可以点击解析结果跳转原文画框
+5. **各级目录树还原展示**，支持点击跳转相应章节
+6. **接口调用选项参数配置**，支持配置不同参数组合，获取相应解析结果
+7. **复制和导出markdown文件**
+8. **复制解析后的表格和图片**，可以直接粘贴到Excel表格中
+
+以上功能，都可以在 [TextIn.com](https://textin.com) 上体验使用，[👉 体验地址](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)
+
+## 安装依赖
+
+环境要求：
+
+1. node 版本 >= 18.20.4
+2. 强烈建议使用 `yarn` 包管理器，项目仓库包含 `yarn.lock`，指定了依赖版本
+
+拉取项目
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/intsig-textin/parsex-frontend.git
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+使用 npm 或 yarn 安装：
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+yarn install
+# 或
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## 启动项目
 
-## Learn More
+```bash
+yarn start
+# 或
+npm run start
+```
 
-To learn more about Next.js, take a look at the following resources:
+浏览器访问 <http://localhost:10007>
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## QA
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+1. 自定义API接口
 
-## Deploy on Vercel
+修改页面【右下角 -> 高级模式 -> custom_api的参数值 】
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. 如何获取`x-ti-app-id`, `x-ti-secret-code`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+在[此链接](https://www.textin.com/console/dashboard/setting)免费注册或登录账号后查看
+
+## 脚本命令
+
+在此列出常用的 `npm/yarn` 脚本命令，例如：
+
+- `npm start` 或 `yarn start`：启动开发服务器。
+- `npm run build` 或 `yarn build`：打包项目。
+- `npm run lint` 或 `yarn lint`：检查代码风格。
+
+全部`scripts`详细参考 `package.json` - `scripts`
+
+## 项目结构
+
+简要描述项目文件结构，以帮助贡献者和用户理解项目的组织方式。
+
+```parse-genius-frontend
+├── src/                    # 源代码
+│   ├── assets/             # 静态资源
+│   ├── components/         # 全局通用组件
+│   ├── layouts/            # 页面框架组件
+│   ├── modules/            # store
+│   ├── pages/              # 页面组件
+│   ├── service/            # 接口服务
+│   ├── utils/              # 工具函数
+│   └── app.ts              # 入口文件
+├── public/                 # 静态资源
+├── config/                 # 配置
+│   ├── routes              # 路由
+│   └── config.*            # 其他umi配置
+├── .eslintrc.js            # ESLint 配置
+├── tsconfig.json           # TypeScript 配置
+├── package.json            # 项目配置
+└── README.md               # 项目说明文件
+```
+
+## 贡献
+
+欢迎贡献代码！在开始之前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 以了解贡献流程和指南。
+
+## 许可证
+
+此项目基于 [CC-NC License](LICENSE) 进行许可。

@@ -1,0 +1,36 @@
+.rightContainer {
+  flex: 1 1 auto;
+  height: 100%;
+  overflow: hidden;
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+
+    .markdownSwitch {
+      width: 32px;
+      margin: 0 16px;
+    }
+
+    .autoSave {
+      display: flex;
+      align-items: center;
+      margin: 0 16px;
+    }
+  }
+
+  .radioBtnGroup {
+    margin: 20px 30px;
+  }
+
+  .jsonViewWrapper {
+    padding: 0 20px;
+  }
+
+  .contentWrapper {
+    height: calc(100% - 72px);
+    overflow-y: auto;
+  }
+}
