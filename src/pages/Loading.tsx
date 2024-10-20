@@ -14,9 +14,6 @@ const Loading = () => {
   }
   return (
     <div className={styles.loadingContainer}>
-      <div className={styles.logo}>
-        <img src={logo} alt="" />
-      </div>
       <Spin spinning />
     </div>
   );

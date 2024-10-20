@@ -4,7 +4,7 @@ const NotFoundPage = () => {
   return (
     <div className="textin-404">
       <div className="textin-404-card">
-        <img src={Img} />
+        {/* <img src={Img} /> */}
         <div className="title">您访问的页面不存在</div>
       </div>
     </div>

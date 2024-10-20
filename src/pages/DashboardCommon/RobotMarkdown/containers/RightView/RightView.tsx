@@ -10,6 +10,8 @@ import markdownSwitchIcon from '@/assets/images/markdown_switch.png';
 import Loading, { DotsLoading } from '@/components/Loading';
 import styles from './index.less';
 import { storeContainer } from '../../../RobotStruct/store';
+import Note from '@/components/Note';
+import Chat from '@/components/Chat';
 
 enum ResultType {
   json = 'json',
@@ -20,7 +22,14 @@ enum ResultType {
   handwriting = 'handwriting',
 }
 
-export { ResultType };
+enum TabType {
+  // 对话
+  chat = 'chat',
+  // 笔记
+  note = 'note',
+}
+
+export { ResultType, TabType };
 
 interface IProps {
   renderFooter: (curType: ResultType) => ReactNode;
@@ -33,12 +42,14 @@ interface IProps {
   children?: any;
 }
 const tabMap = {
-  [ResultType.md]: 'Markdown结果',
+  [ResultType.md]: '原文',
   [ResultType.table]: '表格',
   [ResultType.image]: '图片',
   [ResultType.formula]: '公式',
   [ResultType.json]: '原始JSON',
   [ResultType.handwriting]: '手写',
+  [TabType.chat]: '对话',
+  [TabType.note]: '笔记',
 };
 const RightContainer: FC<IProps> = ({
   renderFooter,
@@ -49,7 +60,7 @@ const RightContainer: FC<IProps> = ({
   Common,
   Robot,
 }) => {
-  const [resultType, setResultType] = useState<ResultType>(ResultType.md);
+  const [resultType, setResultType] = useState<ResultType | TabType>(ResultType.md);
   const { resultLoading } = Common;
 
   const {
@@ -67,11 +78,8 @@ const RightContainer: FC<IProps> = ({
   const options = useMemo(() => {
     return [
       ResultType.md,
-      ResultType.table,
-      ResultType.formula,
-      ResultType.image,
-      ResultType.handwriting,
-      ResultType.json,
+      TabType.chat,
+      TabType.note,
     ].map((item) => ({
       label: tabMap[item],
       value: item,
@@ -119,6 +127,14 @@ const RightContainer: FC<IProps> = ({
           />
         </div>
       );
+    }
+    // 对话
+    if (resultType === TabType.chat) {
+      return <Chat></Chat>
+    }
+    // 笔记
+    if (resultType === TabType.note) {
+      return <Note></Note>
     }
     return (
       <div className={classNames(styles.contentWrapper, 'result-content-body')}>{children}</div>
@@ -178,7 +194,7 @@ const RightContainer: FC<IProps> = ({
         {renderContent()}
       </div>
 
-      {renderFooter(resultType)}
+      {/* {renderFooter(resultType)} */}
     </>
   );
 };

@@ -1,3 +1,4 @@
+import { mockRecognize } from '@/mock/recongnize';
 import { getParamsSettings } from '@/pages/DashboardCommon/components/ParamsSettings/utils';
 import { getResultCache } from '@/pages/DashboardCommon/components/RobotLeftView/utils/cacheResult';
 import type { IResponse } from '@/utils';
@@ -212,8 +213,8 @@ export async function robotRecognize({
   let param: Record<string, any> = {
     img_name: extension ? replaceFileSuffixName(imgName!, 'pdf') : imgName,
     history_id: id,
-    "x-ti-app-id": "9f863ce52d23d6d7980e4765f43af3e9",
-    "x-ti-secret-code": "45251d8628883d67baaaab177fecea18"
+    // "x-ti-app-id": "9f863ce52d23d6d7980e4765f43af3e9",
+    // "x-ti-secret-code": "45251d8628883d67baaaab177fecea18"
   };
   if (service) {
     param.service = service;
@@ -252,6 +253,8 @@ export async function robotRecognize({
   }
 
   const requestUrl = param.custom_api ? param.custom_api : '/ai/service/v1/pdf_to_markdown';
+  
+  return mockRecognize();
 
   return request<IRecognizeRes>(paramToString(param, requestUrl), {
     ...bodyOption,

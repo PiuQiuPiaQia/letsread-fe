@@ -5,8 +5,16 @@ const routes: IRoute[] = [
     component: '@/layouts/RobotTableLayout',
     routes: [
       {
+        path: '/login',
+        component: '@/pages/Login/index',
+      },
+      {
         path: '/',
-        redirect: '/robot_markdown',
+        redirect: '/home',
+      },
+      {
+        path: '/home',
+        component: '@/pages/Home/index',
       },
       {
         path: '/robot_markdown',
