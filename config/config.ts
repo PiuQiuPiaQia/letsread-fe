@@ -4,7 +4,6 @@ import defaultSettings from './defaultSettings';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import { prefixPath } from '../src/utils/env';
 import path from 'path';
-const { esbuildLoader } = require('@umijs/mfsu');
 const esbuild = require('esbuild');
 const { NODE_ENV } = process.env;
 

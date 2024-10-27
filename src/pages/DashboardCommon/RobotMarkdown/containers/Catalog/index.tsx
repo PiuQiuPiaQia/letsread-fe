@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Tree } from 'antd';
-import classNames from 'classnames';
-import useUploadFormat from '@/pages/DashboardCommon/components/RobotLeftView/store/useUploadFormat';
-import ExpandIcon from '@/assets/icon/menu/expandIcon.svg';
-import MenuFolder from '@/assets/icon/dashbord/menu-fold.svg';
-import { genTableContentTreeList, scrollIntoActiveCatalog } from './utils';
-import styles from './index.less';
+import { useEffect, useMemo, useState } from "react";
+import { Tree } from "antd";
+import classNames from "classnames";
+import useUploadFormat from "@/pages/DashboardCommon/components/RobotLeftView/store/useUploadFormat";
+import ExpandIcon from "@/assets/icon/menu/expandIcon.svg";
+import MenuFolder from "@/assets/icon/dashbord/menu-fold.svg";
+import { genTableContentTreeList, scrollIntoActiveCatalog } from "./utils";
+import styles from "./index.less";
 
 const Catalog = ({ data: catalog }: { data: any }) => {
   const data = useMemo(() => {
@@ -42,15 +42,18 @@ const Catalog = ({ data: catalog }: { data: any }) => {
 
   return data?.length ? (
     <div
-      className={classNames(styles.catalog, 'catalogViewContainer', {
-        [styles['catalog-collapsed']]: catalogCollapsed,
+      className={classNames(styles.catalog, "catalogViewContainer", {
+        [styles["catalog-collapsed"]]: catalogCollapsed,
       })}
     >
-      <div className={styles.catalogTitle} onClick={() => setCatalogCollapsed((pre) => !pre)}>
+      <div
+        className={styles.catalogTitle}
+        onClick={() => setCatalogCollapsed((pre) => !pre)}
+      >
         <span>目录</span>
         <img
           src={catalogCollapsed ? ExpandIcon : MenuFolder}
-          title={catalogCollapsed ? '展开' : '收起'}
+          title={catalogCollapsed ? "展开" : "收起"}
           width={18}
           alt=""
         />

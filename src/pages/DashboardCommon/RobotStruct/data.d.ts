@@ -1,4 +1,4 @@
-import type { IFile } from '@/pages/DashboardCommon/components/RobotLeftView/data.d';
+import type { IFile } from "@/pages/DashboardCommon/components/RobotLeftView/data.d";
 
 export interface IFileItem extends IFile {
   cloudOcr?: boolean; // 是否云识别
@@ -18,6 +18,7 @@ export interface IImgResult {
   type?: string;
   type_description?: boolean;
   details?: any[];
+  pages: PageItem[];
   [key: string]: any;
 }
 
@@ -29,11 +30,23 @@ export interface IItemList {
   description: string;
   active: boolean;
   confidence?: number;
-  type: 'img' | 'text' | string;
+  type: "img" | "text" | string;
   number?: string;
   points?: number[];
   image?: string;
   [key: string]: any;
+}
+
+export interface PageItem {
+  angle: number;
+  content: any[];
+  durations: number;
+  height: number;
+  image_id: string;
+  page_id: number;
+  status: string;
+  structured: any[];
+  width: number;
 }
 export interface DetailsItem {
   value: string;
@@ -47,12 +60,12 @@ export type DetailList = {
   lines: DetailsItemValue;
 };
 export enum KeyTypeEnum {
-  ITEM_LIST = 'item_list',
-  DETAILS = 'details',
+  ITEM_LIST = "item_list",
+  DETAILS = "details",
 }
 export enum ResultType {
-  json = 'json',
-  text = 'text',
+  json = "json",
+  text = "text",
 }
 
 export interface IRectListItem {

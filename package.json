@@ -94,7 +94,7 @@
     "remark-gfm": "^3.0.1",
     "remark-math": "5.1.1",
     "styled-components": "^4.0.0",
-    "umi": "^3.5.0",
+    "umi": "3.5.0",
     "umi-types": "^0.5.14",
     "unstated-next": "^1.1.0",
     "utif": "^3.1.0",

@@ -31,9 +31,9 @@ export default (props: IProps) => {
       </div>
       {/* 列表组件 */}
       <FileList />
-      <FooterView>
+      {/* <FooterView>
         <RecognizeButton {...props} />
-      </FooterView>
+      </FooterView> */}
       <ParamsSelect />
     </>
   );

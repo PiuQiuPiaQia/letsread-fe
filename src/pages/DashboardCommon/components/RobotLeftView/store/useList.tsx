@@ -38,7 +38,6 @@ const useList = () => {
       }
       params.service = service;
       return robotRecognize(params).then((res) => {
-        alert(1)
         if (res.code !== 200) {
           return res;
         }

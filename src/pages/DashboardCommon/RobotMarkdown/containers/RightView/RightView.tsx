@@ -1,32 +1,35 @@
-import classNames from 'classnames';
-import type { FC, ReactNode } from 'react';
-import { useMemo, useState } from 'react';
-import { Radio, Tooltip, Switch } from 'antd';
-import ReactJson from 'react-json-view';
-import lodash from 'lodash';
-import { connect } from 'umi';
-import type { ConnectState } from '@/models/connect';
-import markdownSwitchIcon from '@/assets/images/markdown_switch.png';
-import Loading, { DotsLoading } from '@/components/Loading';
-import styles from './index.less';
-import { storeContainer } from '../../../RobotStruct/store';
-import Note from '@/components/Note';
-import Chat from '@/components/Chat';
+import classNames from "classnames";
+import type { FC, ReactNode } from "react";
+import { useMemo, useState } from "react";
+import { Radio, Tooltip, Switch } from "antd";
+import ReactJson from "react-json-view";
+import lodash from "lodash";
+import { connect } from "umi";
+import type { ConnectState } from "@/models/connect";
+import markdownSwitchIcon from "@/assets/images/markdown_switch.png";
+import Loading, { DotsLoading } from "@/components/Loading";
+import styles from "./index.less";
+import { storeContainer } from "../../../RobotStruct/store";
+import Note from "@/components/Note";
+import Chat from "@/components/Chat";
+import Translation from "@/components/Translation";
 
 enum ResultType {
-  json = 'json',
-  md = 'md',
-  table = 'table',
-  image = 'image',
-  formula = 'formula',
-  handwriting = 'handwriting',
+  json = "json",
+  md = "md",
+  table = "table",
+  image = "image",
+  formula = "formula",
+  handwriting = "handwriting",
 }
 
 enum TabType {
   // 对话
-  chat = 'chat',
+  chat = "chat",
   // 笔记
-  note = 'note',
+  note = "note",
+  // 翻译
+  Translation = "Translation",
 }
 
 export { ResultType, TabType };
@@ -37,19 +40,20 @@ interface IProps {
   resultTabName?: string;
   wrapperClassName?: string;
   result: any;
-  Common: ConnectState['Common'];
-  Robot: ConnectState['Robot'];
+  Common: ConnectState["Common"];
+  Robot: ConnectState["Robot"];
   children?: any;
 }
 const tabMap = {
-  [ResultType.md]: '原文',
-  [ResultType.table]: '表格',
-  [ResultType.image]: '图片',
-  [ResultType.formula]: '公式',
-  [ResultType.json]: '原始JSON',
-  [ResultType.handwriting]: '手写',
-  [TabType.chat]: '对话',
-  [TabType.note]: '笔记',
+  [ResultType.md]: "原文",
+  [ResultType.table]: "表格",
+  [ResultType.image]: "图片",
+  [ResultType.formula]: "公式",
+  [ResultType.json]: "原始JSON",
+  [ResultType.handwriting]: "手写",
+  [TabType.chat]: "对话",
+  [TabType.Translation]: "翻译",
+  [TabType.note]: "笔记",
 };
 const RightContainer: FC<IProps> = ({
   renderFooter,
@@ -60,7 +64,9 @@ const RightContainer: FC<IProps> = ({
   Common,
   Robot,
 }) => {
-  const [resultType, setResultType] = useState<ResultType | TabType>(ResultType.md);
+  const [resultType, setResultType] = useState<ResultType | TabType>(
+    ResultType.md
+  );
   const { resultLoading } = Common;
 
   const {
@@ -78,6 +84,7 @@ const RightContainer: FC<IProps> = ({
   const options = useMemo(() => {
     return [
       ResultType.md,
+      TabType.Translation,
       TabType.chat,
       TabType.note,
     ].map((item) => ({
@@ -88,11 +95,20 @@ const RightContainer: FC<IProps> = ({
 
   const showJSON = useMemo(() => {
     if (!result) return {};
-    return lodash.omit(result, ['dpi', 'catalog', 'detail_new', 'markdown_new']);
+    return lodash.omit(result, [
+      "dpi",
+      "catalog",
+      "detail_new",
+      "markdown_new",
+    ]);
   }, [result]);
 
   const showMarkdownSwitcher = useMemo(() => {
-    return resultType === ResultType.md && result?.detail_new && markdownMode === 'view';
+    return (
+      resultType === ResultType.md &&
+      result?.detail_new &&
+      markdownMode === "view"
+    );
   }, [result, resultType, markdownMode]);
 
   const handleChangeTab = (e: any) => {
@@ -109,7 +125,9 @@ const RightContainer: FC<IProps> = ({
     }
     if (resultType === ResultType.json) {
       return (
-        <div className={classNames(styles.contentWrapper, styles.jsonViewWrapper)}>
+        <div
+          className={classNames(styles.contentWrapper, styles.jsonViewWrapper)}
+        >
           <ReactJson
             src={showJSON}
             enableClipboard={false}
@@ -118,8 +136,8 @@ const RightContainer: FC<IProps> = ({
             collapsed={3}
             onAdd={false}
             style={{
-              fontFamily: 'Monaco, Menlo, Consolas, monospace',
-              color: '#9b0c79',
+              fontFamily: "Monaco, Menlo, Consolas, monospace",
+              color: "#9b0c79",
             }}
             displayDataTypes={false}
             displayObjectSize={false}
@@ -128,16 +146,22 @@ const RightContainer: FC<IProps> = ({
         </div>
       );
     }
+    // 翻译
+    if (resultType === TabType.Translation) {
+      return <Translation></Translation>;
+    }
     // 对话
     if (resultType === TabType.chat) {
-      return <Chat></Chat>
+      return <Chat></Chat>;
     }
     // 笔记
     if (resultType === TabType.note) {
-      return <Note></Note>
+      return <Note></Note>;
     }
     return (
-      <div className={classNames(styles.contentWrapper, 'result-content-body')}>{children}</div>
+      <div className={classNames(styles.contentWrapper, "result-content-body")}>
+        {children}
+      </div>
     );
   };
 
@@ -145,10 +169,10 @@ const RightContainer: FC<IProps> = ({
     <>
       <div
         className={classNames(
-          'robotResultTabContainer',
-          'tour_step_2',
+          "robotResultTabContainer",
+          "tour_step_2",
           wrapperClassName,
-          styles.rightContainer,
+          styles.rightContainer
         )}
       >
         <div className={styles.header}>
@@ -162,7 +186,9 @@ const RightContainer: FC<IProps> = ({
           />
           {showMarkdownSwitcher && (
             <Tooltip
-              title={showModifiedMarkdown ? '展示原始识别结果' : '展示最新修改结果'}
+              title={
+                showModifiedMarkdown ? "展示原始识别结果" : "展示最新修改结果"
+              }
               placement="topRight"
             >
               <img
@@ -183,11 +209,14 @@ const RightContainer: FC<IProps> = ({
                     <DotsLoading />
                   </span>
                 ) : (
-                  '自动保存'
+                  "自动保存"
                 )}
               </div>
               <div style={{ width: 8 }} />
-              <Switch checked={autoSaveMarkdown} onChange={(value) => setAutoSaveMarkdown(value)} />
+              <Switch
+                checked={autoSaveMarkdown}
+                onChange={(value) => setAutoSaveMarkdown(value)}
+              />
             </div>
           )}
         </div>
