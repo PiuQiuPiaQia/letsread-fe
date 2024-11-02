@@ -78,8 +78,14 @@ export const ocrUrl = {
   [env.PRODUCTION]: 'https://api.textin.com',
 };
 
+export const lrUrl = {
+  [env.TEST]: 'http://139.198.14.73:8000',
+  [env.PRODUCTION]: 'http://139.198.14.73:8000',
+};
+
 export const getTextinPrefix = () => envUrl[getEnv()];
 export const getOCRPrefix = () => ocrUrl[getEnv()];
+export const getLRPrefix = () => lrUrl[getEnv()];
 
 export const request = extend({
   errorHandler,
