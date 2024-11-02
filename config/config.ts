@@ -12,7 +12,7 @@ const { NODE_ENV } = process.env;
  */
 export default defineConfig({
   history: {
-    type: 'browser',
+    type: 'hash',
   },
   define: {
     env: NODE_ENV,
