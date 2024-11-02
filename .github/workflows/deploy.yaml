@@ -1,4 +1,4 @@
-name: Deploy to Another Repo
+name: 部署到 GitHub Pages
 
 on:
   workflow_dispatch: # 仅允许手动触发
