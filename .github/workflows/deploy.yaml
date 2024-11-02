@@ -1,4 +1,4 @@
-name: 部署到 GitHub Pages
+name: 推送到 LetsRead Page
 
 on:
   workflow_dispatch: # 仅允许手动触发
