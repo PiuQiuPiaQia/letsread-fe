@@ -1,0 +1,26 @@
+.login {
+    width           : 100vw;
+    height          : 100vh;
+    position        : relative;
+    
+    :global {
+  
+      //:global是css modules相关知识点
+      .login-container {
+        width    : 440px;
+        height   : 360px;
+        position : absolute;
+        top      : 50%;
+        left     : 50%;
+        transform: translate(-50%, -50%);
+      }
+      .login-title{
+        color: black;
+        font-size: 25px;
+        font-weight: bold;
+        height: 60px;
+        line-height: 60px;
+        text-align: center;
+      }
+    }
+  }
