@@ -56,7 +56,7 @@ export default {
   menu: {
     locale: true,
   },
-  title: 'textin',
+  title: 'LetsRead',
   pwa: false,
   iconfontUrl: '',
 } as DefaultSettings;

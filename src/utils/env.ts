@@ -15,4 +15,5 @@ export enum env {
   PRODUCTION = 'production',
 }
 
-export const prefixPath = (globalThis?.location?.origin || '') + '/';
+// export const prefixPath = (globalThis?.location?.origin || '') + '/';
+export const prefixPath = "/letsread/";
