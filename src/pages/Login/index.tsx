@@ -1,8 +1,8 @@
-import React, { useState, FormEvent,useEffect } from 'react';
-import { Form, Input, Button, Checkbox, Card, Typography,message } from 'antd';
+import { useState,useEffect } from 'react';
+import { Form, Input, Button, Checkbox, Card, Typography } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { login } from "@/services/user";
-import { setToken,setLocalUsername,setLocalPassword,setLocalRememberMe,getLocalPassword,getLocalUsername,getLocalRememberMe,removeLocalPassword,removeLocalusername } from '@/utils/storage';
+import { setToken} from '@/utils/storage';
 
 import { useHistory } from 'react-router-dom';
 const { Title } = Typography;
