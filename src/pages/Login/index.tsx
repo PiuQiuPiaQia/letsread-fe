@@ -105,11 +105,12 @@ const Login=() => {
               <Checkbox>记住密码</Checkbox>
             </Form.Item>
           </Form.Item>
-          <Form.Item wrapperCol={{ offset:10,span: 14 }} >
+          <Form.Item wrapperCol={{ span: 24 }} >
             <Button
               type="primary"
               htmlType="submit"
               loading={loading}
+              block
             >
               登录
             </Button>
