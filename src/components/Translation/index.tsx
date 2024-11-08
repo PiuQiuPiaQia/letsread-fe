@@ -3,33 +3,54 @@ import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
 import { useSelector } from "umi";
 import styles from "./index.less";
 import { Button, Spin } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Loading from "../Loading";
+import { translateText } from "@/services/util";
 
 export default function Translation() {
   const [hasContent, setHasContent] = useState(false);
   const [translations, setTranslations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { resultJson } = storeContainer.useContainer();
-  let original: any[] = [];
-  console.log(resultJson);
-  if (resultJson) {
+  let [original, setOriginal] = useState<string[]>([]);
+  console.log("resultJson:", resultJson);
+  useEffect(() => {
     !hasContent && setHasContent(true);
-    const pages = resultJson.pages;
-    original = pages.map((page) => {
-      const content = page.content;
-      return content.map((item) => item.text || "").join("");
-    });
+    const pages = resultJson?.pages || [];
+    setOriginal(
+      pages.map((page) => {
+        const content = page.content;
+        return content
+          .map((item) => {
+            
+            return item.text || "";
+          })
+          .join("");
+      })
+    );
+
     console.log("pages:", pages);
-  }
+  }, [resultJson]);
+
+  useEffect(() => {
+    console.log("original:", original);
+  }, [original]);
 
   const handleTranslate = () => {
     setLoading(true);
     setTranslations([]);
-    setTimeout(() => {
-      setTranslations(original);
-      setLoading(false);
-    }, 1000);
+    Promise.all(original.map((text) => translateText({ data: text })))
+      .then((res) => {
+        console.log("res:", res);
+        const translations = res.map((item, index) => {
+          const { code } = item;
+          return code === 200 ? item.trans_result : original[index];
+        });
+        setTranslations(translations);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   return (
