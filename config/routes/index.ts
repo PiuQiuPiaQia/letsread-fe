@@ -2,7 +2,7 @@ import { IRoute } from 'umi-types';
 const routes: IRoute[] = [
   {
     path: '/',
-    component: '@/layouts/RobotTableLayout',
+    // component: '@/layouts/RobotTableLayout',
     routes: [
       {
         path: '/',

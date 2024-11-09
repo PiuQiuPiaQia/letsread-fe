@@ -73,7 +73,7 @@ const Image: React.FC<ImageProps> = ({
   const [status, setStatus] = useState<ImageStatus>(isCustomPlaceholder ? 'loading' : 'wait');
   const [imgTotal, setImgTotal] = useState<number>(1);
 
-  const { query }: Record<string, any> = useLocation();
+  const { query = {} }: Record<string, any> = useLocation();
 
   const [message, setMessage] = useLocalStorageState<Record<string, any>>(
     'img-view-multi-tips',

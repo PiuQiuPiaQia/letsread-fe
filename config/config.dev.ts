@@ -7,10 +7,14 @@ let devRoutes = [...routes];
  * @name 用于本地开发环境
  */
 export default defineConfig({
-  nodeModulesTransform: {
-    type: 'none',
+  // nodeModulesTransform: {
+  //   type: 'none',
+  // },
+
+  antd: {
+    import: false,
   },
-  fastRefresh: {},
+  fastRefresh: true,
   routes: devRoutes,
   analyze: {
     analyzerMode: 'server',

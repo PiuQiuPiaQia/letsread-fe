@@ -29,7 +29,7 @@ export interface IProps {
 export default ({ onUpload, multiple = true, accept, children, maxUploadNum = 50 }: IProps) => {
   const [fileList, setFileList] = useState<RcFile[]>([]);
   const {
-    query: { service },
+    query: { service } = {},
   } = useLocation() as any;
 
   // const isNeedTypes = ROBOT_NEED_FILETYPES_SERVICE.includes(service);

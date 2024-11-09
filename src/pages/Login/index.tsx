@@ -3,10 +3,9 @@ import { Card, Button, Checkbox, Form, Input } from 'antd'
 import styles from './index.module.less' //css modules相关知识点/因为在jsconfig.json里已经配置过绝对引入了，所以这里可以写绝对路径，详见2-1-19以及https://create-react-app.dev/docs/importing-a-component
 import { login } from "@/services/user";
 import { setToken,setLocalUsername,setLocalPassword,setLocalRememberMe,getLocalPassword,getLocalUsername,getLocalRememberMe,removeLocalPassword,removeLocalusername } from '@/utils/storage';
-import { useHistory } from 'react-router-dom';
+import { history } from 'umi';
 
 export default function Login(){
-  const history = useHistory();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);

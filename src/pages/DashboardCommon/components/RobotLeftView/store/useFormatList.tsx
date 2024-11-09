@@ -72,7 +72,7 @@ const useFormatList = (initialState: IProps = {}) => {
   const dispatch = useDispatch();
 
   const {
-    query: { service, robotType },
+    query: { service, robotType } = {},
   } = useLocation() as any;
 
   const needPDFPageTipsVal = useMemo(() => {

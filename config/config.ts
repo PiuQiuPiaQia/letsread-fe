@@ -31,19 +31,22 @@ export default defineConfig({
     "normal-font-color": "#030A1A",
     ...theme,
   },
-  antd: {},
+  antd: {
+    import: false,
+  },
+  fastRefresh: true,
   dva: {
-    hmr: true,
+    // hmr: true,
   },
   targets: {
     // 浏览器兼容 Default: { chrome: 49, firefox: 64, safari: 10, edge: 13, ios: 10 }
-    ie: 11,
+    // ie: 11,
     // firefox: 52,
   },
-  dynamicImport: {
-    loading: "@/pages/Loading",
-  },
-  dynamicImportSyntax: {},
+  // dynamicImport: {
+  //   loading: "@/pages/Loading",
+  // },
+  // dynamicImportSyntax: {},
   headScripts: [
     { src: `${prefixPath}classList.polyfill.min.js`, defer: true },
     { src: `${prefixPath}xlsx.full.min.js`, defer: true },
@@ -95,7 +98,7 @@ export default defineConfig({
   extraBabelIncludes: [
     path.join(__dirname, "./node_modules/exif-rotate-js/lib"),
   ],
-  chunks: ["vendors", "umi"],
+  // chunks: ["vendors", "umi"],
   chainWebpack(config) {
     config.merge({
       optimization: {
@@ -134,7 +137,7 @@ export default defineConfig({
       .loader("file-loader")
       .end();
   },
-  // mfsu: {},
+  mfsu: false,
   // esbuild is father build tools
   // https://umijs.org/plugins/plugin-esbuild
 });
