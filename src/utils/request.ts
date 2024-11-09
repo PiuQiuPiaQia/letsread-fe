@@ -5,6 +5,7 @@ import { notification } from "antd";
 import { ObjectKeyToLine } from "./paramParse";
 import { env, getEnv } from "./env";
 import { getToken } from "./storage";
+import { history } from "umi";
 
 const codeMessage: Record<string, string> = {
   200: "服务器成功返回请求的数据。",
@@ -131,6 +132,14 @@ request.interceptors.request.use((url, options: any) => {
     url,
     options,
   };
+});
+request.interceptors.response.use((response) => {
+  console.log(response);
+  if (response.status === 401) {
+    history.push("/login");
+    return Promise.reject(response);
+  }
+  return response;
 });
 
 export interface IResponse {
