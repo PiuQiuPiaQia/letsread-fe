@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import style from "./index.less";
 import NoteEditor from "../NoteEditor";
 import { Button } from "antd";
@@ -9,25 +9,29 @@ interface NoteItem {
   id: number;
   content: string;
   isNew: boolean;
+  contentId: number;
 }
 
 export default function Note() {
   // 初始化笔记列表状态，每个笔记都有一个唯一的id和内容
   const [notes, setNotes] = useState<NoteItem[]>([]);
+  // 当前编辑的笔记
+  const [currentNoteId, setCurrentNoteId] = useState<number>(-1);
   // 初始化下一个笔记的id
   const [nextNoteId, setNextNoteId] = useState(1);
-  const { currentFile, rectList, ...args } = storeContainer.useContainer();
-  console.log(args);
+  const { currentFile, rectList, curUid, ...args } =
+    storeContainer.useContainer();
+  // console.log(2222, args);
   console.log(currentFile, rectList);
   useEffect(() => {
-    console.log(11111, rectList);
-  }, [rectList]);
+    console.log("curUid", curUid);
+  }, [curUid]);
 
-  useEffect(() => {
+  useMemo(() => {
     getNotes({ paper_id: 1 }).then((res) => {
       console.log(res);
     });
-  });
+  }, [currentFile]);
 
   // 处理新增笔记的操作
   const handleAddNote = () => {
@@ -48,16 +52,18 @@ export default function Note() {
   // 处理保存笔记的操作
   const handleSaveNote = () => {
     console.log("保存笔记");
-    saveNotes(
-      notes.map((note) => {
-        return {
-          paper_id: currentFile.id,
-          notes_id: note.isNew ? null : note.id,
-          notes: note.content,
-          pos: null,
-        };
-      })
-    );
+    setTimeout(() => {
+      saveNotes({
+        data: notes.map((note) => {
+          return {
+            paper_id: currentFile.id,
+            notes_id: note.isNew ? null : note.id,
+            notes: note.content,
+            content_id: note.contentId,
+          };
+        }),
+      });
+    }, 200);
   };
 
   return (
@@ -72,9 +78,20 @@ export default function Note() {
       {notes.map((note) => (
         <div className={`${style["mce-container__item"]}`} key={note.id}>
           <NoteEditor
-            height={100}
+            height={200}
             value={note.content}
-            onChange={(content) => handleNoteChange(note.id, content)}
+            contentId={curUid}
+            onChange={(content) => {
+              // 失去焦点
+              setCurrentNoteId(-1);
+              handleNoteChange(note.id, content);
+            }}
+            onNoteBelong={(contentId) => {
+              const currentNote = notes.find((item) => item.id === note.id);
+              if (currentNote) {
+                currentNote.contentId = contentId;
+              }
+            }}
           />
         </div>
       ))}

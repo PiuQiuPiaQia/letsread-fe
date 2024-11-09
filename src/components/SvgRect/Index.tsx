@@ -5,6 +5,7 @@ import { useSize } from 'ahooks';
 import RectText from './Text';
 import { IRectListItem } from './data.d';
 import styles from './Index.less';
+import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
 
 export { IRectListItem };
 
@@ -53,6 +54,8 @@ export default ({
   const [activeId, setActiveId] = useState<string | number>(-1);
   const [isOverRange, setIsOverRange] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  const { setCurUid } = storeContainer.useContainer();
 
   const wrapperSize = useSize(document.querySelector('.textin-image-robot-mark') as HTMLElement);
 
@@ -133,6 +136,7 @@ export default ({
         setActiveId(id);
         onClick(id);
       }
+      setCurUid(id)
     },
     [autoLink],
   );

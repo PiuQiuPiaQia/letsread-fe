@@ -134,7 +134,6 @@ request.interceptors.request.use((url, options: any) => {
   };
 });
 request.interceptors.response.use((response) => {
-  console.log(response);
   if (response.status === 401) {
     history.push("/login");
     return Promise.reject(response);

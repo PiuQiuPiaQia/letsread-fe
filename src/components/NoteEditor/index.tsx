@@ -5,12 +5,14 @@ import { notification } from "antd";
 
 export default function NoteEditor(props) {
   const editorRef = useRef(null);
-  const { height, pos } = props;
+  const { height, pos, contentId } = props;
   const [btnText, setBtnText] = React.useState("全文");
+
+  console.log(contentId, "contentId");
 
   const info = () => {
     notification.info({
-      message: "笔记锚点需要选中原文",
+      message: "笔记锚点需要先选中原文1111",
     });
   };
 
@@ -18,12 +20,22 @@ export default function NoteEditor(props) {
     props.onChange(content);
   };
 
+  const noteBelongHandler = (api) => {
+    // 按钮点击时执行的动作
+    if (contentId) {
+      api.setActive(true);
+      props.onNoteBelong(contentId);
+    } else {
+      info();
+    }
+  };
+
   return (
     <div className={`${style["mce-container"]}`}>
       <Editor
-        onInit={(evt, editor) =>{ 
-          editorRef.current = editor
-          editor.on('Change', () => {
+        onInit={(evt, editor) => {
+          editorRef.current = editor;
+          editor.on("focusout", () => {
             handleEditorChange(editor.getContent());
           });
         }}
@@ -61,12 +73,7 @@ export default function NoteEditor(props) {
             editor.ui.registry.addToggleButton("noteBelong", {
               text: "笔记锚点", // 按钮文本
               onAction: (api) => {
-                // 按钮点击时执行的动作
-                if (pos?.length) {
-                  api.setActive(true);
-                } else {
-                  info();
-                }
+                noteBelongHandler(api);
               },
               onSetup: function (api) {
                 // 设置按钮的初始状态
