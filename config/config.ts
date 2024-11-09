@@ -137,7 +137,7 @@ export default defineConfig({
       .loader("file-loader")
       .end();
   },
-  mfsu: false,
+  mfsu: {},
   // esbuild is father build tools
   // https://umijs.org/plugins/plugin-esbuild
 });

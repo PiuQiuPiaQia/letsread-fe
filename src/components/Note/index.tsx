@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import style from "./index.less";
-import NoteEditor from "../NoteEditor";
-import { Button } from "antd";
-import { getNotes, saveNotes } from "@/services/note";
 import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
+import { getNotes, saveNotes } from "@/services/note";
+import { Button } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import NoteEditor from "../NoteEditor";
+import style from "./index.less";
 
 interface NoteItem {
   id: number;
@@ -35,7 +35,12 @@ export default function Note() {
 
   // 处理新增笔记的操作
   const handleAddNote = () => {
-    const newNote: NoteItem = { id: nextNoteId, content: "", isNew: true };
+    const newNote: NoteItem = {
+      id: nextNoteId,
+      content: "",
+      isNew: true,
+      contentId: -1,
+    };
     setNotes([...notes, newNote]); // 将新笔记添加到列表中
     setNextNoteId(nextNoteId + 1); // 更新下一个笔记的id
   };
