@@ -1,18 +1,18 @@
-import React, { useRef } from "react";
 import { Editor } from "@tinymce/tinymce-react";
-import style from "./index.less";
 import { notification } from "antd";
+import React, { useRef } from "react";
+import style from "./index.less";
 
-export default function NoteEditor(props) {
+const NoteEditor = (props) => {
   const editorRef = useRef(null);
-  const { height, pos, contentId } = props;
+  const { height, pos, contentId, notesId } = props;
   const [btnText, setBtnText] = React.useState("全文");
 
   console.log(contentId, "contentId");
 
   const info = () => {
     notification.info({
-      message: "笔记锚点需要先选中原文1111",
+      message: "笔记锚点需要先选中原文",
     });
   };
 
@@ -20,7 +20,13 @@ export default function NoteEditor(props) {
     props.onChange(content);
   };
 
+  const handleEditorFocus = () => {
+    props.onFocus(notesId);
+  };
+
   const noteBelongHandler = (api) => {
+    const contentId = editorRef.current.props.contentId;
+
     // 按钮点击时执行的动作
     if (contentId) {
       api.setActive(true);
@@ -33,10 +39,14 @@ export default function NoteEditor(props) {
   return (
     <div className={`${style["mce-container"]}`}>
       <Editor
+        ref={editorRef}
+        contentId={contentId}
         onInit={(evt, editor) => {
-          editorRef.current = editor;
           editor.on("focusout", () => {
             handleEditorChange(editor.getContent());
+          });
+          editor.on("focus", () => {
+            handleEditorFocus();
           });
         }}
         initialValue=""
@@ -75,9 +85,9 @@ export default function NoteEditor(props) {
               onAction: (api) => {
                 noteBelongHandler(api);
               },
-              onSetup: function (api) {
+              onSetup: (api) => {
                 // 设置按钮的初始状态
-                var initialActiveState = false; // 假设我们想要按钮初始为高亮状态
+                const initialActiveState = false; // 假设我们想要按钮初始为高亮状态
                 api.setActive(initialActiveState);
               },
             });
@@ -86,4 +96,6 @@ export default function NoteEditor(props) {
       />
     </div>
   );
-}
+};
+
+export default NoteEditor;
