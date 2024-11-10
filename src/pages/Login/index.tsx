@@ -3,7 +3,7 @@ import { Form, Input, Button, Checkbox, Card, Typography } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { login } from "@/services/user";
 import { setToken} from '@/utils/storage';
-import { useNavigate } from 'react-router-dom';
+import { history } from 'umi';
 const { Title } = Typography;
 
 interface LoginFormValues {
@@ -15,7 +15,6 @@ interface LoginFormValues {
 const Login=() => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
    
   // 从localStorage中读取用户名
   useEffect(() => {
@@ -48,7 +47,7 @@ const Login=() => {
         if(res && res.code === 200){
           const token = res.data.token
           setToken(token)
-          navigate('/home');//跳转到首页
+          history.push('/home');//跳转到首页
         }else{
             setLoading(false)
         }
