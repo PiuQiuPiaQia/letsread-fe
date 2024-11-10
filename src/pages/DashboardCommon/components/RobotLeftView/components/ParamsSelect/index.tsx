@@ -25,7 +25,7 @@ export default function ParamsSelect() {
   return (
     <Modal
       title={modalInfo.title || '选择参数'}
-      visible={modalInfo.visible}
+      open={modalInfo.visible}
       okButtonProps={{ htmlType: 'submit' }}
       width={420}
       wrapClassName={classNames(styles['params-modal'], 'no-footer-border')}

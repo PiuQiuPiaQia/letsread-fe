@@ -47,8 +47,8 @@ export function onRouteChange({ matchedRoutes }: { matchedRoutes: any }) {
   };
   checkUser();
 
-  if (matchedRoutes.length) {
-    document.title = `TextIn - ${matchedRoutes[matchedRoutes.length - 1].route.name || ''}`;
-    window.scrollTo(0, 0);
-  }
+  // if (matchedRoutes.length) {
+  //   document.title = `TextIn - ${matchedRoutes[matchedRoutes.length - 1].route.name || ''}`;
+  //   window.scrollTo(0, 0);
+  // }
 }

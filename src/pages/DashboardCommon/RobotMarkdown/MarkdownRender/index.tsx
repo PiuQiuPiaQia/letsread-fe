@@ -1,21 +1,11 @@
-import { dynamic } from 'umi';
+import React from "react";
 
-const MarkdownComponent = dynamic({
-  loader: async function () {
-    const { default: MarkdownRender } = await import(
-      /* webpackChunkName: "external_A" */ './MarkdownRender'
-    );
-    return MarkdownRender;
-  },
-});
+const MarkdownComponent = React.lazy(
+  () => import(/* webpackChunkName: "external_A" */ "./MarkdownRender")
+);
 
-export const MultiPageMarkdown = dynamic({
-  loader: async function () {
-    const { default: MarkdownRender } = await import(
-      /* webpackChunkName: "external_A" */ './MultiPageMarkdown'
-    );
-    return MarkdownRender;
-  },
-});
+export const MultiPageMarkdown = React.lazy(
+  () => import(/* webpackChunkName: "external_A" */ "./MultiPageMarkdown")
+);
 
 export default MarkdownComponent;
