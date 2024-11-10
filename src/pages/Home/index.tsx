@@ -1,39 +1,79 @@
-import { removeToken } from "@/utils/storage";
-import { Button } from "antd";
-import { history } from "umi";
+import Setting from "@/components/Setting";
+import { DesktopOutlined, PieChartOutlined } from "@ant-design/icons";
+import type { MenuProps } from "antd";
+import { Layout, Menu, theme } from "antd";
+import React, { useState } from "react";
 
-import { ProChat } from "@ant-design/pro-chat";
-import { useTheme } from "antd-style";
+const { Header, Content, Footer, Sider } = Layout;
 
-export default function Home() {
-  //退出登录
-  const exitLogin = () => {
-    console.log("退出");
-    history.push("/login");
-    removeToken();
-  };
-  return (
-    <div>
-      <h1>Home</h1>
-      <Chat></Chat>
-      <Button onClick={exitLogin}>退出</Button>
-    </div>
-  );
+type MenuItem = Required<MenuProps>["items"][number];
+
+function getItem(
+  label: React.ReactNode,
+  key: React.Key,
+  icon?: React.ReactNode,
+  children?: MenuItem[]
+): MenuItem {
+  return {
+    key,
+    icon,
+    children,
+    label,
+  } as MenuItem;
 }
 
-const Chat = () => {
-  const theme = useTheme();
+const items: MenuItem[] = [
+  getItem("阅读", "read", <PieChartOutlined />),
+  getItem("设置", "setting", <DesktopOutlined />),
+];
+
+const Home: React.FC = () => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [selectKey, setSelectKey] = useState<React.Key>("read");
+  const {
+    token: { colorBgContainer, borderRadiusLG },
+  } = theme.useToken();
+
+  const onSelect: MenuProps["onSelect"] = ({ key }) => {
+    console.log("selected", key);
+    setSelectKey(key);
+  };
+
   return (
-    <div style={{ background: theme.colorBgLayout }}>
-      <ProChat
-        helloMessage={
-          "欢迎使用 ProChat ，我是你的专属机器人，这是我们的 Github：[ProChat](https://github.com/ant-design/pro-chat)"
-        }
-        request={async (messages) => {
-          const mockedData: string = `这是一段模拟的对话数据。本次会话传入了${messages.length}条消息`;
-          return new Response(mockedData);
-        }}
-      />
-    </div>
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={(value) => setCollapsed(value)}
+      >
+        <div className="demo-logo-vertical" />
+        <Menu
+          theme="dark"
+          defaultSelectedKeys={["1"]}
+          mode="inline"
+          items={items}
+          onSelect={onSelect}
+        />
+      </Sider>
+      <Layout>
+        <Header
+          style={{
+            height: "48px",
+            padding: 0,
+            marginBottom: "20px",
+            background: colorBgContainer,
+          }}
+        />
+        <Content style={{ margin: "0 16px" }}>
+          {selectKey === "read" ? (
+            <h1>Bill is a cat.</h1>
+          ) : selectKey === "setting" ? (
+            <Setting />
+          ) : null}
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
+
+export default Home;
