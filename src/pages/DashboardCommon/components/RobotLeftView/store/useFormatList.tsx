@@ -193,6 +193,7 @@ const useFormatList = (initialState: IProps = {}) => {
     setList((list) => [...[...array].reverse(), ...list]);
     const keys = array.map((item) => item.id);
 
+    // 上传文件OCR识别
     const uploadFileQ = array.map(({ name, id, imageData, url }) =>
       limit(() =>
         runRecognize({
