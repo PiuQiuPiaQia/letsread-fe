@@ -1,0 +1,24 @@
+.paper-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-top: 20px
+}
+
+.paper-card {
+    display: flex;
+    flex: 1;
+    padding: 20px;
+    box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+    row-gap: 12px;
+    &__title {
+        font-size: 22px;
+        color: rgba(0, 0, 0, 0.8);
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    &__author {
+
+    }
+}
