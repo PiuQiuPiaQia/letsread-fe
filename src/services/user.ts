@@ -7,3 +7,13 @@ export async function login(data: any) {
     data,
   });
 }
+export async function getMessages(data: any) {
+  return request(`/moonshot/paper_qa`, {
+    method: "POST",
+    prefix: getLRPrefix(),
+    data,
+  });
+}
+
+
+
