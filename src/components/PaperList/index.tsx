@@ -1,22 +1,24 @@
 import { getPapers } from "@/services/paper";
 import { useMount } from "ahooks";
-import React from "react";
+import { Spin } from "antd";
+import React, { useState } from "react";
 import { history } from "umi";
 import style from "./index.less";
 
 const PaperList: React.FC = () => {
-  const [paperList, setPaperList] = React.useState<any>([]);
+  const [paperList, setPaperList] = useState<any>([]);
+  const [loading, setLoading] = useState(true);
   useMount(() => {
     getPapers().then((res) => {
-      console.log(res);
+      // console.log(res);
       setPaperList(res.papers);
+      setLoading(false)
     });
   });
 
-  console.log("paperList", paperList);
-
   return (
     <div className={`${style["paper-list"]}`}>
+      <Spin spinning={loading} size="large" />
       {paperList.map((item) => {
         return <PaperCard key={item.paper_id} {...item}></PaperCard>;
       })}

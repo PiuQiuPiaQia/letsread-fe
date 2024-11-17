@@ -96,7 +96,7 @@ const Home: React.FC = () => {
           {selectKey === "read" ? (
             <>
               <Upload {...uploadProps}>
-                <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                <Button icon={<UploadOutlined />}>上传PDF</Button>
               </Upload>
               <PaperList></PaperList>
             </>

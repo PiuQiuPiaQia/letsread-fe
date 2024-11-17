@@ -103,6 +103,7 @@ function useFile(initialState: IProps = {}) {
       },
     });
     setCurFileActiveId(file.id as string);
+    // 上传文件后，选中第一个文件
     if (onFileClick) {
       try {
         let imgBlob = file.imgData;
