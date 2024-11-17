@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useRefreshMath } from '../MathJaxRender/useMathJaxLoad';
-import useContentClick from '../hooks/useContentClick';
-import type { IRectItem } from '../utils';
-import md2html, { getFormula } from './md2html';
-import LazyImage from './LazyImage';
-import styles from './index.less';
-import CopyWrapper from '../containers/CopyWrapper';
-import EditableContent from './EditableContent';
-import Vditor from 'vditor';
-import 'vditor/dist/index.css';
-import classNames from 'classnames';
-import { flatten } from 'lodash';
-import type { ResultJsonUpdateParams } from '../../RobotStruct/store';
-import { ResultType } from '../containers/RightView/RightView';
+import classNames from "classnames";
+import { flatten } from "lodash";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import Vditor from "vditor";
+import "vditor/dist/index.css";
+import type { ResultJsonUpdateParams } from "../../RobotStruct/store";
+import CopyWrapper from "../containers/CopyWrapper";
+import { ResultType } from "../containers/RightView/RightView";
+import useContentClick from "../hooks/useContentClick";
+import { useRefreshMath } from "../MathJaxRender/useMathJaxLoad";
+import type { IRectItem } from "../utils";
+import EditableContent from "./EditableContent";
+import styles from "./index.less";
+import LazyImage from "./LazyImage";
+import md2html, { getFormula } from "./md2html";
 
 const MultiPageMarkdown = ({
   data,
@@ -20,7 +20,7 @@ const MultiPageMarkdown = ({
   dpi,
   dataType,
   markdown,
-  markdownMode = 'view',
+  markdownMode = "view",
   onMarkdownChange,
   markdownEditorRef,
   onSave,
@@ -30,7 +30,7 @@ const MultiPageMarkdown = ({
   dpi?: number;
   dataType?: string;
   markdown?: string;
-  markdownMode?: 'view' | 'edit';
+  markdownMode?: "view" | "edit";
   onMarkdownChange?: (params: ResultJsonUpdateParams) => void;
   onSave?: () => void;
   markdownEditorRef: React.MutableRefObject<Vditor | null>;
@@ -41,8 +41,16 @@ const MultiPageMarkdown = ({
   const getEditorContentId = () =>
     editorRef.current?.vditor.element.parentElement?.dataset.editorContentId;
 
-  const handleMarkdownChange = ({ contentId, value }: { contentId: string; value: string }) => {
-    const contentItem = flatten(data).find((item) => item.content_id?.toString() === contentId)!;
+  const handleMarkdownChange = ({
+    contentId,
+    value,
+  }: {
+    contentId: string;
+    value: string;
+  }) => {
+    const contentItem = flatten(data).find(
+      (item) => item.content_id?.toString() === contentId
+    )!;
     // console.log('changed', contentItem, value);
     // debugger
     // const newMarkdown = editorRef.current?.html2md(markdownContainerRef.current?.innerHTML!);
@@ -55,8 +63,8 @@ const MultiPageMarkdown = ({
     const vditor =
       editorRef.current ||
       new Vditor(`vditor`, {
-        cdn: 'https://static.textin.com/deps/' + 'vditor@3.10.6',
-        mode: 'ir',
+        cdn: "https://static.textin.com/deps/" + "vditor@3.10.6",
+        mode: "ir",
         after: () => {
           editorRef.current = vditor;
         },
@@ -80,6 +88,8 @@ const MultiPageMarkdown = ({
           enable: false,
         },
       });
+    console.log("markdownEditorRef", markdownEditorRef);
+
     markdownEditorRef.current = vditor;
     return () => {
       editorRef.current?.destroy();
@@ -92,9 +102,9 @@ const MultiPageMarkdown = ({
   // 快捷键保存
   const save = useCallback(
     (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-        console.log('save', dataType, markdownMode);
-        if (dataType === ResultType.md && markdownMode === 'edit') {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+        console.log("save", dataType, markdownMode);
+        if (dataType === ResultType.md && markdownMode === "edit") {
           editorRef.current?.blur();
           setTimeout(() => {
             onSave?.();
@@ -103,27 +113,27 @@ const MultiPageMarkdown = ({
         }
       }
     },
-    [dataType, markdownMode, onSave],
+    [dataType, markdownMode, onSave]
   );
   useEffect(() => {
-    document.addEventListener('keydown', save, false);
+    document.addEventListener("keydown", save, false);
     return () => {
-      document.removeEventListener('keydown', save, false);
+      document.removeEventListener("keydown", save, false);
     };
   }, [save]);
 
   const content = useMemo(() => {
     if (!Array.isArray(data)) {
-      const contentHtml = data ? md2html(data) : '';
+      const contentHtml = data ? md2html(data) : "";
       return <div dangerouslySetInnerHTML={{ __html: contentHtml }} />;
     }
     const pages = data.map((page, pageIndex) => {
       const lines = Array.isArray(page)
         ? page.map((line) => {
-            if (line.type === 'catalog') return null;
+            if (line.type === "catalog") return null;
             let text = line.text;
             let markdownText = line.text;
-            if (dataType === 'formula' && text) {
+            if (dataType === "formula" && text) {
               const formulas = getFormula(text);
               return (
                 <div key={line.content_id} data-content-id={line.content_id}>
@@ -134,13 +144,13 @@ const MultiPageMarkdown = ({
                       data-content={item}
                     >
                       <CopyWrapper type="content" />
-                      <div>{'$' + item + '$'}</div>
+                      <div>{"$" + item + "$"}</div>
                     </div>
                   ))}
                 </div>
               );
             }
-            if (line.type === 'image' && line.image_url) {
+            if (line.type === "image" && line.image_url) {
               const zoom = dpi ? 96 / dpi : undefined;
               return (
                 <div
@@ -156,10 +166,11 @@ const MultiPageMarkdown = ({
             }
             // 标题
             const isHeaderText =
-              typeof line.outline_level === 'number' && line.outline_level !== -1;
+              typeof line.outline_level === "number" &&
+              line.outline_level !== -1;
             if (isHeaderText) {
               const headTag = `h${line.outline_level! + 1}`;
-              markdownText = `${'#'.repeat(line.outline_level! + 1)} ${text}`;
+              markdownText = `${"#".repeat(line.outline_level! + 1)} ${text}`;
               text = `<${headTag}>${text}</${headTag}>`;
             }
             // 非html，进行md渲染
@@ -167,7 +178,7 @@ const MultiPageMarkdown = ({
               text = md2html(text);
             }
             // 表格
-            if (line.type === 'table') {
+            if (line.type === "table") {
               // return (
               //   <div
               //     key={line.content_id}
@@ -185,7 +196,9 @@ const MultiPageMarkdown = ({
                   key={line.content_id}
                   editorRef={editorRef}
                   contentId={String(line.content_id)}
-                  editable={dataType === ResultType.md && markdownMode === 'edit'}
+                  editable={
+                    dataType === ResultType.md && markdownMode === "edit"
+                  }
                   value={markdownText}
                   onChange={handleMarkdownChange}
                 >
@@ -195,7 +208,7 @@ const MultiPageMarkdown = ({
                     className="content-container"
                   >
                     <CopyWrapper />
-                    <div dangerouslySetInnerHTML={{ __html: text || '' }} />
+                    <div dangerouslySetInnerHTML={{ __html: text || "" }} />
                   </div>
                 </EditableContent>
               );
@@ -205,14 +218,14 @@ const MultiPageMarkdown = ({
                 key={line.content_id}
                 editorRef={editorRef}
                 contentId={String(line.content_id)}
-                editable={dataType === ResultType.md && markdownMode === 'edit'}
+                editable={dataType === ResultType.md && markdownMode === "edit"}
                 value={markdownText}
                 onChange={handleMarkdownChange}
               >
                 <div
                   key={line.content_id}
                   data-content-id={line.content_id}
-                  dangerouslySetInnerHTML={{ __html: text || '' }}
+                  dangerouslySetInnerHTML={{ __html: text || "" }}
                 />
               </EditableContent>
             );
@@ -233,8 +246,8 @@ const MultiPageMarkdown = ({
 
   return (
     <div
-      className={classNames(styles['markdown-body'], {
-        [styles.markdownBodyEditMode]: markdownMode === 'edit',
+      className={classNames(styles["markdown-body"], {
+        [styles.markdownBodyEditMode]: markdownMode === "edit",
       })}
     >
       <div id="markdownContent" ref={markdownContainerRef}>

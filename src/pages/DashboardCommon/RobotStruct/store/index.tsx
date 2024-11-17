@@ -1,15 +1,23 @@
-import { createContainer } from 'unstated-next';
-import { omit } from 'lodash';
-import { ResultType } from '../data.d';
-import type { IFileItem, IImgResult, IItemList, IRectListItem, KeyTypeEnum } from '../data.d';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { getItemListCopyContent } from '../utils';
-import type { IRectItem } from '../../RobotMarkdown/utils';
-import { isMarkdownHeader, splitMarkdownHeader } from '../../RobotMarkdown/utils';
-import type Vditor from 'vditor';
-import { useSelector } from 'dva';
-import type { ConnectState } from '@/models/connect';
-import { message } from 'antd';
+import { message } from "antd";
+import { omit } from "lodash";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createContainer } from "unstated-next";
+import type Vditor from "vditor";
+import { formatListContainer } from "../../components/RobotLeftView/store";
+import type { IRectItem } from "../../RobotMarkdown/utils";
+import {
+  isMarkdownHeader,
+  splitMarkdownHeader,
+} from "../../RobotMarkdown/utils";
+import type {
+  IFileItem,
+  IImgResult,
+  IItemList,
+  IRectListItem,
+  KeyTypeEnum,
+} from "../data.d";
+import { ResultType } from "../data.d";
+import { getItemListCopyContent } from "../utils";
 
 interface ContentConfig {
   type?: ResultType;
@@ -25,7 +33,9 @@ export interface ResultJsonUpdateParams {
 }
 
 const useStore = () => {
-  const [currentFile, setCurrentFile] = useState<IFileItem | Record<string, any>>({} as any);
+  const [currentFile, setCurrentFile] = useState<
+    IFileItem | Record<string, any>
+  >({} as any);
   const [resultJson, setResultJson] = useState<IImgResult | null>(null);
   const [resultJsonSaveLoading, setResultJsonSaveLoading] = useState(false);
   // 识别结果
@@ -33,24 +43,27 @@ const useStore = () => {
   const [tableList, setTableList] = useState<IItemList[][]>();
   const [key, setKey] = useState<KeyTypeEnum>();
   // 当前选中的框选id
-  const [curUid, setCurUid] = useState<any>('');
+  const [curUid, setCurUid] = useState<any>("");
   // 框选数据
   const [rectList, setRectList] = useState<IRectListItem[]>([]);
 
   // markdown编辑/查看模式
-  const [markdownMode, setMarkdownMode] = useState<'view' | 'edit'>('view');
+  const [markdownMode, setMarkdownMode] = useState<"view" | "edit">("view");
   const markdownEditorRef = useRef<Vditor | null>(null);
 
   // 是否展示markdown最新修改结果
-  const [_showModifiedMarkdown, setShowModifiedMarkdown] = useState<boolean>(true);
+  const [_showModifiedMarkdown, setShowModifiedMarkdown] =
+    useState<boolean>(true);
   const showModifiedMarkdown = useMemo(
     () => _showModifiedMarkdown && resultJson?.detail_new,
-    [_showModifiedMarkdown, resultJson],
+    [_showModifiedMarkdown, resultJson]
   );
 
   // 文件切换重置编辑状态
   useEffect(() => {
-    setMarkdownMode('view');
+    console.log("currentFile", currentFile);
+
+    setMarkdownMode("view");
     setShowModifiedMarkdown(true);
   }, [currentFile?.id]);
 
@@ -60,15 +73,15 @@ const useStore = () => {
   // const shouldSaveMarkdown = !!fileSaveFlag && !currentFile?.isExample;
   const shouldSaveMarkdown = !currentFile?.isExample;
   const showAutoSave = useMemo(() => {
-    return !!shouldSaveMarkdown && markdownMode === 'edit';
+    return !!shouldSaveMarkdown && markdownMode === "edit";
   }, [shouldSaveMarkdown, markdownMode, currentFile]);
 
   const [autoSaveMarkdown, _setAutoSaveMarkdown] = useState<boolean>(
-    (localStorage.getItem('autoSaveMarkdown') ?? 'true') === 'true',
+    (localStorage.getItem("autoSaveMarkdown") ?? "true") === "true"
   );
   const setAutoSaveMarkdown = (value: boolean) => {
     _setAutoSaveMarkdown(value);
-    localStorage.setItem('autoSaveMarkdown', value.toString());
+    localStorage.setItem("autoSaveMarkdown", value.toString());
   };
 
   const autoSaveTimerRef = useRef<any>();
@@ -85,12 +98,12 @@ const useStore = () => {
       //   data: resultJson,
       // });
       if (!silent) {
-        message.success('保存成功');
+        message.success("保存成功");
       }
     } catch (error) {
       console.log(error);
       if (!silent) {
-        message.success('保存失败');
+        message.success("保存失败");
       }
     }
     setResultJsonSaveLoading(false);
@@ -110,12 +123,16 @@ const useStore = () => {
   }, [showAutoSave, autoSaveMarkdown, resultJson]);
 
   const rawResultJson = useMemo(
-    () => omit(resultJson, ['detail_new', 'markdown_new']),
-    [resultJson],
+    () => omit(resultJson, ["detail_new", "markdown_new"]),
+    [resultJson]
   );
 
   // 更新json结果
-  const updateResultJson = ({ value, contentItem, markdown }: ResultJsonUpdateParams) => {
+  const updateResultJson = ({
+    value,
+    contentItem,
+    markdown,
+  }: ResultJsonUpdateParams) => {
     setResultJson((pre) => {
       let newDatail = [...(pre?.detail_new || pre?.detail)];
       newDatail = newDatail.map((item) => {
@@ -152,7 +169,7 @@ const useStore = () => {
     }
     let content = getItemListCopyContent(itemList, separate);
     tableList?.map((item) => {
-      content += content ? '\n' : '';
+      content += content ? "\n" : "";
       content += getItemListCopyContent(item, separate);
     });
     return content;

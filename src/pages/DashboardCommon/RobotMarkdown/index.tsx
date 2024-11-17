@@ -1,21 +1,23 @@
-import type { FC } from 'react';
-import { useEffect, useState } from 'react';
-import { message } from 'antd';
-import { parse } from 'querystring';
-import { connect } from 'umi';
-import type { IFileItem } from '../RobotStruct/data';
-import { robotRecognize, robotRecognizeHistory } from '@/services/robot';
-import LeftView from '../RobotStruct/containers/LeftView/Index';
-import MainView from '../RobotStruct/containers/MainView/Index';
-import RobotRightView from './containers/RightView';
-import { ResultType } from './containers/RightView/RightView';
-import Catalog from './containers/Catalog';
-import styles from '../RobotStruct/Index.less';
-import { storeContainer } from '../RobotStruct/store';
-import type { ConnectState, IRobotModelState } from '@/models/connect';
-import { RobotLayout, RobotHeader } from '../components';
-import { MultiPageMarkdown } from './MarkdownRender';
-import { formatResult } from './utils';
+import { mockRecognize } from "@/mock/recongnize";
+import type { ConnectState, IRobotModelState } from "@/models/connect";
+import { robotRecognize, robotRecognizeHistory } from "@/services/robot";
+import { useMount } from "ahooks";
+import { message } from "antd";
+import { parse } from "querystring";
+import type { FC } from "react";
+import { useEffect, useState } from "react";
+import { connect } from "umi";
+import { RobotLayout } from "../components";
+import LeftView from "../RobotStruct/containers/LeftView/Index";
+import MainView from "../RobotStruct/containers/MainView/Index";
+import type { IFileItem } from "../RobotStruct/data";
+import styles from "../RobotStruct/Index.less";
+import { storeContainer } from "../RobotStruct/store";
+import Catalog from "./containers/Catalog";
+import RobotRightView from "./containers/RightView";
+import { ResultType } from "./containers/RightView/RightView";
+import { MultiPageMarkdown } from "./MarkdownRender";
+import { convertPdfUrlToFile, formatResult } from "./utils";
 
 interface PageProps {
   Robot: IRobotModelState;
@@ -44,8 +46,28 @@ const MarkdownPage: FC<PageProps> = (props) => {
     saveResultJson,
   } = storeContainer.useContainer();
 
+  // const { formatList } = formatListContainer.useContainer();
+
+  useMount(() => {
+    // 手动请求paper，初始化
+    mockRecognize().then(async (res) => {
+      console.log("res", res);
+
+      const { pdf_url: pdfUrl } = res.data;
+      console.log("pdfUrl", pdfUrl);
+
+      // 把pdfUrl的pdf地址转为File对象
+      const file = await convertPdfUrlToFile(pdfUrl);
+      console.log("file", file);
+
+      // 这里设置了当前文件，useFormatList中formatList会自动请求数据
+      setFileList([file]);
+      setResultJson(res.data.result);
+    });
+  });
+
   useEffect(() => {
-    if (currentFile && currentFile.status === 'complete') {
+    if (currentFile && currentFile.status === "complete") {
       setRefreshAutoCollapsed(currentFile.id);
     } else {
       setRefreshAutoCollapsed(false);
@@ -53,15 +75,27 @@ const MarkdownPage: FC<PageProps> = (props) => {
   }, [currentFile]);
 
   useEffect(() => {
+    // 这是编辑pdf后的逻辑
+    // detail_new赋值后触发setCurrentFile
     if (resultJson?.detail_new) {
       setCurrentFile((pre) => {
         return {
           ...pre,
-          newRects: formatResult({ ...pre.originResult, detail: resultJson?.detail_new }, dataType),
+          newRects: formatResult(
+            { ...pre.originResult, detail: resultJson?.detail_new },
+            dataType
+          ),
         };
       });
     }
   }, [resultJson?.detail_new, dataType]);
+
+  useMount(() => {
+    console.log(2222222);
+    // todo 获取接口的pdf文件和pdf解析
+    // 直接点击文件id
+    // onFileClick({});
+  });
 
   // 单击左侧样本的回调
   const onFileClick = (current: Partial<IFileItem>) => {
@@ -70,7 +104,7 @@ const MarkdownPage: FC<PageProps> = (props) => {
     // 清空之前识别结果
     setResultJson(null);
     // 更新store
-    setCurrentFile({ ...current, status: 'upload' });
+    setCurrentFile({ ...current, status: "upload" });
     // 识别样例
     if (isExample) {
       robotRecognize({
@@ -81,31 +115,31 @@ const MarkdownPage: FC<PageProps> = (props) => {
       })
         .then((res) => {
           // 处理回调
-          handleResult(res, 'example');
+          handleResult(res, "example");
         })
         .catch(() => {
-          setCurrentFile({ ...current, status: 'wait' });
+          setCurrentFile({ ...current, status: "wait" });
         });
     } else if (current.id) {
       // 获取历史识别结果
       robotRecognizeHistory(current.id as number)
         .then((res) => {
           // 处理回调
-          handleResult(res, 'data');
+          handleResult(res, "data");
         })
         .catch(() => {
-          setCurrentFile({ ...current, status: 'wait' });
+          setCurrentFile({ ...current, status: "wait" });
         });
     }
 
     // 处理接口返回的结果
-    const handleResult = (result: any, type: 'example' | 'data') => {
+    const handleResult = (result: any, type: "example" | "data") => {
       // @TODO:未做异常处理
       if (result.code !== 200) {
         message.destroy();
         message.error(result.msg || result.message);
         // 更新store
-        setCurrentFile({ ...current, status: 'wait' });
+        setCurrentFile({ ...current, status: "wait" });
         return;
       }
       if (result.data.result) {
@@ -119,14 +153,17 @@ const MarkdownPage: FC<PageProps> = (props) => {
       setCurrentFile({
         ...current,
         countStatus: count_status,
-        status: ocr_status === 1 ? 'complete' : 'wait',
-        imageData: type === 'data' ? '' : current.imageData,
-        cloudStatus: type === 'data' ? current.cloudStatus : 0,
+        status: ocr_status === 1 ? "complete" : "wait",
+        imageData: type === "data" ? "" : current.imageData,
+        cloudStatus: type === "data" ? current.cloudStatus : 0,
         originResult: result.data.result,
         rects: formatResult(result.data.result, dataType),
         newRects:
           result.data.result?.detail_new &&
-          formatResult({ ...result.data.result, detail: result.data.result?.detail_new }, dataType),
+          formatResult(
+            { ...result.data.result, detail: result.data.result?.detail_new },
+            dataType
+          ),
         dpi: result.data.result?.dpi || 72,
       });
     };
@@ -150,12 +187,19 @@ const MarkdownPage: FC<PageProps> = (props) => {
           rects: formatResult(pre.originResult, type),
           newRects:
             pre.originResult?.detail_new &&
-            formatResult({ ...pre.originResult, detail: pre.originResult?.detail_new }, type),
+            formatResult(
+              { ...pre.originResult, detail: pre.originResult?.detail_new },
+              type
+            ),
         };
       }
       return pre;
     });
   };
+
+  useEffect(() => {
+    console.log("fileList", fileList);
+  }, [fileList]);
 
   const curService = service as string;
 
@@ -212,8 +256,9 @@ const MarkdownPage: FC<PageProps> = (props) => {
               <MultiPageMarkdown
                 markdown={resultJson?.markdown}
                 data={
-                  (showModifiedMarkdown ? currentFile?.newRects : currentFile?.rects) ||
-                  resultJson?.markdown
+                  (showModifiedMarkdown
+                    ? currentFile?.newRects
+                    : currentFile?.rects) || resultJson?.markdown
                 }
                 dpi={currentFile?.dpi}
                 dataType={dataType}

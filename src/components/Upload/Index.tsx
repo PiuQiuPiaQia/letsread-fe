@@ -41,10 +41,13 @@ export default ({ onUpload, multiple = true, accept, children, maxUploadNum = 50
     //   message.warn('请上传jpg/png/bmp格式的图片');
     //   return false;
     // }
+    console.log(file, 'file');
+    // debugger
     setFileList((fileList) => [...fileList, file]);
     return false;
   };
 
+  // 上传方法
   useEffect(() => {
     if (fileList.length < 1) return;
     if (fileList.length > maxUploadNum) {
@@ -57,7 +60,7 @@ export default ({ onUpload, multiple = true, accept, children, maxUploadNum = 50
   const props = {
     ...uploadProps,
     multiple,
-    accept: '.png,.jpg,.jpeg,.pdf',
+    accept: '.pdf',
   };
   return (
     <>

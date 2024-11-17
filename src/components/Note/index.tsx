@@ -1,12 +1,12 @@
 import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
 import { getNotes, saveNotes } from "@/services/note";
-import { Button } from "antd";
+import { Button, List } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import NoteEditor from "../NoteEditor";
 import style from "./index.less";
 
 interface NoteItem {
-  id: number;
+  notesId: number;
   content: string;
   isNew: boolean;
   contentId: number;
@@ -36,22 +36,13 @@ export default function Note() {
   // 处理新增笔记的操作
   const handleAddNote = () => {
     const newNote: NoteItem = {
-      id: nextNoteId,
+      notesId: nextNoteId,
       content: "",
       isNew: true,
       contentId: -1,
     };
     setNotes([...notes, newNote]); // 将新笔记添加到列表中
     setNextNoteId(nextNoteId + 1); // 更新下一个笔记的id
-  };
-
-  // 处理编辑笔记内容的变化
-  const handleNoteChange = (id: number, content: string) => {
-    console.log(content);
-
-    setNotes(
-      notes.map((note) => (note.id === id ? { ...note, content } : note))
-    );
   };
 
   // 处理保存笔记的操作
@@ -62,13 +53,18 @@ export default function Note() {
         data: notes.map((note) => {
           return {
             paper_id: currentFile.id,
-            notes_id: note.isNew ? null : note.id,
+            notes_id: note.isNew ? null : note.notesId,
             notes: note.content,
             content_id: note.contentId,
           };
         }),
       });
     }, 200);
+  };
+
+  // 选中原文指定内容
+  const handleSelectNote = (contentId: number) => {
+    // 滚动pdf到指定内容
   };
 
   return (
@@ -79,27 +75,38 @@ export default function Note() {
       <Button type="primary" onClick={handleSaveNote}>
         保存笔记
       </Button>
-
-      {notes.map((note) => (
-        <div className={`${style["mce-container__item"]}`} key={note.id}>
-          <NoteEditor
-            height={200}
-            value={note.content}
-            contentId={curUid}
-            onChange={(content) => {
-              // 失去焦点
-              setCurrentNoteId(-1);
-              handleNoteChange(note.id, content);
-            }}
-            onNoteBelong={(contentId) => {
-              const currentNote = notes.find((item) => item.id === note.id);
-              if (currentNote) {
-                currentNote.contentId = contentId;
-              }
-            }}
-          />
-        </div>
-      ))}
+      <List
+        dataSource={notes}
+        renderItem={(note) => (
+          <div className={`${style["mce-container__item"]}`} key={note.notesId}>
+            <NoteEditor
+              height={200}
+              value={note.content}
+              contentId={curUid}
+              notesId={note.notesId}
+              onFocus={() => {}}
+              onChange={(content) => {
+                // 失去焦点
+                setCurrentNoteId(-1);
+                const currentNote = notes.find(
+                  (item) => item.notesId === note.notesId
+                );
+                if (currentNote) {
+                  currentNote.content = content;
+                }
+              }}
+              onNoteBelong={(contentId) => {
+                const currentNote = notes.find(
+                  (item) => item.notesId === note.notesId
+                );
+                if (currentNote) {
+                  currentNote.contentId = contentId;
+                }
+              }}
+            />
+          </div>
+        )}
+      ></List>
     </div>
   );
 }

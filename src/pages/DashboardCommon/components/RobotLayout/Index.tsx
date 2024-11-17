@@ -1,12 +1,12 @@
-import { useEffect, useMemo } from 'react';
-import { Col, Row } from 'antd';
-import { RightOutlined, LeftOutlined } from '@ant-design/icons';
-import { connect } from 'umi';
-import classNames from 'classnames';
-import type { ConnectState } from '@/models/connect';
-import useUploadFormat from '../RobotLeftView/store/useUploadFormat';
-import useMathJaxLoad from '../../RobotMarkdown/MathJaxRender/useMathJaxLoad';
-import styles from './Index.less';
+import type { ConnectState } from "@/models/connect";
+import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { Col, Row } from "antd";
+import classNames from "classnames";
+import { useEffect, useMemo } from "react";
+import { connect } from "umi";
+import useMathJaxLoad from "../../RobotMarkdown/MathJaxRender/useMathJaxLoad";
+import useUploadFormat from "../RobotLeftView/store/useUploadFormat";
+import styles from "./Index.less";
 
 interface IProps {
   leftView: React.ReactNode;
@@ -30,12 +30,14 @@ const RobotLayout: React.FC<IProps> = ({
   useMathJaxLoad({
     show:
       [16].includes(curRobot?.interaction as number) ||
-      ['professional-document-parse', 'pdf_to_markdown'].includes(curRobot?.service as string),
+      ["professional-document-parse", "pdf_to_markdown"].includes(
+        curRobot?.service as string
+      ),
   });
 
   const showWechatCode = useMemo(() => {
     // 显示群二维码的服务
-    if (['watermark-remove'].includes(curRobot?.service)) {
+    if (["watermark-remove"].includes(curRobot?.service)) {
       return { service: curRobot.service };
     }
     return undefined;
@@ -49,24 +51,33 @@ const RobotLayout: React.FC<IProps> = ({
 
   return (
     <Row className={styles.container}>
-      <Col
-        className={classNames(styles.leftBar, 'leftViewContainer', {
-          [styles.barCollapsed]: collapsed,
-        })}
-      >
-        <div className={styles.leftBarAnimate}>
-          <div className={styles.leftBarContent}>{leftView}</div>
-        </div>
-        {showCollapsed ? (
-          <div onClick={() => setCollapsed((pre) => !pre)} className={styles.collapsedBar}>
-            {collapsed ? <RightOutlined title="展开" /> : <LeftOutlined title="收起" />}
+      {leftView ? (
+        <Col
+          className={classNames(styles.leftBar, "leftViewContainer", {
+            [styles.barCollapsed]: collapsed,
+          })}
+        >
+          <div className={styles.leftBarAnimate}>
+            <div className={styles.leftBarContent}>{leftView}</div>
           </div>
-        ) : (
-          ''
-        )}
-      </Col>
+          {showCollapsed ? (
+            <div
+              onClick={() => setCollapsed((pre) => !pre)}
+              className={styles.collapsedBar}
+            >
+              {collapsed ? (
+                <RightOutlined title="展开" />
+              ) : (
+                <LeftOutlined title="收起" />
+              )}
+            </div>
+          ) : (
+            ""
+          )}
+        </Col>
+      ) : null}
       <Col
-        className={classNames(styles.mainContent, 'mainViewContainer', {
+        className={classNames(styles.mainContent, "mainViewContainer", {
           mainViewCollapsed: collapsed,
         })}
       >
@@ -87,6 +98,8 @@ const RobotViewContainer = (props: any) => (
   </useUploadFormat.Provider>
 );
 
-const mapStateToProps = ({ Robot }: ConnectState) => ({ curRobot: Robot?.info });
+const mapStateToProps = ({ Robot }: ConnectState) => ({
+  curRobot: Robot?.info,
+});
 
 export default connect(mapStateToProps)(RobotViewContainer);

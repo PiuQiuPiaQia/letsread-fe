@@ -103,6 +103,9 @@ const useList = () => {
           return;
         }
 
+        console.log("list", list);
+        
+
         setList((list) =>
           list.map((item) => {
             if (item.id === params[0].id) {
