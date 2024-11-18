@@ -45,7 +45,6 @@ const Home: React.FC = () => {
   };
 
   const uploadProps: UploadProps = {
-    name: "file",
     onChange(info) {
       if (info.file.status !== "uploading") {
         console.log(info.file, info.fileList);
@@ -59,7 +58,8 @@ const Home: React.FC = () => {
     customRequest: async (options) => {
       const formData = new FormData();
       formData.append("file", options.file);
-      formData.append("title", options.filename!);
+      // @ts-ignore
+      formData.append("title", options.file.name);
       uploadPaper(formData).then((res) => {
         console.log(res);
       });
@@ -67,7 +67,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ height: "100vh" }}>
       <Sider
         collapsible
         collapsed={collapsed}

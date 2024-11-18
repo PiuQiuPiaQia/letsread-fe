@@ -1,6 +1,6 @@
 import { getPapers } from "@/services/paper";
 import { useMount } from "ahooks";
-import { Spin } from "antd";
+import { Col, Row, Spin } from "antd";
 import React, { useState } from "react";
 import { history } from "umi";
 import style from "./index.less";
@@ -12,17 +12,25 @@ const PaperList: React.FC = () => {
     getPapers().then((res) => {
       // console.log(res);
       setPaperList(res.papers);
-      setLoading(false)
+      setLoading(false);
     });
   });
 
   return (
-    <div className={`${style["paper-list"]}`}>
+    <>
       <Spin spinning={loading} size="large" />
-      {paperList.map((item) => {
-        return <PaperCard key={item.paper_id} {...item}></PaperCard>;
-      })}
-    </div>
+      <div className={`${style["paper-list"]}`}>
+        <Row gutter={[16, 24]}>
+          {paperList.map((item) => {
+            return (
+              <Col className="gutter-row" span={12}>
+                <PaperCard key={item.paper_id} {...item}></PaperCard>
+              </Col>
+            );
+          })}
+        </Row>
+      </div>
+    </>
   );
 };
 
@@ -39,7 +47,14 @@ const PaperCard = (paper) => {
   return (
     <div onClick={openPaper} className={`${style["paper-card"]}`}>
       <div className={`${style["paper-card__title"]}`}>{paper.title}</div>
-      <div className={`${style["paper-card__author"]}`}>{paper.authors}</div>
+      <div className={`${style["paper-card__bottom"]}`}>
+        <div className={`${style["paper-card__bottom__author"]}`}>
+          {paper.authors}
+        </div>
+        <div className={`${style["paper-card__bottom__create"]}`}>
+          {paper.created_at}
+        </div>
+      </div>
     </div>
   );
 };
