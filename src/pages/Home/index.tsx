@@ -35,6 +35,7 @@ const items: MenuItem[] = [
 const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [selectKey, setSelectKey] = useState<React.Key>("read");
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -62,8 +63,10 @@ const Home: React.FC = () => {
       formData.append("title", options.file.name);
       uploadPaper(formData).then((res) => {
         console.log(res);
+        setRefreshKey(refreshKey + 1);
       });
     },
+    showUploadList: false,
   };
 
   return (
@@ -97,7 +100,7 @@ const Home: React.FC = () => {
               <Upload {...uploadProps}>
                 <Button icon={<UploadOutlined />}>上传PDF</Button>
               </Upload>
-              <PaperList></PaperList>
+              <PaperList refreshKey={refreshKey}></PaperList>
             </>
           ) : selectKey === "setting" ? (
             <Setting />

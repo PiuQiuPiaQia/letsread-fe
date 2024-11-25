@@ -2,11 +2,13 @@ import { deletePaper, getPapers } from "@/services/paper";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useMount } from "ahooks";
 import { Col, message, Row, Spin } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { history } from "umi";
 import style from "./index.less";
 
-const PaperList: React.FC = () => {
+const PaperList: React.FC<{
+  refreshKey: number;
+}> = (props: any) => {
   const [paperList, setPaperList] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   useMount(() => {
@@ -21,6 +23,10 @@ const PaperList: React.FC = () => {
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    getPaperList();
+  }, [props.refreshKey]);
 
   return (
     <>
