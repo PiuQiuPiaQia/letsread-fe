@@ -30,3 +30,12 @@ export async function uploadPaper(body: any) {
     lrToken: true,
   });
 }
+
+export async function deletePaper(data) {
+  return request<IResponse>(`/paper/delete`, {
+    method: "POST",
+    prefix: getLRPrefix(),
+    data,
+    lrToken: true,
+  });
+}
