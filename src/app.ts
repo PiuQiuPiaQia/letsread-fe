@@ -1,17 +1,19 @@
-import './utils/h5';
-import React from 'react';
+import React from "react";
+import "./utils/h5";
 // import { createLogger } from 'redux-logger';
-import { ConfigProvider } from 'antd';
-import zhCN from 'antd/es/locale/zh_CN';
-import 'dayjs/locale/zh-cn';
-import { message } from 'antd';
-import qs from 'query-string';
-import { history } from 'umi';
+import { injectSpeedInsights } from "@vercel/speed-insights";
+import { ConfigProvider, message } from "antd";
+import zhCN from "antd/es/locale/zh_CN";
+import "dayjs/locale/zh-cn";
+import qs from "query-string";
+import { history } from "umi";
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   // eslint-disable-next-line no-underscore-dangle
   window._gr_ignore_local_rule = true;
 }
+
+injectSpeedInsights();
 
 export const dva = {
   config: {
@@ -30,11 +32,11 @@ export function rootContainer(container: React.ReactNode) {
 }
 
 const checkUser = () => {
-  const { pathname, search = '' } = window.location;
-  if (search.includes('_token')) {
+  const { pathname, search = "" } = window.location;
+  if (search.includes("_token")) {
     const { _token } = qs.parse(search);
-    if (_token && typeof _token === 'string') {
-      const newSearch = qs.pick(search, (key) => !['_token'].includes(key));
+    if (_token && typeof _token === "string") {
+      const newSearch = qs.pick(search, (key) => !["_token"].includes(key));
       history.replace(history.location.pathname + newSearch);
     }
   }
