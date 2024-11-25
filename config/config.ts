@@ -19,7 +19,7 @@ export default defineConfig({
   },
   hash: true,
   locale: false,
-  base: "/",
+  base: prefixPath,
   publicPath: prefixPath,
   ignoreMomentLocale: true,
   theme: {
