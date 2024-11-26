@@ -28,7 +28,7 @@
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider UMI_UI=none UMI_ENV=dev max dev",
     "start:analyze": "cross-env ANALYZE=1 UMI_ENV=dev max dev",
     "start:console": "set NODE_OPTIONS=--openssl-legacy-provider && cross-env UMI_UI=none UMI_ENV=dev MENU=console max dev",
-    "start:dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider UMI_ENV=dev max dev",
+    "start:dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider UMI_ENV=dev HOST=letsread-fe.vercel.test max dev",
     "start:ie": "cross-env UMI_UI=none UMI_ENV=cloud max dev",
     "start:legacy": "set NODE_OPTIONS=--openssl-legacy-provider && cross-env UMI_UI=none UMI_ENV=dev max dev",
     "test": "umi-test",
