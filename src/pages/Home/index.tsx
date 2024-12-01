@@ -1,13 +1,9 @@
 import PaperList from "@/components/PaperList";
+import PaperUpload from "@/components/PaperUpload";
 import Setting from "@/components/Setting";
-import { uploadPaper } from "@/services/paper";
-import {
-  DesktopOutlined,
-  PieChartOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
-import type { MenuProps, UploadProps } from "antd";
-import { Button, Layout, Menu, message, theme, Upload } from "antd";
+import { DesktopOutlined, PieChartOutlined } from "@ant-design/icons";
+import type { MenuProps } from "antd";
+import { Layout, Menu, theme } from "antd";
 import React, { useState } from "react";
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -45,30 +41,6 @@ const Home: React.FC = () => {
     setSelectKey(key);
   };
 
-  const uploadProps: UploadProps = {
-    onChange(info) {
-      if (info.file.status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (info.file.status === "done") {
-        message.success(`${info.file.name} file uploaded successfully`);
-      } else if (info.file.status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
-    customRequest: async (options) => {
-      const formData = new FormData();
-      formData.append("file", options.file);
-      // @ts-ignore
-      formData.append("title", options.file.name);
-      uploadPaper(formData).then((res) => {
-        console.log(res);
-        setRefreshKey(refreshKey + 1);
-      });
-    },
-    showUploadList: false,
-  };
-
   return (
     <Layout style={{ height: "100vh" }}>
       <Sider
@@ -79,7 +51,7 @@ const Home: React.FC = () => {
         <div className="demo-logo-vertical" />
         <Menu
           theme="dark"
-          defaultSelectedKeys={["1"]}
+          defaultSelectedKeys={["read"]}
           mode="inline"
           items={items}
           onSelect={onSelect}
@@ -97,9 +69,11 @@ const Home: React.FC = () => {
         <Content style={{ margin: "0 16px" }}>
           {selectKey === "read" ? (
             <>
-              <Upload {...uploadProps}>
-                <Button icon={<UploadOutlined />}>上传PDF</Button>
-              </Upload>
+              <PaperUpload
+                onUploadDone={() => {
+                  setRefreshKey(refreshKey + 1);
+                }}
+              ></PaperUpload>
               <PaperList refreshKey={refreshKey}></PaperList>
             </>
           ) : selectKey === "setting" ? (

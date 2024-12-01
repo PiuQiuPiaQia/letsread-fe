@@ -39,3 +39,12 @@ export async function deletePaper(data) {
     lrToken: true,
   });
 }
+
+export async function parsePaper(data: { paper_id: number }) {
+  return request<IResponse>(`/paper/parse`, {
+    method: "GET",
+    prefix: getLRPrefix(),
+    params: data,
+    lrToken: true,
+  });
+}

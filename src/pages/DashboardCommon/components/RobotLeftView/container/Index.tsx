@@ -25,9 +25,9 @@ export default (props: IProps) => {
         })}
       >
         {/* 示例组件 */}
-        <Example />
+        {/* <Example /> */}
         <FileListHeader />
-        <Upload />
+        {/* <Upload /> */}
       </div>
       {/* 列表组件 */}
       <FileList />

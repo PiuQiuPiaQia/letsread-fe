@@ -35,9 +35,8 @@ const PaperList: React.FC<{
         <Row gutter={[16, 24]}>
           {paperList.map((item) => {
             return (
-              <Col className="gutter-row" span={12}>
+              <Col className="gutter-row" span={12} key={item.paper_id}>
                 <PaperCard
-                  key={item.paper_id}
                   {...item}
                   onDelete={() => {
                     message.info("删除成功");
@@ -94,9 +93,10 @@ const PaperCard = (paper) => {
         </div>
       </div>
       <div className={`${style["paper-card__actions"]}`}>
-        {actions.map((action) => {
+        {actions.map((action, index) => {
           return (
             <div
+              key={index}
               onClick={action.onClick}
               className={`${style["paper-card__actions__item"]}`}
             >
