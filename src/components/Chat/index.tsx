@@ -1,15 +1,23 @@
-import { ProChat } from '@ant-design/pro-chat';
-import {getMessages} from '@/services/question';
-import { useTheme } from 'antd-style';
+import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
+import { getMessages } from "@/services/question";
+import { ProChat } from "@ant-design/pro-chat";
+import { useTheme } from "antd-style";
 
 const ChatComponent = () => {
   const theme = useTheme();
+  const { currentFile } = storeContainer.useContainer();
+  const pdfName = currentFile?.name;
+
   const handleStream = async (inputMessages) => {
     try {
-      const res = await getMessages(JSON.stringify({ question: inputMessages[inputMessages.length - 1]?.content }))
+      const res = await getMessages(
+        JSON.stringify({
+          question: inputMessages[inputMessages.length - 1]?.content,
+        })
+      );
       // 确保响应体是ReadableStream
       if (!res.body) {
-        throw new Error('Response body is not a ReadableStream');
+        throw new Error("Response body is not a ReadableStream");
       }
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
@@ -25,32 +33,36 @@ const ChatComponent = () => {
               break;
             }
             const chunkText = decoder.decode(value, { stream: true });
-            console.log("chunkText:" + chunkText)
-            let errorFlag = false//记录是否有报错信息
-            const newMessages = chunkText.split('\n\n').map((chunk) => {
-              const match = chunk.match(/data: (.*)/);
-              if (match) {
-                const data = match[1];
-                console.log("data:" + data)
-                if (data !== '[DONE]') {
-                  const data_parse = JSON.parse(data)
-                  if ("error" in data_parse) {
-                    errorFlag = true
-                    return data_parse["error"]
-                  } else {
-                    return JSON.parse(data);
+            console.log("chunkText:" + chunkText);
+            let errorFlag = false; //记录是否有报错信息
+            const newMessages = chunkText
+              .split("\n\n")
+              .map((chunk) => {
+                const match = chunk.match(/data: (.*)/);
+                if (match) {
+                  const data = match[1];
+                  console.log("data:" + data);
+                  if (data !== "[DONE]") {
+                    const data_parse = JSON.parse(data);
+                    if ("error" in data_parse) {
+                      errorFlag = true;
+                      return data_parse["error"];
+                    } else {
+                      return JSON.parse(data);
+                    }
                   }
                 }
-              }
-              return null;
-            }).filter((msg) => msg !== null);
-            const newText = errorFlag?JSON.stringify(newMessages):newMessages.map(item => item.content).join('')
+                return null;
+              })
+              .filter((msg) => msg !== null);
+            const newText = errorFlag
+              ? JSON.stringify(newMessages)
+              : newMessages.map((item) => item.content).join("");
             controller.enqueue(encoder.encode(newText));
           }
         },
         cancel(err) {
-          console.error('ReadableStream cancelled', err);
-          
+          console.error("ReadableStream cancelled", err);
         },
       });
 
@@ -63,7 +75,13 @@ const ChatComponent = () => {
 
   return (
     <ProChat
-      style={{ height: "100%", width: "100%",paddingBottom:"72px",background: theme.colorBgLayout }}
+      helloMessage={`哈喽，对于 ${pdfName} 的提问，我可以为你提供一些帮助`}
+      style={{
+        height: "100%",
+        width: "100%",
+        paddingBottom: "72px",
+        background: theme.colorBgLayout,
+      }}
       request={handleStream}
     />
   );

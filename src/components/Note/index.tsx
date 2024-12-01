@@ -69,12 +69,14 @@ export default function Note() {
 
   return (
     <div className={`${style["mce-container"]}`}>
-      <Button type="primary" onClick={handleAddNote}>
-        新增笔记
-      </Button>
-      <Button type="primary" onClick={handleSaveNote}>
-        保存笔记
-      </Button>
+      <div className={`${style["mce-container__header"]}`}>
+        <Button type="default" onClick={handleAddNote}>
+          新增笔记
+        </Button>
+        <Button type="primary" onClick={handleSaveNote}>
+          保存笔记
+        </Button>
+      </div>
       <List
         dataSource={notes}
         renderItem={(note) => (

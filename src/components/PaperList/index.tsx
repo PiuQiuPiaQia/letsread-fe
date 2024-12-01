@@ -5,6 +5,7 @@ import { Col, message, Row, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import { history } from "umi";
 import style from "./index.less";
+import dayjs from "dayjs";
 
 const PaperList: React.FC<{
   refreshKey: number;
@@ -89,7 +90,7 @@ const PaperCard = (paper) => {
           {paper.authors}
         </div>
         <div className={`${style["paper-card__bottom__create"]}`}>
-          {paper.created_at}
+          {dayjs(paper.created_at).format("YYYY-MM-DD")}
         </div>
       </div>
       <div className={`${style["paper-card__actions"]}`}>
