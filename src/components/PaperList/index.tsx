@@ -2,10 +2,10 @@ import { deletePaper, getPapers } from "@/services/paper";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useMount } from "ahooks";
 import { Col, message, Row, Spin } from "antd";
+import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 import { history } from "umi";
 import style from "./index.less";
-import dayjs from "dayjs";
 
 const PaperList: React.FC<{
   refreshKey: number;
@@ -82,9 +82,19 @@ const PaperCard = (paper) => {
       },
     },
   ];
+
+  const cardStyle = {
+    background: `url(${paper.thumbnail_path}) no-repeat top`,
+    "backgroundSize": "cover",
+  };
+
   return (
     <div onClick={openPaper} className={`${style["paper-card"]}`}>
       <div className={`${style["paper-card__title"]}`}>{paper.title}</div>
+      <div
+        className={`${style["paper-card__content"]}`}
+        style={cardStyle}
+      ></div>
       <div className={`${style["paper-card__bottom"]}`}>
         <div className={`${style["paper-card__bottom__author"]}`}>
           {paper.authors}
