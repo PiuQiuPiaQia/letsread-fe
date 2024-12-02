@@ -93,7 +93,7 @@ export default function Note() {
         renderItem={(note) => (
           <div className={`${style["mce-container__item"]}`} key={note.notesId}>
             <NoteEditor
-              height={200}
+              height={700}
               value={note.content}
               contentId={curUid}
               notesId={note.notesId}
