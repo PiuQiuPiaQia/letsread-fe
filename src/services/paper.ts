@@ -9,7 +9,7 @@ export async function getPapers() {
         authors: string;
         created_at: string;
         file_path: string;
-        paper_id: number;
+        paper_id: string;
         publish_date: string;
         title: string;
       }[];
@@ -40,7 +40,7 @@ export async function deletePaper(data) {
   });
 }
 
-export async function parsePaper(data: { paper_id: number }) {
+export async function parsePaper(data: { paper_id: string }) {
   return request<IResponse>(`/paper/parse`, {
     method: "GET",
     prefix: getLRPrefix(),

@@ -1,6 +1,7 @@
 import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
 import { getNotes, saveNotes } from "@/services/note";
-import { Button, List } from "antd";
+import { useMount } from "ahooks";
+import { Button, List, message } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import NoteEditor from "../NoteEditor";
 import style from "./index.less";
@@ -19,7 +20,7 @@ export default function Note() {
   const [currentNoteId, setCurrentNoteId] = useState<number>(-1);
   // 初始化下一个笔记的id
   const [nextNoteId, setNextNoteId] = useState(1);
-  const { currentFile, rectList, curUid, ...args } =
+  const { currentFile, rectList, curUid, currentPaperId, ...args } =
     storeContainer.useContainer();
   // console.log(2222, args);
   console.log(currentFile, rectList);
@@ -28,7 +29,7 @@ export default function Note() {
   }, [curUid]);
 
   useMemo(() => {
-    getNotes({ paper_id: 1 }).then((res) => {
+    getNotes({ paper_id: currentPaperId }).then((res) => {
       console.log(res);
     });
   }, [currentFile]);
@@ -45,19 +46,29 @@ export default function Note() {
     setNextNoteId(nextNoteId + 1); // 更新下一个笔记的id
   };
 
+  useMount(() => {
+    // 默认添加一个笔记
+    // todo: 目前只支持一个笔记
+    handleAddNote();
+  });
+
   // 处理保存笔记的操作
   const handleSaveNote = () => {
     console.log("保存笔记");
     setTimeout(() => {
+      const note = notes[0];
       saveNotes({
-        data: notes.map((note) => {
-          return {
-            paper_id: currentFile.id,
-            notes_id: note.isNew ? null : note.notesId,
-            notes: note.content,
-            content_id: note.contentId,
-          };
-        }),
+        paper_id: currentPaperId,
+        note_id: note.isNew ? null : note.notesId,
+        note: note.content,
+        content_id: note.contentId,
+      }).then((res) => {
+        const { code } = res;
+        if (code === 200) {
+          message.success("保存成功");
+        } else {
+          message.error("保存失败");
+        }
       });
     }, 200);
   };
@@ -70,9 +81,9 @@ export default function Note() {
   return (
     <div className={`${style["mce-container"]}`}>
       <div className={`${style["mce-container__header"]}`}>
-        <Button type="default" onClick={handleAddNote}>
+        {/* <Button type="default" onClick={handleAddNote}>
           新增笔记
-        </Button>
+        </Button> */}
         <Button type="primary" onClick={handleSaveNote}>
           保存笔记
         </Button>
