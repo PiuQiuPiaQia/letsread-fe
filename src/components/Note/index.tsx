@@ -30,7 +30,16 @@ export default function Note() {
 
   useMemo(() => {
     getNotes({ paper_id: currentPaperId }).then((res) => {
-      console.log(res);
+      // console.log("getNotes", res);
+      setNotes(
+        res.notes.map((item) => {
+          return {
+            contentId: item.content_id,
+            notesId: item.note_id,
+            content: item.note,
+          };
+        })
+      );
     });
   }, [currentFile]);
 
@@ -95,7 +104,7 @@ export default function Note() {
             <NoteEditor
               height={700}
               value={note.content}
-              contentId={curUid}
+              contentId={note.contentId}
               notesId={note.notesId}
               onFocus={() => {}}
               onChange={(content) => {
