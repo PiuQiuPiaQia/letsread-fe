@@ -5,10 +5,10 @@ import style from "./index.less";
 
 const NoteEditor = (props) => {
   const editorRef = useRef(null);
-  const { height, pos, contentId, notesId } = props;
+  const { height, pos, contentId, notesId, value } = props;
   const [btnText, setBtnText] = React.useState("全文");
 
-  console.log(contentId, "contentId");
+  console.log("contentId", contentId, value);
 
   const info = () => {
     notification.info({
@@ -41,6 +41,7 @@ const NoteEditor = (props) => {
       <Editor
         ref={editorRef}
         contentId={contentId}
+        initialValue={value}
         onInit={(evt, editor) => {
           editor.on("focusout", () => {
             handleEditorChange(editor.getContent());
@@ -49,7 +50,6 @@ const NoteEditor = (props) => {
             handleEditorFocus();
           });
         }}
-        initialValue=""
         init={{
           height: height || 150,
           menubar: false,
