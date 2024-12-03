@@ -3,7 +3,6 @@ import { omit } from "lodash";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createContainer } from "unstated-next";
 import type Vditor from "vditor";
-import { formatListContainer } from "../../components/RobotLeftView/store";
 import type { IRectItem } from "../../RobotMarkdown/utils";
 import {
   isMarkdownHeader,
@@ -36,6 +35,7 @@ const useStore = () => {
   const [currentFile, setCurrentFile] = useState<
     IFileItem | Record<string, any>
   >({} as any);
+  const [currentPaperId, setCurrentPaperId] = useState<number>(0);
   const [resultJson, setResultJson] = useState<IImgResult | null>(null);
   const [resultJsonSaveLoading, setResultJsonSaveLoading] = useState(false);
   // 识别结果
@@ -177,6 +177,8 @@ const useStore = () => {
   return {
     currentFile,
     setCurrentFile,
+    currentPaperId,
+    setCurrentPaperId,
     rawResultJson,
     resultJson,
     setResultJson,

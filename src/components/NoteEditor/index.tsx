@@ -80,17 +80,17 @@ const NoteEditor = (props) => {
           content_style:
             "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
           setup: (editor) => {
-            editor.ui.registry.addToggleButton("noteBelong", {
-              text: "笔记锚点", // 按钮文本
-              onAction: (api) => {
-                noteBelongHandler(api);
-              },
-              onSetup: (api) => {
-                // 设置按钮的初始状态
-                const initialActiveState = false; // 假设我们想要按钮初始为高亮状态
-                api.setActive(initialActiveState);
-              },
-            });
+            // editor.ui.registry.addToggleButton("noteBelong", {
+            //   text: "笔记锚点", // 按钮文本
+            //   onAction: (api) => {
+            //     noteBelongHandler(api);
+            //   },
+            //   onSetup: (api) => {
+            //     // 设置按钮的初始状态
+            //     const initialActiveState = false; // 假设我们想要按钮初始为高亮状态
+            //     api.setActive(initialActiveState);
+            //   },
+            // });
           },
         }}
       />

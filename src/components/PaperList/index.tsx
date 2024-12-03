@@ -2,6 +2,7 @@ import { deletePaper, getPapers } from "@/services/paper";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useMount } from "ahooks";
 import { Col, message, Row, Spin } from "antd";
+import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 import { history } from "umi";
 import style from "./index.less";
@@ -35,9 +36,8 @@ const PaperList: React.FC<{
         <Row gutter={[16, 24]}>
           {paperList.map((item) => {
             return (
-              <Col className="gutter-row" span={12}>
+              <Col className="gutter-row" span={12} key={item.paper_id}>
                 <PaperCard
-                  key={item.paper_id}
                   {...item}
                   onDelete={() => {
                     message.info("删除成功");
@@ -82,21 +82,32 @@ const PaperCard = (paper) => {
       },
     },
   ];
+
+  const cardStyle = {
+    background: `url(${paper.thumbnail_path}) no-repeat top`,
+    "backgroundSize": "cover",
+  };
+
   return (
     <div onClick={openPaper} className={`${style["paper-card"]}`}>
       <div className={`${style["paper-card__title"]}`}>{paper.title}</div>
+      <div
+        className={`${style["paper-card__content"]}`}
+        style={cardStyle}
+      ></div>
       <div className={`${style["paper-card__bottom"]}`}>
         <div className={`${style["paper-card__bottom__author"]}`}>
           {paper.authors}
         </div>
         <div className={`${style["paper-card__bottom__create"]}`}>
-          {paper.created_at}
+          {dayjs(paper.created_at).format("YYYY-MM-DD")}
         </div>
       </div>
       <div className={`${style["paper-card__actions"]}`}>
-        {actions.map((action) => {
+        {actions.map((action, index) => {
           return (
             <div
+              key={index}
               onClick={action.onClick}
               className={`${style["paper-card__actions__item"]}`}
             >

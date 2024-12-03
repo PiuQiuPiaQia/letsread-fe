@@ -9,7 +9,7 @@ export async function getPapers() {
         authors: string;
         created_at: string;
         file_path: string;
-        paper_id: number;
+        paper_id: string;
         publish_date: string;
         title: string;
       }[];
@@ -36,6 +36,29 @@ export async function deletePaper(data) {
     method: "POST",
     prefix: getLRPrefix(),
     data,
+    lrToken: true,
+  });
+}
+
+export async function getPaper(data: { paper_id: string }) {
+  return request<
+    IResponse & {
+      file_path: string;
+      file_title: string;
+    }
+  >(`/paper/getById`, {
+    method: "GET",
+    prefix: getLRPrefix(),
+    params: data,
+    lrToken: true,
+  });
+}
+
+export async function parsePaper(data: { paper_id: string }) {
+  return request<IResponse>(`/paper/parse`, {
+    method: "GET",
+    prefix: getLRPrefix(),
+    params: data,
     lrToken: true,
   });
 }
