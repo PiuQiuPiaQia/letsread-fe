@@ -1,7 +1,7 @@
 import { ProChat, ProChatInstance  } from '@ant-design/pro-chat';
 import {getMessages} from '@/services/question';
 import { useTheme } from 'antd-style';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Dropdown,MenuProps,Space} from 'antd';
 import { useLocation } from 'react-router-dom';
 interface menuType{
@@ -103,7 +103,6 @@ const ChatComponent = () => {
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
 
-      // 创建一个 ReadableStream
       const readableStream = new ReadableStream({
         async pull(controller) {
           while (true) {
@@ -113,38 +112,41 @@ const ChatComponent = () => {
               break;
             }
             const chunkText = decoder.decode(value, { stream: true });
-            let errorFlag = false//记录是否有报错信息
-            const newMessages = chunkText.split('\n\n').map((chunk) => {
+            const chunks = chunkText.split('\n\n').map((chunk) => {
               const match = chunk.match(/data: (.*)/);
               if (match) {
                 const data = match[1];
-                console.log("data:" + data)
-                if (data !== '[DONE]') {
-                  const data_parse = JSON.parse(data)
-                  if ("error" in data_parse) {
-                    errorFlag = true
-                    return data_parse["error"]
-                  } else {
-                    return JSON.parse(data);
-                  }
-                }
+                return data;
               }
               return null;
-            }).filter((msg) => msg !== null);
-            const newText = errorFlag?JSON.stringify(newMessages):newMessages.map(item => item.content).join('')
-            controller.enqueue(encoder.encode(newText));
+            }).filter((chunk) => chunk !== null);
+            
+            for (const chunk of chunks) {
+              console.log("chunk:" + chunk)
+              if (chunk === '[DONE]') {
+                controller.close();
+                return; // 退出pull函数
+              }
+              const data_parse = JSON.parse(chunk!);
+              if ("error" in data_parse) {
+                controller.enqueue(encoder.encode(data_parse.error));
+                // controller.close();
+                // return; // 退出pull函数
+              } else {
+                controller.enqueue(encoder.encode(data_parse.content)); // 只发送有效消息内容
+              }
+            }
           }
         },
         cancel(err) {
           console.error('ReadableStream cancelled', err);
-          
         },
       });
-
+  
       return new Response(readableStream);
     } catch (error) {
       console.error("请求或处理流数据时发生错误", error);
-      return new Response("Error: " + error);
+      return new Response("请求或处理流数据时发生错误Error: " + error);
     }
   };
 
