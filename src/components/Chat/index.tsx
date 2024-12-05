@@ -152,7 +152,7 @@ const ChatComponent = () => {
 
   return (
     <ProChat
-      style={{ height: "100%", width: "100%",paddingBottom:"72px",background: theme.colorBgLayout }}
+      style={{ height: "100%", width: "100%",paddingBottom:"10px",background: theme.colorBgLayout }}
       request={handleStream}
       chatRef={proChatRef}
       actions={{

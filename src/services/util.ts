@@ -10,5 +10,6 @@ export function translateText(data: any) {
     method: "POST",
     prefix: getLRPrefix(),
     data,
+    lrToken: true,
   });
 }

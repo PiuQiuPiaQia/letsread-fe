@@ -74,7 +74,15 @@ const FooterButton = ({
     setSaveLoading(false);
   };
 
-  const onClickExportResult = async (key: string) => {};
+  const onClickExportResult = async (key: string) => {
+    setShowExportModal(false);
+    setDownLoading(true);
+    if (externalExport) {
+      await externalExport(key);
+      setDownLoading(false);
+      return;
+    }
+  };
 
   return (
     <>

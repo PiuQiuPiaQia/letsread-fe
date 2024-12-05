@@ -35,7 +35,7 @@ const useStore = () => {
   const [currentFile, setCurrentFile] = useState<
     IFileItem | Record<string, any>
   >({} as any);
-  const [currentPaperId, setCurrentPaperId] = useState<number>(0);
+  const [currentPaperId, setCurrentPaperId] = useState<string>("");
   const [resultJson, setResultJson] = useState<IImgResult | null>(null);
   const [resultJsonSaveLoading, setResultJsonSaveLoading] = useState(false);
   // 识别结果

@@ -13,6 +13,13 @@ interface NoteItem {
   contentId: number;
 }
 
+const defaultNode: NoteItem = {
+  notesId: -1,
+  content: "",
+  isNew: false,
+  contentId: -1,
+};
+
 export default function Note() {
   // 初始化笔记列表状态，每个笔记都有一个唯一的id和内容
   const [notes, setNotes] = useState<NoteItem[]>([]);
@@ -31,8 +38,9 @@ export default function Note() {
   useMemo(() => {
     getNotes({ paper_id: currentPaperId }).then((res) => {
       // console.log("getNotes", res);
+      const notes = res.notes.length ? res.notes : [{ ...defaultNode }];
       setNotes(
-        res.notes.map((item) => {
+        notes.map((item) => {
           return {
             contentId: item.content_id,
             notesId: item.note_id,

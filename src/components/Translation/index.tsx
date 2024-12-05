@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import Loading from "../Loading";
 import styles from "./index.less";
 
-export default function Translation() {
-  const [hasContent, setHasContent] = useState(false);
+export default function Translation(props: any) {
+  const [hasTranslation, setHasTranslation] = useState(false);
   const [translations, setTranslations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { resultJson } = storeContainer.useContainer();
@@ -14,31 +14,31 @@ export default function Translation() {
   console.log("resultJson:", resultJson);
   useMount(() => {
     console.log("useMount Translation");
-    // 自动翻译
-    if (hasContent) {
-      handleTranslate();
-    }
+    setTimeout(() => {}, 1000);
   });
   useEffect(() => {
-    !hasContent && setHasContent(true);
-    const pages = resultJson?.pages || [];
+    const pages = resultJson?.detail || [];
     setOriginal(
       pages.map((page) => {
-        const content = page.content;
-        return content
-          .map((item) => {
-            return item.text || "";
-          })
-          .join("");
+        return page.text || "";
       })
     );
-
     console.log("pages:", pages);
   }, [resultJson]);
 
   useEffect(() => {
     console.log("original:", original);
   }, [original]);
+
+  useEffect(() => {
+    if (props.firstLoad) {
+      if (!hasTranslation && original.length) {
+        // 自动翻译
+        handleTranslate();
+        setHasTranslation(true);
+      }
+    }
+  }, [props.firstLoad]);
 
   const handleTranslate = () => {
     setLoading(true);

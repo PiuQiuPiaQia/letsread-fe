@@ -1,18 +1,18 @@
+import markdownSwitchIcon from "@/assets/images/markdown_switch.png";
+import Chat from "@/components/Chat";
+import Loading, { DotsLoading } from "@/components/Loading";
+import Note from "@/components/Note";
+import Translation from "@/components/Translation";
+import type { ConnectState } from "@/models/connect";
+import { Radio, Switch, Tooltip } from "antd";
 import classNames from "classnames";
+import lodash from "lodash";
 import type { FC, ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Radio, Tooltip, Switch } from "antd";
 import ReactJson from "react-json-view";
-import lodash from "lodash";
 import { connect } from "umi";
-import type { ConnectState } from "@/models/connect";
-import markdownSwitchIcon from "@/assets/images/markdown_switch.png";
-import Loading, { DotsLoading } from "@/components/Loading";
-import styles from "./index.less";
 import { storeContainer } from "../../../RobotStruct/store";
-import Note from "@/components/Note";
-import Chat from "@/components/Chat";
-import Translation from "@/components/Translation";
+import styles from "./index.less";
 
 enum ResultType {
   json = "json",
@@ -67,6 +67,7 @@ const RightContainer: FC<IProps> = ({
   const [resultType, setResultType] = useState<ResultType | TabType>(
     ResultType.md
   );
+  const [firstLoadedList, setFirstLoadedList] = useState<string[]>([]);
   const { resultLoading } = Common;
 
   const {
@@ -82,15 +83,12 @@ const RightContainer: FC<IProps> = ({
   const showAutoSaveSwitch = resultType === ResultType.md && showAutoSave;
 
   const options = useMemo(() => {
-    return [
-      ResultType.md,
-      TabType.Translation,
-      TabType.chat,
-      TabType.note,
-    ].map((item) => ({
-      label: tabMap[item],
-      value: item,
-    }));
+    return [ResultType.md, TabType.Translation, TabType.chat, TabType.note].map(
+      (item) => ({
+        label: tabMap[item],
+        value: item,
+      })
+    );
   }, []);
 
   const showJSON = useMemo(() => {
@@ -114,6 +112,7 @@ const RightContainer: FC<IProps> = ({
   const handleChangeTab = (e: any) => {
     const type = e.target.value;
     setResultType(type);
+    setFirstLoadedList((prev) => [...prev, type]);
     if (onTabChange) {
       onTabChange(type);
     }
@@ -123,47 +122,66 @@ const RightContainer: FC<IProps> = ({
     if (resultLoading) {
       return <Loading type="normal" />;
     }
-    if (resultType === ResultType.json) {
-      return (
-        <div
-          className={classNames(styles.contentWrapper, styles.jsonViewWrapper)}
-        >
-          <ReactJson
-            src={showJSON}
-            enableClipboard={false}
-            onEdit={false}
-            name={null}
-            collapsed={3}
-            onAdd={false}
-            style={{
-              fontFamily: "Monaco, Menlo, Consolas, monospace",
-              color: "#9b0c79",
-            }}
-            displayDataTypes={false}
-            displayObjectSize={false}
-            collapseStringsAfterLength={1000}
-          />
-        </div>
-      );
-    }
-    // 翻译
-    if (resultType === TabType.Translation) {
-      return <Translation></Translation>;
-    }
-    // 对话
-    if (resultType === TabType.chat) {
-      return <Chat></Chat>;
-    }
-    // 笔记
-    if (resultType === TabType.note) {
-      return <Note></Note>;
-    }
+    const contentList: JSX.Element[] = [];
+
+    // 暂时不用
+    const jsonXml = (
+      <div
+        className={classNames(styles.contentWrapper, styles.jsonViewWrapper)}
+        style={showContentStyle(ResultType.md)}
+      >
+        <ReactJson
+          src={showJSON}
+          enableClipboard={false}
+          onEdit={false}
+          name={null}
+          collapsed={3}
+          onAdd={false}
+          style={{
+            fontFamily: "Monaco, Menlo, Consolas, monospace",
+            color: "#9b0c79",
+          }}
+          displayDataTypes={false}
+          displayObjectSize={false}
+          collapseStringsAfterLength={1000}
+        />
+      </div>
+    );
+    const mdXml = <div style={showContentStyle(ResultType.md)}>{children}</div>;
+    const translationXml = (
+      <div style={showContentStyle(TabType.Translation)}>
+        <Translation
+          firstLoad={firstLoadedList.includes(TabType.Translation)}
+        ></Translation>
+      </div>
+    );
+    const chatXml = (
+      <div style={showContentStyle(TabType.chat)}>
+        <Chat></Chat>
+      </div>
+    );
+    const noteXml = (
+      <div style={showContentStyle(TabType.note)}>
+        <Note></Note>
+      </div>
+    );
+    contentList.push(mdXml, translationXml, chatXml, noteXml);
+
     return (
       <div className={classNames(styles.contentWrapper, "result-content-body")}>
-        {children}
+        {contentList}
       </div>
     );
   };
+
+  function showContentStyle(type: ResultType | TabType) {
+    console.log(resultType, type);
+
+    return {
+      height: "100%",
+      display: resultType === type ? "block" : "none",
+    };
+  }
 
   return (
     <>

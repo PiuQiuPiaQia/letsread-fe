@@ -177,7 +177,7 @@ export function isMarkdownHeader(markdown: string) {
   return headerRegex.test(markdown);
 }
 
-export const convertPdfUrlToFile = async (pdfUrl) => {
+export const convertPdfUrlToFile = async (pdfUrl, pdfName) => {
   try {
     const response = await axios({
       url: pdfUrl,
@@ -186,7 +186,7 @@ export const convertPdfUrlToFile = async (pdfUrl) => {
     });
 
     const blob = new Blob([response.data], { type: "application/pdf" });
-    const file = new File([blob], "filename.pdf", { type: "application/pdf" });
+    const file = new File([blob], pdfName, { type: "application/pdf" });
 
     return file;
   } catch (error) {
