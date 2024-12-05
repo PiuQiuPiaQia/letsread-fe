@@ -254,7 +254,7 @@ export async function robotRecognize({
 
   const requestUrl = param.custom_api ? param.custom_api : '/ai/service/v1/pdf_to_markdown';
   
-  return mockRecognize();
+  // return mockRecognize();
 
   return request<IRecognizeRes>(paramToString(param, requestUrl), {
     ...bodyOption,

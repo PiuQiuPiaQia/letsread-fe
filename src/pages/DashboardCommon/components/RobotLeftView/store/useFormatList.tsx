@@ -96,9 +96,7 @@ const useFormatList = (initialState: IProps = {}) => {
   }, [addFileList]);
 
   useMount(() => {
-    mockRecognize().then((res) => {
-      
-    });
+    // mockRecognize().then((res) => {});
   });
 
   useEventListener("beforeunload", (e) => {
@@ -220,8 +218,9 @@ const useFormatList = (initialState: IProps = {}) => {
     const keys = array.map((item) => item.id);
 
     // 上传文件OCR识别
-    const uploadFileQ = array.map(({ name, id, imageData, url }) =>
-      limit(() =>
+    const uploadFileQ = array.map(({ name, id, imageData, url }) => {
+      console.log("uploadFileQ", name, id, imageData, url);
+      return limit(() =>
         runRecognize({
           id,
           imgName: name,
@@ -234,8 +233,8 @@ const useFormatList = (initialState: IProps = {}) => {
             : { service }),
           ...ocrParams,
         })
-      )
-    );
+      );
+    });
     (async () => {
       const key = "upload-info";
       message.info(

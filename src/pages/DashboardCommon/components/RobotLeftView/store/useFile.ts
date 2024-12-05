@@ -76,7 +76,7 @@ function useFile(initialState: IProps = {}) {
     }
     // 点击同一张文件时取消请求
     if (file.id === curFileRef.current.id) {
-      console.log('handleCheckFileClick-点击同一个');
+      console.log('handleCheckFileClick-点击同一个', file, curFileRef);
       return null;
     }
 
@@ -128,7 +128,6 @@ function useFile(initialState: IProps = {}) {
           file.url = URL.createObjectURL(imgBlob);
         }
         onFileClick({ ...file });
-        // console.log('onFileClick', { ...file });
         // eslint-disable-next-line no-empty
       } catch (error) {
         console.log('error', error);

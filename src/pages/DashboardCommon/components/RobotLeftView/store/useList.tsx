@@ -1,18 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { createContainer } from 'unstated-next';
-import { useRequest } from 'ahooks';
-import { message } from 'antd';
-import { useSelector } from 'umi';
-import type { IFileItem } from '../data';
-import { ReactComponent as WaringCircle } from '@/assets/icon/dashbord/warning.svg';
-import { convertFileItem } from '../utils/convertFileItem';
-import { robotRecognize } from '@/services/robot';
-import { COUNT_STATUS_LIST } from '../constants';
-import { generateUUID, messageByCode, notSupportPreView } from '@/utils';
-import { setResultCache } from '../utils/cacheResult';
-import type { ConnectState } from '@/models/connect';
-import { AppIdAndSecretPosition } from '../../ParamsSettings';
-import { getParamsSettings } from '../../ParamsSettings/utils';
+import { ReactComponent as WaringCircle } from "@/assets/icon/dashbord/warning.svg";
+import type { ConnectState } from "@/models/connect";
+import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
+import { parsePaper } from "@/services/paper";
+import { generateUUID, messageByCode, notSupportPreView } from "@/utils";
+import { useRequest } from "ahooks";
+import { message } from "antd";
+import { useEffect, useRef, useState } from "react";
+import { useSelector } from "umi";
+import { createContainer } from "unstated-next";
+import { AppIdAndSecretPosition } from "../../ParamsSettings";
+import { getParamsSettings } from "../../ParamsSettings/utils";
+import { COUNT_STATUS_LIST } from "../constants";
+import type { IFileItem } from "../data";
+import { setResultCache } from "../utils/cacheResult";
+import { convertFileItem } from "../utils/convertFileItem";
 
 interface IResult {
   list: IFileItem[];
@@ -24,11 +25,12 @@ const useList = () => {
   const [list, setList] = useState<IFileItem[]>([]);
 
   const { service } = useSelector(
-    (states: ConnectState) => states.Robot.info as { service: string },
+    (states: ConnectState) => states.Robot.info as { service: string }
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const queuesRef = useRef<number[]>();
+  const { currentPaperId } = storeContainer.useContainer();
 
   // ocr手动识别
   const { run: runRecognize, fetches } = useRequest(
@@ -37,7 +39,11 @@ const useList = () => {
         queuesRef.current = [...(keys || [])];
       }
       params.service = service;
-      return robotRecognize(params).then((res) => {
+      console.log("params", params);
+
+      // return robotRecognize(params).then((res) => {
+      // return mockRecognize(params).then((res) => {
+      return parsePaper({ paper_id: currentPaperId }).then((res) => {
         if (res.code !== 200) {
           return res;
         }
@@ -48,7 +54,7 @@ const useList = () => {
           // 兼容角度
           if (!data?.metrics) {
             const curSettings = getParamsSettings();
-            data.dpi = curSettings.dpi || '144';
+            data.dpi = curSettings.dpi || "144";
             data.metrics =
               data.pages?.map((o, i) => ({
                 page_id: i + 1,
@@ -85,7 +91,7 @@ const useList = () => {
         const hasCountNoMore = COUNT_STATUS_LIST.includes(data?.count_status);
         if (code !== 200) {
           message.destroy();
-          let resMsg = messageByCode[code] || msg || m || '请求失败';
+          let resMsg = messageByCode[code] || msg || m || "请求失败";
           if (code === 40101) {
             resMsg = resMsg += `，${AppIdAndSecretPosition}`;
           }
@@ -97,33 +103,44 @@ const useList = () => {
           } else {
             // 其他的标记为失败
             setList((list) =>
-              list.map((item) => (item.id === params[0].id ? { ...item, status: 'wait' } : item)),
+              list.map((item) =>
+                item.id === params[0].id ? { ...item, status: "wait" } : item
+              )
             );
           }
           return;
         }
 
         console.log("list", list);
-        
 
         setList((list) =>
           list.map((item) => {
             if (item.id === params[0].id) {
               // 首次识别失败
-              if (!item.url && Array.isArray(data.result) && !data.result.length) {
+              if (
+                !item.url &&
+                Array.isArray(data.result) &&
+                !data.result.length
+              ) {
                 return item;
               }
               const row = hasCountNoMore
-                ? { ...item, status: 'wait' }
-                : { isLocalUpload: item.isLocalUpload, ...convertFileItem(data) };
+                ? { ...item, status: "wait" }
+                : {
+                    isLocalUpload: item.isLocalUpload,
+                    ...convertFileItem(data),
+                  };
               Object.assign(item, row);
-              if (!notSupportPreView(item.name) && params[0]?.url?.startsWith('blob:http')) {
+              if (
+                !notSupportPreView(item.name) &&
+                params[0]?.url?.startsWith("blob:http")
+              ) {
                 item.url = params[0]?.url;
                 item.thumbnail = params[0]?.thumbnail;
               }
             }
             return item;
-          }, [] as IFileItem[]),
+          }, [] as IFileItem[])
         );
 
         // 缓存结果
@@ -131,15 +148,15 @@ const useList = () => {
       },
       onError: (e, params) => {
         const error = e as any;
-        if (error.type === 'Timeout') {
+        if (error.type === "Timeout") {
           message.error({
             icon: <WaringCircle className="warning-icon" />,
-            content: '识别超时，请点击重新识别',
+            content: "识别超时，请点击重新识别",
           });
           setList((list) => {
             list.forEach((item) => {
               if (item.id === params[0].id) {
-                item.status = 'timeout';
+                item.status = "timeout";
               }
             });
             return [...list];
@@ -155,11 +172,13 @@ const useList = () => {
         } else {
           // 其他的标记为失败
           setList((list) =>
-            list.map((item) => (item.id === params[0].id ? { ...item, status: 'wait' } : item)),
+            list.map((item) =>
+              item.id === params[0].id ? { ...item, status: "wait" } : item
+            )
           );
         }
       },
-    },
+    }
   );
 
   useEffect(() => {
@@ -180,10 +199,10 @@ const useList = () => {
       setList((list: IFileItem[]) => {
         const newList = list.map((item: any) => {
           if (ids.includes(`${item.id}`)) {
-            return { ...item, status: 'recognize' };
+            return { ...item, status: "recognize" };
           }
           if (queues.map(String).includes(`${item.id}`)) {
-            return { ...item, status: 'queue' };
+            return { ...item, status: "queue" };
           }
           return item;
         });

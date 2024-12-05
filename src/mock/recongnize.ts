@@ -1,5081 +1,4392 @@
 export function mockRecognize() {
-    return Promise.resolve({
-        code: 200,
-        data: {
-            "id": "93c1c551-7a48-495f-9338-a5efa020421d",
-            "count_status": 1,
-            "ocr_status": 1,
-            "cloud_ocr": 0,
-            "ctime": "1729437205",
-            "utime": "1729437205",
-            "status": null,
-            "img_name": "测试 两页pdf.pdf",
-            "img_uri": "blob:http://localhost:8000/f2c3d557-7903-400c-887e-02e6b8fbf463",
-            "thumbnail": "blob:http://localhost:8000/f2c3d557-7903-400c-887e-02e6b8fbf463",
-            "pdf_url": "http://139.198.14.73:8080/static/papers/d1980ada1f9642d2b924e8f033d0a738.pdf",
-            "result": {
-                "markdown": "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE\n\nTransactions on Visualization and Computer Graphics\n\n# Context-aware Sampling of Large Networks via Graph\n\nRepresentation Learning\n\nZhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,\n\nYuhua Liu,Ying Zhao and Wei Chen\n\n<!-- a. C. b. d. e. g. f. h.  -->\n![](https://textin-image-store-1303028177.cos.ap-shanghai.myqcloud.com/external/e616a02f49d8d2cb)\n\nFig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).\n\nAbstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and exploration of large networks.\n\nIndex Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation\n\n\n![](https://textin-image-store-1303028177.cos.ap-shanghai.myqcloud.com/external/84c42c140c4b3212)\n\n## 1 INTRODUCTION\n\n·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and Yuhua Liu are with School of Information,Zhejiang University of Finance and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn.\n\n·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn.\n\n·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University.\n\nE-mail:chenwei@cad.zju.edu.cn.\n\n·Ying Zhao and Wei Chen are corresponding authors.\n\nManuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication xx xxx.201x;date of current version xx xxx. 201x. For information on obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx\n\nAs a ubiquitous data structure, network is always employed to encode relationships among entities in a variety of application areas,such as social relationships between people and financial transactions between companies [5,57]. Graph visualization offers an interactive and ex-ploratory means allowing users to gain structural insights [2] and sense implicit contextual features of networks. However, with the increase of data sizes, the visual exploration and analysis of networks are se-riously influenced,because nodes and edges overlap with each other and generate much visual clutter in large graph visualizations, making it a complicated and time-consuming task to visually explore structural features of significance [50].\n\nGraph sampling is commonly used to reduce thevisual clutter and address scalability issues in the visual exploration of large networks,by means of which a subset of nodes and edges are selected on behalf of the original large graph. Over the past few decades, numerous ef-\n\nThis article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE\n\nTransactions on Visualization and Computer Graphics\n\nforts have been paid on the design of sampling strategies, ranging from node-based and edge-based schemes [4,26] to transversal-based and semantic-based schemes [4,23,56]. However, such strategies largely focus on sampling efficiency and randomness of sampling results, pay-ing little attention to the preservation of significant contextual struc-tures.\n\nContextual structures, formed by nodes and edges with tight rela-tionships, are always of great significance for the exploration and in-terpretation of networks, such as bridging nodes, connected paths and aggregated communities [19,46].For example, it is quite necessary to identify the contextual structures of crowd movement network for the diagnosis and spread prevention of infectious diseases [44]. Howev-er, it is a tough task to preserve contextual structures in the sampled network based on traditional sampling strategies, because contextual structures often have three characteristics: concealment in location, ir-regularity in scale, and complexity in structure. For example, nodes with tight relationships (in a community) may be difficult to find in large networks due to their concealed locations, because they are eas-ily laid out far away from each other. Also, contextual structures are immune to scale, that is few nodes and edges would rather present a tough contextual structure (a small complete graph). Thus,it is re-ally hard to give a comprehensive definition of contextual structures because their formations are too complicated to find a regular pattern.\n\nAs an effective way to represent and identify contextual structures of large networks [5], GRL has been widely applied in a variety of research areas, such as graph classification, graph query, graph min-ing,et al [12,33]. It transforms nodes into vectors to quantitate the structural features of networks. Numerous GRL models have been pro-posed to train and represent nodes according to their local contexts in the network, such as deepwalk [39],node2vec [11],and struc2vec [42].A family of biased random walks are developed in the course of corpus generation allowing an efficient exploration of diverse neighborhoods for given nodes [32]. Thus,network structures are well represented in a vectroized space obtained by GRL (e.g. a contextual structure of interest is highlighted as shown in Figure la and Figure 1c). We be-lieve that it would be a feasible way to conduct graph sampling in the vectorized space, and the contextual structures would be preserved as far as possible (e.g. the contextual structure is well preserved in the sampled graph as shown in Figure 1d and Figure 1b).\n\nHowever,there are still severa problems to overcome for the p-reservation of contextual structures in the vectorized space obtained through GRL.P1: GRL is able to encode the contextual structures with vectorizied representation, but the vectorized space is too compli-cated to gaininsights due to its high dimensions. P2: It is a difficult task to define a graph sampling model to preserve contextual structures captured by GRL,since they are represented with data distributions in the vectorized space rather than topological relationships in the origi-nal network space. P3: It is also difficult to conduct a unified graph sampling scheme to preserve various kinds of contextual structures in the vectorized space due to their respective characteristics. P4: It is another tough task to evaluate the sampled graphs from a variety of perspectives,and further demonstrate that the contextual structures of significance are well retained in the sampled graphs.\n\nIn this paper, we propose a novel graph sampling method to simpli-fy large graphs, especially with the contextual structures identified and preserved in the sampled graphs. Firstly, a GRL model is employed to encode contextual structures and a dimensionality reduction method is applied to transform the contextual structures into a low-dimensional vectorized space,where nodes sharing similar contextual features are visually distributed close to each other (P1). Then, we propose a novel blue noise sampling model to generate a subset of nodes in the vec-torized space, guaranteeing that nodes with tight relationships are re-tained and the contextual features are well preserved in the sampled graph (P2). A set of desired objectives are further integrated into the sampling model to optimize the sampled graphs, in which topological features of significance are enhanced such as bridging nodes and graph connection (P3). Also, we utilize a group of metrics to evaluate the va-lidity of our sampling method in contextual feature preservation from different perspectives, such as node importance, graph connection and\n\ncommunity changes (P4). At last, a graph sampling framework is im-plemented to integrate sampling models, GRL and visual designs of metrics, and a rich set of interactions are also provided allowing users to intuitively evaluate different sampling strategies and easily explore structures of interest in large networks. The effectiveness and use-fulness of our system are further demonstrated with case studies and quantitate comparisons based on real-world datasets. In summary, the main contributions of our work are:\n\n·We utilize a GRL model (node2vec) to quantitate the contextu-al features of networks, offering important clues for graph sam-pling. To the best of our knowledge, it is the first to sample graphs with GRL.\n\n·We design a multi-objective blue noise sampling model to simpli-fy large networks, with the contextual structures and their topo-logical features well retained in the sampled graphs.\n\nWe propose a group of specific metrics enabling users to com-pare sampling strategies from different perspectives, and conduct case studies with real-world datasets to demonstrate the validity of our context-aware graph sampling method.\n\n## 2 RELATED WORK\n\nWe classify existing methods into four categories,including large graph visualization, graph sampling, metrics for graph evaluation and graph representation learning.\n\n### 2.1 Large Graph Visualization\n\nGraph visualization is widely used for network analysis [5].Node-link diagram is a most intuitive layout scheme in which the nodes are rep-resented as points and edges are represented as lines. Force-directed methods are employed to layout the node-link diagrams by optimizing graph drawing aesthetics [10,19,41]. With the increasing size of net-works, the readability of node-link diagrams largely decreases due to visual clutter and scalability issues [9]. Two categories of methods are proposed: (1) Graph clustering methods aggregate groups of nodes and edges with similar properties to reduce the visual complexity of large graphs [7,58]. ASK-GraphView [1] was proposed to organize a large graph into hierarchical structures allowing users to aggregate nodes to reduce visual clutter. To reduce edge crossings and empha-size directional patterns, a set of edge-based clustering methods are proposed in which edges with similar spatial distribution features are bundled together [6,8,15,16]. (2) Graph filtering methods extract subgraphs of interest from original large graphs [20]. Hennessey et al. [14] took a set of graph metrics into account to obtain representa-tive skeletons and simplify the visualization of large graphs, such as shortest path and distance to the central node. Yoghourdjian et al. [51]proposed Graph Thumbnails to enhance the readability of large graph-s with high-level structures described with small icon-like glyphs.It can be seen that the underlying topological structures of networks are changed with clustering methods,which are still not preserved in the simplified graphs with filteringmethods. It might generate a great deal of ambiguity that misleads the exploration of networks [49].\n\n### 2.2 Graph Sampling\n\nGraph sampling is another kind of filtering method, which also gen-erates a subset of nodes or edges to simplify the original networks.Three categories are covered: (1) Node-based Sampling. Random Node Sampling (RNS) [26] is commonly used to randomly generate nodes from the original network. A set of graph properties are con-sidered to improve the results of node-based sampling. For example,Random PageRank Node (RPN) defines the probability of nodes to be sampled as proportional to their PageRank weights [26,36]. Random Degree Node (RDN) increases the probability of nodes with higher de-gree values to be sampled [4]. Hu et al. [18] designed a graph sampling method based on spectral sparsification, to reduce the number of edges and retain structural properties of original graphs. (2) Edge-based Sampling. Random Edge Sampling (RES) extracts a random subset of\n\n",
-                "success_count": 2,
-                "catalog": {
-                    "toc": [
-                        {
-                            "pos": [
-                                203,
-                                109,
-                                1030,
-                                109,
-                                1030,
-                                195,
-                                203,
-                                195
-                            ],
-                            "page_id": 1,
-                            "hierarchy": 2,
-                            "pos_list": [
-                                [
-                                    203,
-                                    109,
-                                    1030,
-                                    109,
-                                    1030,
-                                    151,
-                                    203,
-                                    151
-                                ],
-                                [
-                                    427,
-                                    155,
-                                    809,
-                                    155,
-                                    809,
-                                    195,
-                                    427,
-                                    195
-                                ]
-                            ],
-                            "title": "Context-aware Sampling of Large Networks via GraphRepresentation Learning",
-                            "sub_type": "text_title"
-                        },
-                        {
-                            "pos": [
-                                151,
-                                725,
-                                1085,
-                                725,
-                                1085,
-                                837,
-                                151,
-                                837
-                            ],
-                            "page_id": 1,
-                            "hierarchy": 3,
-                            "pos_list": [
-                                [
-                                    151,
-                                    725,
-                                    1085,
-                                    725,
-                                    1085,
-                                    837,
-                                    151,
-                                    837
-                                ]
-                            ],
-                            "title": "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).",
-                            "sub_type": "image_title"
-                        },
-                        {
-                            "pos": [
-                                103,
-                                1157,
-                                256,
-                                1157,
-                                256,
-                                1177,
-                                103,
-                                1177
-                            ],
-                            "page_id": 1,
-                            "hierarchy": 2,
-                            "pos_list": [
-                                [
-                                    103,
-                                    1157,
-                                    256,
-                                    1157,
-                                    256,
-                                    1177,
-                                    103,
-                                    1177
-                                ]
-                            ],
-                            "title": "1 INTRODUCTION",
-                            "sub_type": "text_title"
-                        },
-                        {
-                            "pos": [
-                                609,
-                                554,
-                                780,
-                                554,
-                                780,
-                                576,
-                                609,
-                                576
-                            ],
-                            "page_id": 2,
-                            "hierarchy": 2,
-                            "pos_list": [
-                                [
-                                    609,
-                                    554,
-                                    780,
-                                    554,
-                                    780,
-                                    576,
-                                    609,
-                                    576
-                                ]
-                            ],
-                            "title": "2 RELATED WORK",
-                            "sub_type": "text_title"
-                        },
-                        {
-                            "pos": [
-                                609,
-                                657,
-                                881,
-                                657,
-                                881,
-                                679,
-                                609,
-                                679
-                            ],
-                            "page_id": 2,
-                            "hierarchy": 3,
-                            "pos_list": [
-                                [
-                                    609,
-                                    657,
-                                    881,
-                                    657,
-                                    881,
-                                    679,
-                                    609,
-                                    679
-                                ]
-                            ],
-                            "title": "2.1 Large Graph Visualization",
-                            "sub_type": "text_title"
-                        },
-                        {
-                            "pos": [
-                                611,
-                                1199,
-                                800,
-                                1199,
-                                800,
-                                1221,
-                                611,
-                                1221
-                            ],
-                            "page_id": 2,
-                            "hierarchy": 3,
-                            "pos_list": [
-                                [
-                                    611,
-                                    1199,
-                                    800,
-                                    1199,
-                                    800,
-                                    1221,
-                                    611,
-                                    1221
-                                ]
-                            ],
-                            "title": "2.2 Graph Sampling",
-                            "sub_type": "text_title"
-                        }
-                    ]
-                },
-                "pages": [
-                    {
-                        "angle": 0,
-                        "page_id": 1,
-                        "content": [
-                            {
-                                "pos": [
-                                    38,
-                                    5,
-                                    1184,
-                                    5,
-                                    1184,
-                                    24,
-                                    38,
-                                    24
-                                ],
-                                "id": 0,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE"
-                            },
-                            {
-                                "pos": [
-                                    465,
-                                    25,
-                                    757,
-                                    25,
-                                    757,
-                                    42,
-                                    465,
-                                    42
-                                ],
-                                "id": 1,
-                                "score": 0.99800002574921,
-                                "type": "line",
-                                "text": "Transactions on Visualization and Computer Graphics"
-                            },
-                            {
-                                "pos": [
-                                    206,
-                                    111,
-                                    1034,
-                                    113,
-                                    1034,
-                                    155,
-                                    206,
-                                    153
-                                ],
-                                "id": 2,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "Context-aware Sampling of Large Networks via Graph"
-                            },
-                            {
-                                "pos": [
-                                    429,
-                                    157,
-                                    813,
-                                    157,
-                                    813,
-                                    199,
-                                    429,
-                                    199
-                                ],
-                                "id": 3,
-                                "score": 0.9990000128746,
-                                "type": "line",
-                                "text": "Representation Learning"
-                            },
-                            {
-                                "pos": [
-                                    313,
-                                    220,
-                                    926,
-                                    220,
-                                    926,
-                                    248,
-                                    313,
-                                    248
-                                ],
-                                "id": 4,
-                                "score": 0.96399998664856,
-                                "type": "line",
-                                "text": "Zhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,"
-                            },
-                            {
-                                "pos": [
-                                    457,
-                                    246,
-                                    785,
-                                    246,
-                                    785,
-                                    273,
-                                    457,
-                                    273
-                                ],
-                                "id": 5,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "Yuhua Liu,Ying Zhao and Wei Chen"
-                            },
-                            {
-                                "pos": [
-                                    185,
-                                    298,
-                                    205,
-                                    298,
-                                    205,
-                                    316,
-                                    185,
-                                    316
-                                ],
-                                "id": 6,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "a."
-                            },
-                            {
-                                "pos": [
-                                    540,
-                                    298,
-                                    561,
-                                    298,
-                                    561,
-                                    316,
-                                    540,
-                                    316
-                                ],
-                                "id": 7,
-                                "score": 0.94099998474121,
-                                "type": "line",
-                                "text": "C."
-                            },
-                            {
-                                "pos": [
-                                    745,
-                                    291,
-                                    769,
-                                    291,
-                                    769,
-                                    318,
-                                    745,
-                                    318
-                                ],
-                                "id": 8,
-                                "score": 0.99599999189377,
-                                "type": "line",
-                                "text": "b."
-                            },
-                            {
-                                "pos": [
-                                    540,
-                                    449,
-                                    559,
-                                    449,
-                                    559,
-                                    471,
-                                    540,
-                                    471
-                                ],
-                                "id": 9,
-                                "score": 0.91000002622604,
-                                "type": "line",
-                                "text": "d."
-                            },
-                            {
-                                "pos": [
-                                    182,
-                                    605,
-                                    200,
-                                    605,
-                                    200,
-                                    622,
-                                    182,
-                                    622
-                                ],
-                                "id": 10,
-                                "score": 0.8289999961853,
-                                "type": "line",
-                                "text": "e."
-                            },
-                            {
-                                "pos": [
-                                    389,
-                                    605,
-                                    407,
-                                    605,
-                                    407,
-                                    625,
-                                    389,
-                                    625
-                                ],
-                                "id": 11,
-                                "score": 0.96499997377396,
-                                "type": "line",
-                                "text": "g."
-                            },
-                            {
-                                "pos": [
-                                    684,
-                                    601,
-                                    701,
-                                    601,
-                                    701,
-                                    622,
-                                    684,
-                                    622
-                                ],
-                                "id": 12,
-                                "score": 0.98000001907349,
-                                "type": "line",
-                                "text": "f."
-                            },
-                            {
-                                "pos": [
-                                    888,
-                                    601,
-                                    912,
-                                    601,
-                                    912,
-                                    624,
-                                    888,
-                                    624
-                                ],
-                                "id": 13,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "h."
-                            },
-                            {
-                                "size": [
-                                    411,
-                                    196
-                                ],
-                                "id": 14,
-                                "pos": [
-                                    173,
-                                    284,
-                                    1076,
-                                    284,
-                                    1076,
-                                    716,
-                                    171,
-                                    715
-                                ],
-                                "data": {
-                                    "base64": "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",
-                                    "path": "https://textin-image-store-1303028177.cos.ap-shanghai.myqcloud.com/external/e616a02f49d8d2cb",
-                                    "region": [
-                                        173,
-                                        284,
-                                        1076,
-                                        284,
-                                        1076,
-                                        716,
-                                        171,
-                                        715
-                                    ]
-                                },
-                                "type": "image"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    728,
-                                    1088,
-                                    728,
-                                    1088,
-                                    751,
-                                    152,
-                                    751
-                                ],
-                                "id": 15,
-                                "score": 0.98000001907349,
-                                "type": "line",
-                                "text": "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    748,
-                                    1088,
-                                    748,
-                                    1088,
-                                    766,
-                                    152,
-                                    766
-                                ],
-                                "id": 16,
-                                "score": 0.98199999332428,
-                                "type": "line",
-                                "text": "graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    768,
-                                    1086,
-                                    768,
-                                    1086,
-                                    786,
-                                    152,
-                                    786
-                                ],
-                                "id": 17,
-                                "score": 0.98500001430511,
-                                "type": "line",
-                                "text": "highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    786,
-                                    1086,
-                                    786,
-                                    1086,
-                                    805,
-                                    152,
-                                    805
-                                ],
-                                "id": 18,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    805,
-                                    1086,
-                                    805,
-                                    1086,
-                                    823,
-                                    152,
-                                    823
-                                ],
-                                "id": 19,
-                                "score": 0.98100000619888,
-                                "type": "line",
-                                "text": "presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    825,
-                                    949,
-                                    825,
-                                    949,
-                                    842,
-                                    152,
-                                    842
-                                ],
-                                "id": 20,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h)."
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    856,
-                                    1088,
-                                    856,
-                                    1088,
-                                    873,
-                                    152,
-                                    873
-                                ],
-                                "id": 21,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "Abstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    875,
-                                    1086,
-                                    875,
-                                    1086,
-                                    893,
-                                    152,
-                                    893
-                                ],
-                                "id": 22,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    893,
-                                    1088,
-                                    893,
-                                    1088,
-                                    912,
-                                    152,
-                                    912
-                                ],
-                                "id": 23,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    913,
-                                    1086,
-                                    913,
-                                    1086,
-                                    930,
-                                    152,
-                                    930
-                                ],
-                                "id": 24,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    932,
-                                    1086,
-                                    932,
-                                    1086,
-                                    950,
-                                    152,
-                                    950
-                                ],
-                                "id": 25,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    950,
-                                    1086,
-                                    950,
-                                    1086,
-                                    969,
-                                    152,
-                                    969
-                                ],
-                                "id": 26,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    970,
-                                    1088,
-                                    970,
-                                    1088,
-                                    987,
-                                    152,
-                                    987
-                                ],
-                                "id": 27,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    989,
-                                    1088,
-                                    989,
-                                    1088,
-                                    1008,
-                                    152,
-                                    1008
-                                ],
-                                "id": 28,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    1008,
-                                    1088,
-                                    1008,
-                                    1088,
-                                    1026,
-                                    152,
-                                    1026
-                                ],
-                                "id": 29,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    1026,
-                                    1086,
-                                    1026,
-                                    1086,
-                                    1045,
-                                    152,
-                                    1045
-                                ],
-                                "id": 30,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and"
-                            },
-                            {
-                                "pos": [
-                                    152,
-                                    1046,
-                                    363,
-                                    1046,
-                                    363,
-                                    1065,
-                                    152,
-                                    1065
-                                ],
-                                "id": 31,
-                                "score": 0.99699997901917,
-                                "type": "line",
-                                "text": "exploration of large networks."
-                            },
-                            {
-                                "pos": [
-                                    151,
-                                    1071,
-                                    879,
-                                    1071,
-                                    879,
-                                    1094,
-                                    151,
-                                    1094
-                                ],
-                                "id": 32,
-                                "score": 0.98199999332428,
-                                "type": "line",
-                                "text": "Index Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation"
-                            },
-                            {
-                                "pos": [
-                                    383,
-                                    1108,
-                                    846,
-                                    1106,
-                                    846,
-                                    1139,
-                                    382,
-                                    1141
-                                ],
-                                "id": 33,
-                                "score": 1,
-                                "type": "line",
-                                "text": ""
-                            },
-                            {
-                                "size": [
-                                    210,
-                                    14
-                                ],
-                                "id": 34,
-                                "pos": [
-                                    383,
-                                    1108,
-                                    846,
-                                    1106,
-                                    846,
-                                    1139,
-                                    382,
-                                    1141
-                                ],
-                                "data": {
-                                    "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wAARCAAhAc8DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9/KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACik3DO3PNKCGGQaACjIztzzQSBXyb/AMFiv+CpXw3/AOCUH7KEnx28TJa6p4j1PWLbTvB/hRpws2rTGWNrgqM5CRW/mSM/3QxjUnMiggH1kDkZorkvgT8cPhh+0n8G/Dfx6+DPiq31rwt4r0iHUdF1K2YFZYZBnDDqjqco6H5kdWVgCpA60HPIoAKKQsAcE8+lLQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRSFlHU4pQc8igAooooAK+Rv2nvgf8A8FlfGHxy1zxH+yl+3T8LPBvgG4+zf2D4b8R/C1tRvbPbbRLP5lwJV8zfOs0i8Darqv8ADX1zRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8Ef8ADNP/AAcO/wDSTb4I/wDhkn/+P0f8M0/8HDv/AEk2+CP/AIZJ/wD4/X3vRQB8EH9mj/g4aK4P/BTX4JZ9R8En/wDkivtn4W6b8QNG+GXhzR/ix4kstZ8VWmhWkPibWNNsvs1tfagsKLcTxQ5PlRvKHZUydqsB2reooAx/Hlh451PwhqVj8NvEemaRr01o6aTqms6PJqFrazEfK8ttHcW7TKDyUWaMn+8K/ku/4OLv2av+CrXwh/awt/iN/wAFKPiL/wAJ7Y66ksHgPxroUZj0P7KjbvsVvbhVFjIoIZ4SNzEl983Mh/rprw7/AIKHfsE/Bj/gpH+zHqn7L3xzsmOk6hqFlfW1/bqPtFhcW86yCWFuqOyCSIkc7JnHQ4oA/HH/AINSf2Xf+Cx/h3wPB8YvC3xn0zwR+zvrd81zbeFfHWhy6p/b7g7ZLnTbZZYHs1baVNz5yI7AN5VwF4/f5RgYIrO8K+E/DvgbwxpvgvwdoVtpmkaPYQ2WlabZxiOK1t4kEccUajhVVFVQB0AxWkBgUAeRftm+B/2yPH/wvstG/Yh+OPhf4f8AiyPXYpr7WvFvhg6tbS6eIZhJAsIddshlaBhJngRsMfNXzKP2af8Ag4cHT/gpt8ER/wB0Sf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAfBH/AAzT/wAHDv8A0k2+CP8A4ZJ//j9H/DNP/Bw7/wBJNvgj/wCGSf8A+P1970UAeAfsRfDH/gol8PZvEzft5/tO+CPiKt2tmPCo8G+CDo39nlfP+0+dmR/O37oNvTb5bdd1e/jIHNFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAf//Z",
-                                    "path": "https://textin-image-store-1303028177.cos.ap-shanghai.myqcloud.com/external/84c42c140c4b3212",
-                                    "region": [
-                                        383,
-                                        1108,
-                                        846,
-                                        1106,
-                                        846,
-                                        1139,
-                                        382,
-                                        1141
-                                    ]
-                                },
-                                "type": "image"
-                            },
-                            {
-                                "pos": [
-                                    104,
-                                    1158,
-                                    260,
-                                    1158,
-                                    260,
-                                    1181,
-                                    104,
-                                    1181
-                                ],
-                                "id": 35,
-                                "score": 0.99599999189377,
-                                "type": "line",
-                                "text": "1 INTRODUCTION"
-                            },
-                            {
-                                "pos": [
-                                    110,
-                                    1229,
-                                    595,
-                                    1229,
-                                    595,
-                                    1247,
-                                    110,
-                                    1247
-                                ],
-                                "id": 36,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and"
-                            },
-                            {
-                                "pos": [
-                                    129,
-                                    1249,
-                                    602,
-                                    1249,
-                                    602,
-                                    1266,
-                                    129,
-                                    1266
-                                ],
-                                "id": 37,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "Yuhua Liu are with School of Information,Zhejiang University of Finance"
-                            },
-                            {
-                                "pos": [
-                                    129,
-                                    1269,
-                                    550,
-                                    1267,
-                                    550,
-                                    1286,
-                                    129,
-                                    1287
-                                ],
-                                "id": 38,
-                                "score": 0.97699999809265,
-                                "type": "line",
-                                "text": "and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,"
-                            },
-                            {
-                                "pos": [
-                                    129,
-                                    1288,
-                                    451,
-                                    1288,
-                                    451,
-                                    1305,
-                                    129,
-                                    1305
-                                ],
-                                "id": 39,
-                                "score": 0.9990000128746,
-                                "type": "line",
-                                "text": "cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn."
-                            },
-                            {
-                                "pos": [
-                                    110,
-                                    1308,
-                                    608,
-                                    1308,
-                                    608,
-                                    1326,
-                                    110,
-                                    1326
-                                ],
-                                "id": 40,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn."
-                            },
-                            {
-                                "pos": [
-                                    110,
-                                    1327,
-                                    562,
-                                    1329,
-                                    562,
-                                    1348,
-                                    110,
-                                    1346
-                                ],
-                                "id": 41,
-                                "score": 0.97600001096725,
-                                "type": "line",
-                                "text": "·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University."
-                            },
-                            {
-                                "pos": [
-                                    127,
-                                    1348,
-                                    347,
-                                    1348,
-                                    347,
-                                    1366,
-                                    127,
-                                    1366
-                                ],
-                                "id": 42,
-                                "score": 0.9990000128746,
-                                "type": "line",
-                                "text": "E-mail:chenwei@cad.zju.edu.cn."
-                            },
-                            {
-                                "pos": [
-                                    112,
-                                    1368,
-                                    465,
-                                    1368,
-                                    465,
-                                    1387,
-                                    112,
-                                    1387
-                                ],
-                                "id": 43,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "·Ying Zhao and Wei Chen are corresponding authors."
-                            },
-                            {
-                                "pos": [
-                                    109,
-                                    1394,
-                                    608,
-                                    1394,
-                                    608,
-                                    1413,
-                                    109,
-                                    1413
-                                ],
-                                "id": 44,
-                                "score": 0.97399997711182,
-                                "type": "line",
-                                "text": "Manuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication"
-                            },
-                            {
-                                "pos": [
-                                    104,
-                                    1414,
-                                    556,
-                                    1414,
-                                    556,
-                                    1431,
-                                    104,
-                                    1431
-                                ],
-                                "id": 45,
-                                "score": 0.96299999952316,
-                                "type": "line",
-                                "text": "xx xxx.201x;date of current version xx xxx. 201x. For information on"
-                            },
-                            {
-                                "pos": [
-                                    104,
-                                    1433,
-                                    584,
-                                    1433,
-                                    584,
-                                    1452,
-                                    104,
-                                    1452
-                                ],
-                                "id": 46,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org."
-                            },
-                            {
-                                "pos": [
-                                    104,
-                                    1452,
-                                    454,
-                                    1452,
-                                    454,
-                                    1470,
-                                    104,
-                                    1470
-                                ],
-                                "id": 47,
-                                "score": 0.9539999961853,
-                                "type": "line",
-                                "text": "Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1190,
-                                    1134,
-                                    1190,
-                                    1134,
-                                    1209,
-                                    630,
-                                    1209
-                                ],
-                                "id": 48,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "As a ubiquitous data structure, network is always employed to encode"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1210,
-                                    1134,
-                                    1210,
-                                    1134,
-                                    1229,
-                                    630,
-                                    1229
-                                ],
-                                "id": 49,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "relationships among entities in a variety of application areas,such as"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1230,
-                                    1134,
-                                    1230,
-                                    1134,
-                                    1249,
-                                    630,
-                                    1249
-                                ],
-                                "id": 50,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "social relationships between people and financial transactions between"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1250,
-                                    1138,
-                                    1250,
-                                    1138,
-                                    1269,
-                                    630,
-                                    1269
-                                ],
-                                "id": 51,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "companies [5,57]. Graph visualization offers an interactive and ex-"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1271,
-                                    1134,
-                                    1271,
-                                    1134,
-                                    1289,
-                                    630,
-                                    1289
-                                ],
-                                "id": 52,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "ploratory means allowing users to gain structural insights [2] and sense"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1291,
-                                    1134,
-                                    1291,
-                                    1134,
-                                    1309,
-                                    630,
-                                    1309
-                                ],
-                                "id": 53,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "implicit contextual features of networks. However, with the increase"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1309,
-                                    1136,
-                                    1311,
-                                    1136,
-                                    1331,
-                                    630,
-                                    1329
-                                ],
-                                "id": 54,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "of data sizes, the visual exploration and analysis of networks are se-"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1331,
-                                    1134,
-                                    1331,
-                                    1134,
-                                    1349,
-                                    630,
-                                    1349
-                                ],
-                                "id": 55,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "riously influenced,because nodes and edges overlap with each other"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1351,
-                                    1134,
-                                    1351,
-                                    1134,
-                                    1370,
-                                    630,
-                                    1370
-                                ],
-                                "id": 56,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "and generate much visual clutter in large graph visualizations, making"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1370,
-                                    1134,
-                                    1370,
-                                    1134,
-                                    1388,
-                                    630,
-                                    1388
-                                ],
-                                "id": 57,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "it a complicated and time-consuming task to visually explore structural"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1390,
-                                    837,
-                                    1390,
-                                    837,
-                                    1408,
-                                    630,
-                                    1408
-                                ],
-                                "id": 58,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "features of significance [50]."
-                            },
-                            {
-                                "pos": [
-                                    649,
-                                    1408,
-                                    1136,
-                                    1408,
-                                    1136,
-                                    1431,
-                                    649,
-                                    1431
-                                ],
-                                "id": 59,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "Graph sampling is commonly used to reduce thevisual clutter and"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1430,
-                                    1136,
-                                    1430,
-                                    1136,
-                                    1448,
-                                    630,
-                                    1448
-                                ],
-                                "id": 60,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "address scalability issues in the visual exploration of large networks,"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1450,
-                                    1134,
-                                    1450,
-                                    1134,
-                                    1469,
-                                    630,
-                                    1469
-                                ],
-                                "id": 61,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "by means of which a subset of nodes and edges are selected on behalf"
-                            },
-                            {
-                                "pos": [
-                                    630,
-                                    1470,
-                                    1136,
-                                    1470,
-                                    1136,
-                                    1489,
-                                    630,
-                                    1489
-                                ],
-                                "id": 62,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "of the original large graph. Over the past few decades, numerous ef-"
-                            },
-                            {
-                                "pos": [
-                                    49,
-                                    1541,
-                                    1173,
-                                    1541,
-                                    1173,
-                                    1558,
-                                    49,
-                                    1558
-                                ],
-                                "id": 63,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "1077-2626(c)2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information."
-                            },
-                            {
-                                "pos": [
-                                    154,
-                                    1557,
-                                    1063,
-                                    1557,
-                                    1063,
-                                    1574,
-                                    154,
-                                    1574
-                                ],
-                                "id": 64,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "Authorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply."
-                            }
-                        ],
-                        "status": "Success",
-                        "height": 1584,
-                        "structured": [
-                            {
-                                "content": [
-                                    0
-                                ],
-                                "pos": [
-                                    38,
-                                    5,
-                                    1184,
-                                    5,
-                                    1184,
-                                    24,
-                                    38,
-                                    24
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    1
-                                ],
-                                "pos": [
-                                    465,
-                                    25,
-                                    757,
-                                    25,
-                                    757,
-                                    42,
-                                    465,
-                                    42
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    2
-                                ],
-                                "pos": [
-                                    206,
-                                    111,
-                                    1034,
-                                    113,
-                                    1034,
-                                    155,
-                                    206,
-                                    153
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    3
-                                ],
-                                "pos": [
-                                    429,
-                                    157,
-                                    813,
-                                    157,
-                                    813,
-                                    199,
-                                    429,
-                                    199
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    4
-                                ],
-                                "pos": [
-                                    313,
-                                    220,
-                                    926,
-                                    220,
-                                    926,
-                                    248,
-                                    313,
-                                    248
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    5
-                                ],
-                                "pos": [
-                                    457,
-                                    246,
-                                    785,
-                                    246,
-                                    785,
-                                    273,
-                                    457,
-                                    273
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    14
-                                ],
-                                "pos": [
-                                    173,
-                                    284,
-                                    1076,
-                                    284,
-                                    1076,
-                                    716,
-                                    171,
-                                    715
-                                ],
-                                "lines": [
-                                    6,
-                                    7,
-                                    8,
-                                    9,
-                                    10,
-                                    11,
-                                    12,
-                                    13
-                                ],
-                                "type": "image"
-                            },
-                            {
-                                "content": [
-                                    15,
-                                    16,
-                                    17,
-                                    18,
-                                    19,
-                                    20
-                                ],
-                                "pos": [
-                                    152,
-                                    728,
-                                    1088,
-                                    728,
-                                    1088,
-                                    842,
-                                    152,
-                                    842
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    21,
-                                    22,
-                                    23,
-                                    24,
-                                    25,
-                                    26,
-                                    27,
-                                    28,
-                                    29,
-                                    30,
-                                    31
-                                ],
-                                "pos": [
-                                    152,
-                                    856,
-                                    1088,
-                                    856,
-                                    1088,
-                                    1065,
-                                    152,
-                                    1065
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    32
-                                ],
-                                "pos": [
-                                    151,
-                                    1071,
-                                    879,
-                                    1071,
-                                    879,
-                                    1094,
-                                    151,
-                                    1094
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    34
-                                ],
-                                "pos": [
-                                    383,
-                                    1108,
-                                    846,
-                                    1106,
-                                    846,
-                                    1139,
-                                    382,
-                                    1141
-                                ],
-                                "lines": [
-                                    33
-                                ],
-                                "type": "image"
-                            },
-                            {
-                                "content": [
-                                    35
-                                ],
-                                "pos": [
-                                    104,
-                                    1158,
-                                    260,
-                                    1158,
-                                    260,
-                                    1181,
-                                    104,
-                                    1181
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    36,
-                                    37,
-                                    38,
-                                    39
-                                ],
-                                "pos": [
-                                    110,
-                                    1229,
-                                    602,
-                                    1229,
-                                    602,
-                                    1305,
-                                    110,
-                                    1305
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    40
-                                ],
-                                "pos": [
-                                    110,
-                                    1308,
-                                    608,
-                                    1308,
-                                    608,
-                                    1326,
-                                    110,
-                                    1326
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    41
-                                ],
-                                "pos": [
-                                    110,
-                                    1327,
-                                    562,
-                                    1329,
-                                    562,
-                                    1348,
-                                    110,
-                                    1346
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    42
-                                ],
-                                "pos": [
-                                    127,
-                                    1348,
-                                    347,
-                                    1348,
-                                    347,
-                                    1366,
-                                    127,
-                                    1366
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    43
-                                ],
-                                "pos": [
-                                    112,
-                                    1368,
-                                    465,
-                                    1368,
-                                    465,
-                                    1387,
-                                    112,
-                                    1387
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    44,
-                                    45,
-                                    46,
-                                    47
-                                ],
-                                "pos": [
-                                    104,
-                                    1394,
-                                    608,
-                                    1394,
-                                    608,
-                                    1470,
-                                    104,
-                                    1470
-                                ],
-                                "continue": true,
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    48,
-                                    49,
-                                    50,
-                                    51,
-                                    52,
-                                    53,
-                                    54,
-                                    55,
-                                    56,
-                                    57,
-                                    58
-                                ],
-                                "pos": [
-                                    630,
-                                    1190,
-                                    1138,
-                                    1190,
-                                    1138,
-                                    1408,
-                                    630,
-                                    1408
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    59,
-                                    60,
-                                    61,
-                                    62
-                                ],
-                                "pos": [
-                                    630,
-                                    1408,
-                                    1136,
-                                    1408,
-                                    1136,
-                                    1489,
-                                    630,
-                                    1489
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "pos": [
-                                    49,
-                                    1541,
-                                    1173,
-                                    1541,
-                                    1173,
-                                    1574,
-                                    49,
-                                    1574
-                                ],
-                                "blocks": [
-                                    {
-                                        "content": [
-                                            63,
-                                            64
-                                        ],
-                                        "pos": [
-                                            49,
-                                            1541,
-                                            1173,
-                                            1541,
-                                            1173,
-                                            1574,
-                                            49,
-                                            1574
-                                        ],
-                                        "type": "textblock"
-                                    }
-                                ],
-                                "type": "footer"
-                            }
-                        ],
-                        "durations": 919.52838134766,
-                        "image_id": "",
-                        "width": 1224
-                    },
-                    {
-                        "angle": 0,
-                        "page_id": 2,
-                        "content": [
-                            {
-                                "pos": [
-                                    38,
-                                    5,
-                                    1184,
-                                    5,
-                                    1184,
-                                    24,
-                                    38,
-                                    24
-                                ],
-                                "id": 0,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "This article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE"
-                            },
-                            {
-                                "pos": [
-                                    465,
-                                    25,
-                                    757,
-                                    25,
-                                    757,
-                                    42,
-                                    465,
-                                    42
-                                ],
-                                "id": 1,
-                                "score": 0.99800002574921,
-                                "type": "line",
-                                "text": "Transactions on Visualization and Computer Graphics"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    104,
-                                    591,
-                                    104,
-                                    591,
-                                    123,
-                                    87,
-                                    123
-                                ],
-                                "id": 2,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "forts have been paid on the design of sampling strategies, ranging from"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    124,
-                                    591,
-                                    124,
-                                    591,
-                                    143,
-                                    87,
-                                    143
-                                ],
-                                "id": 3,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "node-based and edge-based schemes [4,26] to transversal-based and"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    144,
-                                    591,
-                                    144,
-                                    591,
-                                    163,
-                                    87,
-                                    163
-                                ],
-                                "id": 4,
-                                "score": 0.98000001907349,
-                                "type": "line",
-                                "text": "semantic-based schemes [4,23,56]. However, such strategies largely"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    165,
-                                    593,
-                                    165,
-                                    593,
-                                    183,
-                                    87,
-                                    183
-                                ],
-                                "id": 5,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "focus on sampling efficiency and randomness of sampling results, pay-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    185,
-                                    593,
-                                    185,
-                                    593,
-                                    203,
-                                    87,
-                                    203
-                                ],
-                                "id": 6,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "ing little attention to the preservation of significant contextual struc-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    205,
-                                    130,
-                                    205,
-                                    130,
-                                    222,
-                                    87,
-                                    222
-                                ],
-                                "id": 7,
-                                "score": 0.9990000128746,
-                                "type": "line",
-                                "text": "tures."
-                            },
-                            {
-                                "pos": [
-                                    106,
-                                    223,
-                                    595,
-                                    223,
-                                    595,
-                                    247,
-                                    106,
-                                    247
-                                ],
-                                "id": 8,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "Contextual structures, formed by nodes and edges with tight rela-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    247,
-                                    593,
-                                    247,
-                                    593,
-                                    265,
-                                    87,
-                                    265
-                                ],
-                                "id": 9,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "tionships, are always of great significance for the exploration and in-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    267,
-                                    591,
-                                    267,
-                                    591,
-                                    285,
-                                    87,
-                                    285
-                                ],
-                                "id": 10,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "terpretation of networks, such as bridging nodes, connected paths and"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    284,
-                                    593,
-                                    284,
-                                    593,
-                                    307,
-                                    86,
-                                    307
-                                ],
-                                "id": 11,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "aggregated communities [19,46].For example, it is quite necessary to"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    307,
-                                    591,
-                                    305,
-                                    591,
-                                    324,
-                                    87,
-                                    326
-                                ],
-                                "id": 12,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "identify the contextual structures of crowd movement network for the"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    326,
-                                    593,
-                                    324,
-                                    593,
-                                    344,
-                                    87,
-                                    346
-                                ],
-                                "id": 13,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "diagnosis and spread prevention of infectious diseases [44]. Howev-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    347,
-                                    591,
-                                    345,
-                                    592,
-                                    364,
-                                    87,
-                                    366
-                                ],
-                                "id": 14,
-                                "score": 0.98500001430511,
-                                "type": "line",
-                                "text": "er, it is a tough task to preserve contextual structures in the sampled"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    366,
-                                    591,
-                                    366,
-                                    591,
-                                    384,
-                                    87,
-                                    384
-                                ],
-                                "id": 15,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "network based on traditional sampling strategies, because contextual"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    386,
-                                    593,
-                                    386,
-                                    593,
-                                    404,
-                                    87,
-                                    404
-                                ],
-                                "id": 16,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "structures often have three characteristics: concealment in location, ir-"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    406,
-                                    591,
-                                    406,
-                                    591,
-                                    424,
-                                    86,
-                                    424
-                                ],
-                                "id": 17,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "regularity in scale, and complexity in structure. For example, nodes"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    426,
-                                    591,
-                                    426,
-                                    591,
-                                    444,
-                                    86,
-                                    444
-                                ],
-                                "id": 18,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "with tight relationships (in a community) may be difficult to find in"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    443,
-                                    595,
-                                    445,
-                                    595,
-                                    465,
-                                    87,
-                                    463
-                                ],
-                                "id": 19,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "large networks due to their concealed locations, because they are eas-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    465,
-                                    591,
-                                    465,
-                                    591,
-                                    483,
-                                    87,
-                                    483
-                                ],
-                                "id": 20,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "ily laid out far away from each other. Also, contextual structures are"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    485,
-                                    591,
-                                    485,
-                                    591,
-                                    503,
-                                    87,
-                                    503
-                                ],
-                                "id": 21,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "immune to scale, that is few nodes and edges would rather present a"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    505,
-                                    593,
-                                    505,
-                                    593,
-                                    523,
-                                    87,
-                                    523
-                                ],
-                                "id": 22,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "tough contextual structure (a small complete graph). Thus,it is re-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    525,
-                                    591,
-                                    525,
-                                    591,
-                                    544,
-                                    87,
-                                    544
-                                ],
-                                "id": 23,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "ally hard to give a comprehensive definition of contextual structures"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    544,
-                                    591,
-                                    544,
-                                    591,
-                                    567,
-                                    86,
-                                    567
-                                ],
-                                "id": 24,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "because their formations are too complicated to find a regular pattern."
-                            },
-                            {
-                                "pos": [
-                                    107,
-                                    568,
-                                    591,
-                                    568,
-                                    591,
-                                    587,
-                                    107,
-                                    587
-                                ],
-                                "id": 25,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "As an effective way to represent and identify contextual structures"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    588,
-                                    591,
-                                    588,
-                                    591,
-                                    607,
-                                    87,
-                                    607
-                                ],
-                                "id": 26,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "of large networks [5], GRL has been widely applied in a variety of"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    608,
-                                    593,
-                                    608,
-                                    593,
-                                    627,
-                                    87,
-                                    627
-                                ],
-                                "id": 27,
-                                "score": 0.98199999332428,
-                                "type": "line",
-                                "text": "research areas, such as graph classification, graph query, graph min-"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    625,
-                                    593,
-                                    625,
-                                    593,
-                                    649,
-                                    86,
-                                    649
-                                ],
-                                "id": 28,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "ing,et al [12,33]. It transforms nodes into vectors to quantitate the"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    647,
-                                    593,
-                                    647,
-                                    593,
-                                    666,
-                                    87,
-                                    666
-                                ],
-                                "id": 29,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "structural features of networks. Numerous GRL models have been pro-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    667,
-                                    591,
-                                    667,
-                                    591,
-                                    686,
-                                    87,
-                                    686
-                                ],
-                                "id": 30,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "posed to train and represent nodes according to their local contexts in"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    684,
-                                    595,
-                                    684,
-                                    595,
-                                    707,
-                                    86,
-                                    707
-                                ],
-                                "id": 31,
-                                "score": 0.98199999332428,
-                                "type": "line",
-                                "text": "the network, such as deepwalk [39],node2vec [11],and struc2vec [42]."
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    707,
-                                    591,
-                                    707,
-                                    591,
-                                    726,
-                                    87,
-                                    726
-                                ],
-                                "id": 32,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "A family of biased random walks are developed in the course of corpus"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    728,
-                                    591,
-                                    728,
-                                    591,
-                                    746,
-                                    87,
-                                    746
-                                ],
-                                "id": 33,
-                                "score": 0.99599999189377,
-                                "type": "line",
-                                "text": "generation allowing an efficient exploration of diverse neighborhoods"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    745,
-                                    593,
-                                    745,
-                                    593,
-                                    768,
-                                    86,
-                                    768
-                                ],
-                                "id": 34,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "for given nodes [32]. Thus,network structures are well represented"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    765,
-                                    593,
-                                    765,
-                                    593,
-                                    788,
-                                    86,
-                                    788
-                                ],
-                                "id": 35,
-                                "score": 0.97399997711182,
-                                "type": "line",
-                                "text": "in a vectroized space obtained by GRL (e.g. a contextual structure of"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    785,
-                                    595,
-                                    785,
-                                    595,
-                                    808,
-                                    86,
-                                    808
-                                ],
-                                "id": 36,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "interest is highlighted as shown in Figure la and Figure 1c). We be-"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    805,
-                                    593,
-                                    805,
-                                    593,
-                                    828,
-                                    86,
-                                    828
-                                ],
-                                "id": 37,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "lieve that it would be a feasible way to conduct graph sampling in the"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    825,
-                                    593,
-                                    825,
-                                    593,
-                                    848,
-                                    86,
-                                    848
-                                ],
-                                "id": 38,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "vectorized space, and the contextual structures would be preserved as"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    847,
-                                    591,
-                                    847,
-                                    591,
-                                    865,
-                                    87,
-                                    865
-                                ],
-                                "id": 39,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "far as possible (e.g. the contextual structure is well preserved in the"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    865,
-                                    474,
-                                    865,
-                                    474,
-                                    888,
-                                    86,
-                                    888
-                                ],
-                                "id": 40,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "sampled graph as shown in Figure 1d and Figure 1b)."
-                            },
-                            {
-                                "pos": [
-                                    106,
-                                    887,
-                                    595,
-                                    887,
-                                    595,
-                                    910,
-                                    106,
-                                    910
-                                ],
-                                "id": 41,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "However,there are still severa problems to overcome for the p-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    909,
-                                    591,
-                                    909,
-                                    591,
-                                    927,
-                                    87,
-                                    927
-                                ],
-                                "id": 42,
-                                "score": 0.99699997901917,
-                                "type": "line",
-                                "text": "reservation of contextual structures in the vectorized space obtained"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    929,
-                                    591,
-                                    929,
-                                    591,
-                                    947,
-                                    87,
-                                    947
-                                ],
-                                "id": 43,
-                                "score": 0.97600001096725,
-                                "type": "line",
-                                "text": "through GRL.P1: GRL is able to encode the contextual structures"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    949,
-                                    593,
-                                    949,
-                                    593,
-                                    967,
-                                    86,
-                                    967
-                                ],
-                                "id": 44,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "with vectorizied representation, but the vectorized space is too compli-"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    966,
-                                    593,
-                                    966,
-                                    593,
-                                    989,
-                                    86,
-                                    989
-                                ],
-                                "id": 45,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "cated to gaininsights due to its high dimensions. P2: It is a difficult"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    989,
-                                    591,
-                                    989,
-                                    591,
-                                    1008,
-                                    87,
-                                    1008
-                                ],
-                                "id": 46,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "task to define a graph sampling model to preserve contextual structures"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1009,
-                                    591,
-                                    1009,
-                                    591,
-                                    1028,
-                                    87,
-                                    1028
-                                ],
-                                "id": 47,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "captured by GRL,since they are represented with data distributions in"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1029,
-                                    593,
-                                    1029,
-                                    593,
-                                    1048,
-                                    87,
-                                    1048
-                                ],
-                                "id": 48,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "the vectorized space rather than topological relationships in the origi-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1049,
-                                    591,
-                                    1049,
-                                    591,
-                                    1068,
-                                    87,
-                                    1068
-                                ],
-                                "id": 49,
-                                "score": 0.97899997234344,
-                                "type": "line",
-                                "text": "nal network space. P3: It is also difficult to conduct a unified graph"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1069,
-                                    591,
-                                    1069,
-                                    591,
-                                    1088,
-                                    87,
-                                    1088
-                                ],
-                                "id": 50,
-                                "score": 0.99599999189377,
-                                "type": "line",
-                                "text": "sampling scheme to preserve various kinds of contextual structures in"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1086,
-                                    593,
-                                    1086,
-                                    593,
-                                    1110,
-                                    86,
-                                    1110
-                                ],
-                                "id": 51,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "the vectorized space due to their respective characteristics. P4: It is"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1110,
-                                    591,
-                                    1110,
-                                    591,
-                                    1128,
-                                    86,
-                                    1128
-                                ],
-                                "id": 52,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "another tough task to evaluate the sampled graphs from a variety of"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1128,
-                                    591,
-                                    1128,
-                                    591,
-                                    1147,
-                                    87,
-                                    1147
-                                ],
-                                "id": 53,
-                                "score": 0.99599999189377,
-                                "type": "line",
-                                "text": "perspectives,and further demonstrate that the contextual structures of"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1148,
-                                    466,
-                                    1148,
-                                    466,
-                                    1167,
-                                    87,
-                                    1167
-                                ],
-                                "id": 54,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "significance are well retained in the sampled graphs."
-                            },
-                            {
-                                "pos": [
-                                    106,
-                                    1168,
-                                    595,
-                                    1168,
-                                    595,
-                                    1192,
-                                    106,
-                                    1192
-                                ],
-                                "id": 55,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "In this paper, we propose a novel graph sampling method to simpli-"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1189,
-                                    593,
-                                    1189,
-                                    593,
-                                    1212,
-                                    86,
-                                    1212
-                                ],
-                                "id": 56,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "fy large graphs, especially with the contextual structures identified and"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1209,
-                                    593,
-                                    1209,
-                                    593,
-                                    1232,
-                                    86,
-                                    1232
-                                ],
-                                "id": 57,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "preserved in the sampled graphs. Firstly, a GRL model is employed to"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1231,
-                                    591,
-                                    1230,
-                                    591,
-                                    1249,
-                                    86,
-                                    1250
-                                ],
-                                "id": 58,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "encode contextual structures and a dimensionality reduction method is"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1252,
-                                    591,
-                                    1250,
-                                    591,
-                                    1269,
-                                    87,
-                                    1271
-                                ],
-                                "id": 59,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "applied to transform the contextual structures into a low-dimensional"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1271,
-                                    591,
-                                    1269,
-                                    591,
-                                    1289,
-                                    87,
-                                    1291
-                                ],
-                                "id": 60,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "vectorized space,where nodes sharing similar contextual features are"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1291,
-                                    591,
-                                    1291,
-                                    591,
-                                    1309,
-                                    87,
-                                    1309
-                                ],
-                                "id": 61,
-                                "score": 0.97600001096725,
-                                "type": "line",
-                                "text": "visually distributed close to each other (P1). Then, we propose a novel"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1311,
-                                    593,
-                                    1311,
-                                    593,
-                                    1329,
-                                    87,
-                                    1329
-                                ],
-                                "id": 62,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "blue noise sampling model to generate a subset of nodes in the vec-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1331,
-                                    593,
-                                    1331,
-                                    593,
-                                    1349,
-                                    87,
-                                    1349
-                                ],
-                                "id": 63,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "torized space, guaranteeing that nodes with tight relationships are re-"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1348,
-                                    593,
-                                    1348,
-                                    593,
-                                    1371,
-                                    86,
-                                    1371
-                                ],
-                                "id": 64,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "tained and the contextual features are well preserved in the sampled"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1368,
-                                    593,
-                                    1368,
-                                    593,
-                                    1391,
-                                    86,
-                                    1391
-                                ],
-                                "id": 65,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "graph (P2). A set of desired objectives are further integrated into the"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1388,
-                                    593,
-                                    1388,
-                                    593,
-                                    1411,
-                                    86,
-                                    1411
-                                ],
-                                "id": 66,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "sampling model to optimize the sampled graphs, in which topological"
-                            },
-                            {
-                                "pos": [
-                                    86,
-                                    1408,
-                                    593,
-                                    1408,
-                                    593,
-                                    1431,
-                                    86,
-                                    1431
-                                ],
-                                "id": 67,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "features of significance are enhanced such as bridging nodes and graph"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1430,
-                                    593,
-                                    1430,
-                                    593,
-                                    1448,
-                                    87,
-                                    1448
-                                ],
-                                "id": 68,
-                                "score": 0.97799998521805,
-                                "type": "line",
-                                "text": "connection (P3). Also, we utilize a group of metrics to evaluate the va-"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1450,
-                                    591,
-                                    1450,
-                                    591,
-                                    1469,
-                                    87,
-                                    1469
-                                ],
-                                "id": 69,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "lidity of our sampling method in contextual feature preservation from"
-                            },
-                            {
-                                "pos": [
-                                    87,
-                                    1470,
-                                    591,
-                                    1470,
-                                    591,
-                                    1489,
-                                    87,
-                                    1489
-                                ],
-                                "id": 70,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "different perspectives, such as node importance, graph connection and"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    104,
-                                    1119,
-                                    104,
-                                    1119,
-                                    123,
-                                    612,
-                                    123
-                                ],
-                                "id": 71,
-                                "score": 0.98199999332428,
-                                "type": "line",
-                                "text": "community changes (P4). At last, a graph sampling framework is im-"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    124,
-                                    1117,
-                                    124,
-                                    1117,
-                                    143,
-                                    613,
-                                    143
-                                ],
-                                "id": 72,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "plemented to integrate sampling models, GRL and visual designs of"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    144,
-                                    1116,
-                                    144,
-                                    1116,
-                                    163,
-                                    613,
-                                    163
-                                ],
-                                "id": 73,
-                                "score": 0.97799998521805,
-                                "type": "line",
-                                "text": "metrics, and a rich set of interactions are also provided allowing users"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    165,
-                                    1116,
-                                    165,
-                                    1116,
-                                    183,
-                                    613,
-                                    183
-                                ],
-                                "id": 74,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "to intuitively evaluate different sampling strategies and easily explore"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    185,
-                                    1119,
-                                    185,
-                                    1119,
-                                    203,
-                                    612,
-                                    203
-                                ],
-                                "id": 75,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "structures of interest in large networks. The effectiveness and use-"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    205,
-                                    1116,
-                                    205,
-                                    1116,
-                                    222,
-                                    613,
-                                    222
-                                ],
-                                "id": 76,
-                                "score": 0.99500000476837,
-                                "type": "line",
-                                "text": "fulness of our system are further demonstrated with case studies and"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    223,
-                                    1116,
-                                    223,
-                                    1116,
-                                    242,
-                                    613,
-                                    242
-                                ],
-                                "id": 77,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "quantitate comparisons based on real-world datasets. In summary, the"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    243,
-                                    870,
-                                    243,
-                                    870,
-                                    260,
-                                    612,
-                                    260
-                                ],
-                                "id": 78,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "main contributions of our work are:"
-                            },
-                            {
-                                "pos": [
-                                    638,
-                                    285,
-                                    1119,
-                                    285,
-                                    1119,
-                                    304,
-                                    638,
-                                    304
-                                ],
-                                "id": 79,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "·We utilize a GRL model (node2vec) to quantitate the contextu-"
-                            },
-                            {
-                                "pos": [
-                                    652,
-                                    305,
-                                    1119,
-                                    305,
-                                    1119,
-                                    324,
-                                    652,
-                                    324
-                                ],
-                                "id": 80,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "al features of networks, offering important clues for graph sam-"
-                            },
-                            {
-                                "pos": [
-                                    650,
-                                    322,
-                                    1117,
-                                    322,
-                                    1117,
-                                    346,
-                                    650,
-                                    346
-                                ],
-                                "id": 81,
-                                "score": 0.98500001430511,
-                                "type": "line",
-                                "text": "pling. To the best of our knowledge, it is the first to sample"
-                            },
-                            {
-                                "pos": [
-                                    650,
-                                    343,
-                                    786,
-                                    341,
-                                    787,
-                                    364,
-                                    650,
-                                    366
-                                ],
-                                "id": 82,
-                                "score": 0.99599999189377,
-                                "type": "line",
-                                "text": "graphs with GRL."
-                            },
-                            {
-                                "pos": [
-                                    639,
-                                    380,
-                                    1120,
-                                    380,
-                                    1120,
-                                    403,
-                                    639,
-                                    403
-                                ],
-                                "id": 83,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "·We design a multi-objective blue noise sampling model to simpli-"
-                            },
-                            {
-                                "pos": [
-                                    650,
-                                    400,
-                                    1120,
-                                    400,
-                                    1120,
-                                    423,
-                                    650,
-                                    423
-                                ],
-                                "id": 84,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "fy large networks, with the contextual structures and their topo-"
-                            },
-                            {
-                                "pos": [
-                                    652,
-                                    421,
-                                    1028,
-                                    421,
-                                    1028,
-                                    440,
-                                    652,
-                                    440
-                                ],
-                                "id": 85,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "logical features well retained in the sampled graphs."
-                            },
-                            {
-                                "pos": [
-                                    642,
-                                    457,
-                                    1120,
-                                    457,
-                                    1120,
-                                    480,
-                                    642,
-                                    480
-                                ],
-                                "id": 86,
-                                "score": 0.98400002717972,
-                                "type": "line",
-                                "text": "We propose a group of specific metrics enabling users to com-"
-                            },
-                            {
-                                "pos": [
-                                    652,
-                                    480,
-                                    1116,
-                                    480,
-                                    1116,
-                                    499,
-                                    652,
-                                    499
-                                ],
-                                "id": 87,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "pare sampling strategies from different perspectives, and conduct"
-                            },
-                            {
-                                "pos": [
-                                    650,
-                                    499,
-                                    1117,
-                                    499,
-                                    1117,
-                                    517,
-                                    650,
-                                    517
-                                ],
-                                "id": 88,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "case studies with real-world datasets to demonstrate the validity"
-                            },
-                            {
-                                "pos": [
-                                    652,
-                                    519,
-                                    981,
-                                    519,
-                                    981,
-                                    537,
-                                    652,
-                                    537
-                                ],
-                                "id": 89,
-                                "score": 0.99400001764297,
-                                "type": "line",
-                                "text": "of our context-aware graph sampling method."
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    556,
-                                    783,
-                                    556,
-                                    783,
-                                    581,
-                                    610,
-                                    581
-                                ],
-                                "id": 90,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "2 RELATED WORK"
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    584,
-                                    1117,
-                                    585,
-                                    1117,
-                                    608,
-                                    610,
-                                    607
-                                ],
-                                "id": 91,
-                                "score": 0.99699997901917,
-                                "type": "line",
-                                "text": "We classify existing methods into four categories,including large"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    607,
-                                    1116,
-                                    607,
-                                    1116,
-                                    625,
-                                    612,
-                                    625
-                                ],
-                                "id": 92,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "graph visualization, graph sampling, metrics for graph evaluation and"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    627,
-                                    830,
-                                    627,
-                                    830,
-                                    646,
-                                    612,
-                                    646
-                                ],
-                                "id": 93,
-                                "score": 0.99699997901917,
-                                "type": "line",
-                                "text": "graph representation learning."
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    660,
-                                    885,
-                                    660,
-                                    885,
-                                    684,
-                                    610,
-                                    684
-                                ],
-                                "id": 94,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "2.1 Large Graph Visualization"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    687,
-                                    1119,
-                                    687,
-                                    1119,
-                                    711,
-                                    612,
-                                    711
-                                ],
-                                "id": 95,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "Graph visualization is widely used for network analysis [5].Node-link"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    709,
-                                    1119,
-                                    709,
-                                    1119,
-                                    728,
-                                    612,
-                                    728
-                                ],
-                                "id": 96,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "diagram is a most intuitive layout scheme in which the nodes are rep-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    729,
-                                    1117,
-                                    729,
-                                    1117,
-                                    748,
-                                    612,
-                                    748
-                                ],
-                                "id": 97,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "resented as points and edges are represented as lines. Force-directed"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    749,
-                                    1116,
-                                    749,
-                                    1116,
-                                    768,
-                                    613,
-                                    768
-                                ],
-                                "id": 98,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "methods are employed to layout the node-link diagrams by optimizing"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    769,
-                                    1119,
-                                    769,
-                                    1119,
-                                    788,
-                                    612,
-                                    788
-                                ],
-                                "id": 99,
-                                "score": 0.98500001430511,
-                                "type": "line",
-                                "text": "graph drawing aesthetics [10,19,41]. With the increasing size of net-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    789,
-                                    1117,
-                                    789,
-                                    1117,
-                                    808,
-                                    612,
-                                    808
-                                ],
-                                "id": 100,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "works, the readability of node-link diagrams largely decreases due to"
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    806,
-                                    1119,
-                                    806,
-                                    1119,
-                                    830,
-                                    610,
-                                    830
-                                ],
-                                "id": 101,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "visual clutter and scalability issues [9]. Two categories of methods are"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    830,
-                                    1117,
-                                    830,
-                                    1117,
-                                    848,
-                                    612,
-                                    848
-                                ],
-                                "id": 102,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "proposed: (1) Graph clustering methods aggregate groups of nodes"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    850,
-                                    1117,
-                                    850,
-                                    1117,
-                                    868,
-                                    612,
-                                    868
-                                ],
-                                "id": 103,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "and edges with similar properties to reduce the visual complexity of"
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    867,
-                                    1117,
-                                    867,
-                                    1117,
-                                    890,
-                                    610,
-                                    890
-                                ],
-                                "id": 104,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "large graphs [7,58]. ASK-GraphView [1] was proposed to organize"
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    887,
-                                    1119,
-                                    887,
-                                    1119,
-                                    910,
-                                    610,
-                                    910
-                                ],
-                                "id": 105,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "a large graph into hierarchical structures allowing users to aggregate"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    909,
-                                    1119,
-                                    909,
-                                    1119,
-                                    927,
-                                    612,
-                                    927
-                                ],
-                                "id": 106,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "nodes to reduce visual clutter. To reduce edge crossings and empha-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    929,
-                                    1117,
-                                    929,
-                                    1117,
-                                    947,
-                                    612,
-                                    947
-                                ],
-                                "id": 107,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "size directional patterns, a set of edge-based clustering methods are"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    949,
-                                    1116,
-                                    949,
-                                    1116,
-                                    967,
-                                    612,
-                                    967
-                                ],
-                                "id": 108,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "proposed in which edges with similar spatial distribution features are"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    969,
-                                    1117,
-                                    969,
-                                    1117,
-                                    987,
-                                    613,
-                                    987
-                                ],
-                                "id": 109,
-                                "score": 0.97899997234344,
-                                "type": "line",
-                                "text": "bundled together [6,8,15,16]. (2) Graph filtering methods extract"
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    986,
-                                    1119,
-                                    986,
-                                    1119,
-                                    1009,
-                                    610,
-                                    1009
-                                ],
-                                "id": 110,
-                                "score": 0.98100000619888,
-                                "type": "line",
-                                "text": "subgraphs of interest from original large graphs [20]. Hennessey et"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1008,
-                                    1119,
-                                    1008,
-                                    1119,
-                                    1026,
-                                    612,
-                                    1026
-                                ],
-                                "id": 111,
-                                "score": 0.97899997234344,
-                                "type": "line",
-                                "text": "al. [14] took a set of graph metrics into account to obtain representa-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1028,
-                                    1117,
-                                    1028,
-                                    1117,
-                                    1046,
-                                    612,
-                                    1046
-                                ],
-                                "id": 112,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "tive skeletons and simplify the visualization of large graphs, such as"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1048,
-                                    1117,
-                                    1048,
-                                    1117,
-                                    1066,
-                                    612,
-                                    1066
-                                ],
-                                "id": 113,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "shortest path and distance to the central node. Yoghourdjian et al. [51]"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1068,
-                                    1119,
-                                    1066,
-                                    1119,
-                                    1086,
-                                    612,
-                                    1088
-                                ],
-                                "id": 114,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "proposed Graph Thumbnails to enhance the readability of large graph-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1088,
-                                    1117,
-                                    1088,
-                                    1117,
-                                    1107,
-                                    612,
-                                    1107
-                                ],
-                                "id": 115,
-                                "score": 0.99099999666214,
-                                "type": "line",
-                                "text": "s with high-level structures described with small icon-like glyphs.It"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1108,
-                                    1116,
-                                    1108,
-                                    1116,
-                                    1127,
-                                    612,
-                                    1127
-                                ],
-                                "id": 116,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "can be seen that the underlying topological structures of networks are"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1128,
-                                    1116,
-                                    1128,
-                                    1116,
-                                    1147,
-                                    612,
-                                    1147
-                                ],
-                                "id": 117,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "changed with clustering methods,which are still not preserved in the"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1148,
-                                    1116,
-                                    1148,
-                                    1116,
-                                    1167,
-                                    612,
-                                    1167
-                                ],
-                                "id": 118,
-                                "score": 0.98699998855591,
-                                "type": "line",
-                                "text": "simplified graphs with filteringmethods. It might generate a great deal"
-                            },
-                            {
-                                "pos": [
-                                    610,
-                                    1165,
-                                    1048,
-                                    1165,
-                                    1048,
-                                    1189,
-                                    610,
-                                    1189
-                                ],
-                                "id": 119,
-                                "score": 0.98900002241135,
-                                "type": "line",
-                                "text": "of ambiguity that misleads the exploration of networks [49]."
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1201,
-                                    803,
-                                    1201,
-                                    803,
-                                    1224,
-                                    612,
-                                    1224
-                                ],
-                                "id": 120,
-                                "score": 0.98500001430511,
-                                "type": "line",
-                                "text": "2.2 Graph Sampling"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1229,
-                                    1120,
-                                    1229,
-                                    1120,
-                                    1252,
-                                    612,
-                                    1252
-                                ],
-                                "id": 121,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "Graph sampling is another kind of filtering method, which also gen-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1252,
-                                    1119,
-                                    1252,
-                                    1119,
-                                    1271,
-                                    612,
-                                    1271
-                                ],
-                                "id": 122,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "erates a subset of nodes or edges to simplify the original networks."
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    1271,
-                                    1116,
-                                    1271,
-                                    1116,
-                                    1289,
-                                    613,
-                                    1289
-                                ],
-                                "id": 123,
-                                "score": 0.98600000143051,
-                                "type": "line",
-                                "text": "Three categories are covered: (1) Node-based Sampling. Random"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    1291,
-                                    1117,
-                                    1291,
-                                    1117,
-                                    1309,
-                                    613,
-                                    1309
-                                ],
-                                "id": 124,
-                                "score": 0.97500002384186,
-                                "type": "line",
-                                "text": "Node Sampling (RNS) [26] is commonly used to randomly generate"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1311,
-                                    1119,
-                                    1311,
-                                    1119,
-                                    1329,
-                                    612,
-                                    1329
-                                ],
-                                "id": 125,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "nodes from the original network. A set of graph properties are con-"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1331,
-                                    1117,
-                                    1331,
-                                    1117,
-                                    1349,
-                                    612,
-                                    1349
-                                ],
-                                "id": 126,
-                                "score": 0.99000000953674,
-                                "type": "line",
-                                "text": "sidered to improve the results of node-based sampling. For example,"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    1349,
-                                    1117,
-                                    1349,
-                                    1117,
-                                    1368,
-                                    613,
-                                    1368
-                                ],
-                                "id": 127,
-                                "score": 0.98000001907349,
-                                "type": "line",
-                                "text": "Random PageRank Node (RPN) defines the probability of nodes to be"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1371,
-                                    1116,
-                                    1369,
-                                    1116,
-                                    1388,
-                                    612,
-                                    1390
-                                ],
-                                "id": 128,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "sampled as proportional to their PageRank weights [26,36]. Random"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    1390,
-                                    1119,
-                                    1390,
-                                    1119,
-                                    1408,
-                                    613,
-                                    1408
-                                ],
-                                "id": 129,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "Degree Node (RDN) increases the probability of nodes with higher de-"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    1409,
-                                    1116,
-                                    1410,
-                                    1116,
-                                    1430,
-                                    613,
-                                    1428
-                                ],
-                                "id": 130,
-                                "score": 0.97399997711182,
-                                "type": "line",
-                                "text": "gree values to be sampled [4]. Hu et al. [18] designed a graph sampling"
-                            },
-                            {
-                                "pos": [
-                                    613,
-                                    1430,
-                                    1116,
-                                    1430,
-                                    1116,
-                                    1448,
-                                    613,
-                                    1448
-                                ],
-                                "id": 131,
-                                "score": 0.99299997091293,
-                                "type": "line",
-                                "text": "method based on spectral sparsification, to reduce the number of edges"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1450,
-                                    1116,
-                                    1450,
-                                    1116,
-                                    1469,
-                                    612,
-                                    1469
-                                ],
-                                "id": 132,
-                                "score": 0.98100000619888,
-                                "type": "line",
-                                "text": "and retain structural properties of original graphs. (2) Edge-based"
-                            },
-                            {
-                                "pos": [
-                                    612,
-                                    1470,
-                                    1117,
-                                    1470,
-                                    1117,
-                                    1489,
-                                    612,
-                                    1489
-                                ],
-                                "id": 133,
-                                "score": 0.98299998044968,
-                                "type": "line",
-                                "text": "Sampling. Random Edge Sampling (RES) extracts a random subset of"
-                            },
-                            {
-                                "pos": [
-                                    49,
-                                    1541,
-                                    1173,
-                                    1541,
-                                    1173,
-                                    1558,
-                                    49,
-                                    1558
-                                ],
-                                "id": 134,
-                                "score": 0.99199998378754,
-                                "type": "line",
-                                "text": "1077-2626 (c) 2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information."
-                            },
-                            {
-                                "pos": [
-                                    154,
-                                    1557,
-                                    1063,
-                                    1557,
-                                    1063,
-                                    1574,
-                                    154,
-                                    1574
-                                ],
-                                "id": 135,
-                                "score": 0.9879999756813,
-                                "type": "line",
-                                "text": "Authorized licensed use limited to: Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply."
-                            }
-                        ],
-                        "status": "Success",
-                        "height": 1584,
-                        "structured": [
-                            {
-                                "content": [
-                                    0
-                                ],
-                                "pos": [
-                                    38,
-                                    5,
-                                    1184,
-                                    5,
-                                    1184,
-                                    24,
-                                    38,
-                                    24
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    1
-                                ],
-                                "pos": [
-                                    465,
-                                    25,
-                                    757,
-                                    25,
-                                    757,
-                                    42,
-                                    465,
-                                    42
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    2,
-                                    3,
-                                    4,
-                                    5,
-                                    6,
-                                    7
-                                ],
-                                "pos": [
-                                    87,
-                                    104,
-                                    593,
-                                    104,
-                                    593,
-                                    222,
-                                    87,
-                                    222
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    8,
-                                    9,
-                                    10,
-                                    11,
-                                    12,
-                                    13,
-                                    14,
-                                    15,
-                                    16,
-                                    17,
-                                    18,
-                                    19,
-                                    20,
-                                    21,
-                                    22,
-                                    23,
-                                    24
-                                ],
-                                "pos": [
-                                    86,
-                                    223,
-                                    595,
-                                    223,
-                                    595,
-                                    567,
-                                    86,
-                                    567
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    25,
-                                    26,
-                                    27,
-                                    28,
-                                    29,
-                                    30,
-                                    31,
-                                    32,
-                                    33,
-                                    34,
-                                    35,
-                                    36,
-                                    37,
-                                    38,
-                                    39,
-                                    40
-                                ],
-                                "pos": [
-                                    86,
-                                    568,
-                                    595,
-                                    568,
-                                    595,
-                                    888,
-                                    86,
-                                    888
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    41,
-                                    42,
-                                    43,
-                                    44,
-                                    45,
-                                    46,
-                                    47,
-                                    48,
-                                    49,
-                                    50,
-                                    51,
-                                    52,
-                                    53,
-                                    54
-                                ],
-                                "pos": [
-                                    86,
-                                    887,
-                                    595,
-                                    887,
-                                    595,
-                                    1167,
-                                    86,
-                                    1167
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    55,
-                                    56,
-                                    57,
-                                    58,
-                                    59,
-                                    60,
-                                    61,
-                                    62,
-                                    63,
-                                    64,
-                                    65,
-                                    66,
-                                    67,
-                                    68,
-                                    69,
-                                    70
-                                ],
-                                "pos": [
-                                    86,
-                                    1168,
-                                    595,
-                                    1168,
-                                    595,
-                                    1489,
-                                    86,
-                                    1489
-                                ],
-                                "continue": true,
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    71,
-                                    72,
-                                    73,
-                                    74,
-                                    75,
-                                    76,
-                                    77,
-                                    78
-                                ],
-                                "pos": [
-                                    612,
-                                    104,
-                                    1119,
-                                    104,
-                                    1119,
-                                    260,
-                                    612,
-                                    260
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    79,
-                                    80,
-                                    81,
-                                    82
-                                ],
-                                "pos": [
-                                    638,
-                                    285,
-                                    1119,
-                                    285,
-                                    1119,
-                                    366,
-                                    638,
-                                    366
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    83,
-                                    84,
-                                    85
-                                ],
-                                "pos": [
-                                    639,
-                                    380,
-                                    1120,
-                                    380,
-                                    1120,
-                                    440,
-                                    639,
-                                    440
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    86,
-                                    87,
-                                    88,
-                                    89
-                                ],
-                                "pos": [
-                                    642,
-                                    457,
-                                    1120,
-                                    457,
-                                    1120,
-                                    537,
-                                    642,
-                                    537
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    90
-                                ],
-                                "pos": [
-                                    610,
-                                    556,
-                                    783,
-                                    556,
-                                    783,
-                                    581,
-                                    610,
-                                    581
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    91,
-                                    92,
-                                    93
-                                ],
-                                "pos": [
-                                    610,
-                                    584,
-                                    1117,
-                                    584,
-                                    1117,
-                                    646,
-                                    610,
-                                    646
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    94
-                                ],
-                                "pos": [
-                                    610,
-                                    660,
-                                    885,
-                                    660,
-                                    885,
-                                    684,
-                                    610,
-                                    684
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    95,
-                                    96,
-                                    97,
-                                    98,
-                                    99,
-                                    100,
-                                    101,
-                                    102,
-                                    103,
-                                    104,
-                                    105,
-                                    106,
-                                    107,
-                                    108,
-                                    109,
-                                    110,
-                                    111,
-                                    112,
-                                    113,
-                                    114,
-                                    115,
-                                    116,
-                                    117,
-                                    118,
-                                    119
-                                ],
-                                "pos": [
-                                    610,
-                                    687,
-                                    1119,
-                                    687,
-                                    1119,
-                                    1189,
-                                    610,
-                                    1189
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "content": [
-                                    120
-                                ],
-                                "pos": [
-                                    612,
-                                    1201,
-                                    803,
-                                    1201,
-                                    803,
-                                    1224,
-                                    612,
-                                    1224
-                                ],
-                                "type": "textblock",
-                                "sub_type": "list"
-                            },
-                            {
-                                "content": [
-                                    121,
-                                    122,
-                                    123,
-                                    124,
-                                    125,
-                                    126,
-                                    127,
-                                    128,
-                                    129,
-                                    130,
-                                    131,
-                                    132,
-                                    133
-                                ],
-                                "pos": [
-                                    612,
-                                    1229,
-                                    1120,
-                                    1229,
-                                    1120,
-                                    1489,
-                                    612,
-                                    1489
-                                ],
-                                "type": "textblock"
-                            },
-                            {
-                                "pos": [
-                                    49,
-                                    1541,
-                                    1173,
-                                    1541,
-                                    1173,
-                                    1574,
-                                    49,
-                                    1574
-                                ],
-                                "blocks": [
-                                    {
-                                        "content": [
-                                            134,
-                                            135
-                                        ],
-                                        "pos": [
-                                            49,
-                                            1541,
-                                            1173,
-                                            1541,
-                                            1173,
-                                            1574,
-                                            49,
-                                            1574
-                                        ],
-                                        "type": "textblock"
-                                    }
-                                ],
-                                "type": "footer"
-                            }
-                        ],
-                        "durations": 1250.73828125,
-                        "image_id": "",
-                        "width": 1224
-                    }
-                ],
-                "valid_page_number": 2,
-                "total_page_number": 2,
-                "total_count": 2,
-                "detail": [
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 0,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            39,
-                            6,
-                            1182,
-                            6,
-                            1182,
-                            21,
-                            39,
-                            21
-                        ],
-                        "outline_level": -1,
-                        "text": "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 1,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            467,
-                            26,
-                            756,
-                            26,
-                            756,
-                            41,
-                            467,
-                            41
-                        ],
-                        "outline_level": -1,
-                        "text": "Transactions on Visualization and Computer Graphics"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 2,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            206,
-                            111,
-                            1032,
-                            111,
-                            1032,
-                            153,
-                            206,
-                            153
-                        ],
-                        "outline_level": 0,
-                        "text": "Context-aware Sampling of Large Networks via Graph"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 3,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            429,
-                            157,
-                            811,
-                            157,
-                            811,
-                            197,
-                            429,
-                            197
-                        ],
-                        "outline_level": -1,
-                        "text": "Representation Learning"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 4,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            313,
-                            221,
-                            925,
-                            221,
-                            925,
-                            247,
-                            313,
-                            247
-                        ],
-                        "outline_level": -1,
-                        "text": "Zhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 5,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            458,
-                            247,
-                            782,
-                            247,
-                            782,
-                            271,
-                            458,
-                            271
-                        ],
-                        "outline_level": -1,
-                        "text": "Yuhua Liu,Ying Zhao and Wei Chen"
-                    },
-                    {
-                        "type": "image",
-                        "text": "a. C. b. d. e. g. f. h. ",
-                        "paragraph_id": 6,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            171,
-                            285,
-                            1074,
-                            285,
-                            1074,
-                            714,
-                            171,
-                            714
-                        ],
-                        "outline_level": -1,
-                        "image_url": "https://textin-image-store-1303028177.cos.ap-shanghai.myqcloud.com/external/e616a02f49d8d2cb"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 7,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            153,
-                            728,
-                            1087,
-                            728,
-                            1087,
-                            839,
-                            153,
-                            839
-                        ],
-                        "outline_level": -1,
-                        "text": "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h)."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 8,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            153,
-                            857,
-                            1087,
-                            857,
-                            1087,
-                            1063,
-                            153,
-                            1063
-                        ],
-                        "outline_level": -1,
-                        "text": "Abstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and exploration of large networks."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 9,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            151,
-                            1072,
-                            877,
-                            1072,
-                            877,
-                            1092,
-                            151,
-                            1092
-                        ],
-                        "outline_level": -1,
-                        "text": "Index Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation"
-                    },
-                    {
-                        "type": "image",
-                        "text": " ",
-                        "paragraph_id": 10,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            383,
-                            1107,
-                            844,
-                            1107,
-                            844,
-                            1140,
-                            383,
-                            1140
-                        ],
-                        "outline_level": -1,
-                        "image_url": "https://textin-image-store-1303028177.cos.ap-shanghai.myqcloud.com/external/84c42c140c4b3212"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 11,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            105,
-                            1160,
-                            258,
-                            1160,
-                            258,
-                            1179,
-                            105,
-                            1179
-                        ],
-                        "outline_level": 1,
-                        "text": "1 INTRODUCTION"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 12,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            111,
-                            1230,
-                            600,
-                            1230,
-                            600,
-                            1304,
-                            111,
-                            1304
-                        ],
-                        "outline_level": -1,
-                        "text": "·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and Yuhua Liu are with School of Information,Zhejiang University of Finance and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 13,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            111,
-                            1309,
-                            607,
-                            1309,
-                            607,
-                            1324,
-                            111,
-                            1324
-                        ],
-                        "outline_level": -1,
-                        "text": "·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 14,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            111,
-                            1329,
-                            561,
-                            1329,
-                            561,
-                            1346,
-                            111,
-                            1346
-                        ],
-                        "outline_level": -1,
-                        "text": "·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 18,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            127,
-                            1348,
-                            346,
-                            1348,
-                            346,
-                            1364,
-                            127,
-                            1364
-                        ],
-                        "outline_level": -1,
-                        "text": "E-mail:chenwei@cad.zju.edu.cn."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 19,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            114,
-                            1368,
-                            464,
-                            1368,
-                            464,
-                            1386,
-                            114,
-                            1386
-                        ],
-                        "outline_level": -1,
-                        "text": "·Ying Zhao and Wei Chen are corresponding authors."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 20,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            105,
-                            1394,
-                            607,
-                            1394,
-                            607,
-                            1469,
-                            105,
-                            1469
-                        ],
-                        "outline_level": -1,
-                        "text": "Manuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication xx xxx.201x;date of current version xx xxx. 201x. For information on obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 21,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            631,
-                            1190,
-                            1136,
-                            1190,
-                            1136,
-                            1407,
-                            631,
-                            1407
-                        ],
-                        "outline_level": -1,
-                        "text": "As a ubiquitous data structure, network is always employed to encode relationships among entities in a variety of application areas,such as social relationships between people and financial transactions between companies [5,57]. Graph visualization offers an interactive and ex-ploratory means allowing users to gain structural insights [2] and sense implicit contextual features of networks. However, with the increase of data sizes, the visual exploration and analysis of networks are se-riously influenced,because nodes and edges overlap with each other and generate much visual clutter in large graph visualizations, making it a complicated and time-consuming task to visually explore structural features of significance [50]."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 22,
-                        "page_id": 1,
-                        "content": 0,
-                        "position": [
-                            631,
-                            1410,
-                            1133,
-                            1410,
-                            1133,
-                            1486,
-                            631,
-                            1486
-                        ],
-                        "outline_level": -1,
-                        "text": "Graph sampling is commonly used to reduce thevisual clutter and address scalability issues in the visual exploration of large networks,by means of which a subset of nodes and edges are selected on behalf of the original large graph. Over the past few decades, numerous ef-"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 24,
-                        "page_id": 1,
-                        "content": 1,
-                        "position": [
-                            50,
-                            1541,
-                            1171,
-                            1541,
-                            1171,
-                            1572,
-                            50,
-                            1572
-                        ],
-                        "outline_level": -1,
-                        "text": "1077-2626(c)2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.Authorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 0,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            39,
-                            6,
-                            1182,
-                            6,
-                            1182,
-                            21,
-                            39,
-                            21
-                        ],
-                        "outline_level": -1,
-                        "text": "This article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 1,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            467,
-                            26,
-                            756,
-                            26,
-                            756,
-                            41,
-                            467,
-                            41
-                        ],
-                        "outline_level": -1,
-                        "text": "Transactions on Visualization and Computer Graphics"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 2,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            87,
-                            105,
-                            592,
-                            105,
-                            592,
-                            221,
-                            87,
-                            221
-                        ],
-                        "outline_level": -1,
-                        "text": "forts have been paid on the design of sampling strategies, ranging from node-based and edge-based schemes [4,26] to transversal-based and semantic-based schemes [4,23,56]. However, such strategies largely focus on sampling efficiency and randomness of sampling results, pay-ing little attention to the preservation of significant contextual struc-tures."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 3,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            87,
-                            223,
-                            594,
-                            223,
-                            594,
-                            565,
-                            87,
-                            565
-                        ],
-                        "outline_level": -1,
-                        "text": "Contextual structures, formed by nodes and edges with tight rela-tionships, are always of great significance for the exploration and in-terpretation of networks, such as bridging nodes, connected paths and aggregated communities [19,46].For example, it is quite necessary to identify the contextual structures of crowd movement network for the diagnosis and spread prevention of infectious diseases [44]. Howev-er, it is a tough task to preserve contextual structures in the sampled network based on traditional sampling strategies, because contextual structures often have three characteristics: concealment in location, ir-regularity in scale, and complexity in structure. For example, nodes with tight relationships (in a community) may be difficult to find in large networks due to their concealed locations, because they are eas-ily laid out far away from each other. Also, contextual structures are immune to scale, that is few nodes and edges would rather present a tough contextual structure (a small complete graph). Thus,it is re-ally hard to give a comprehensive definition of contextual structures because their formations are too complicated to find a regular pattern."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 4,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            87,
-                            568,
-                            594,
-                            568,
-                            594,
-                            886,
-                            87,
-                            886
-                        ],
-                        "outline_level": -1,
-                        "text": "As an effective way to represent and identify contextual structures of large networks [5], GRL has been widely applied in a variety of research areas, such as graph classification, graph query, graph min-ing,et al [12,33]. It transforms nodes into vectors to quantitate the structural features of networks. Numerous GRL models have been pro-posed to train and represent nodes according to their local contexts in the network, such as deepwalk [39],node2vec [11],and struc2vec [42].A family of biased random walks are developed in the course of corpus generation allowing an efficient exploration of diverse neighborhoods for given nodes [32]. Thus,network structures are well represented in a vectroized space obtained by GRL (e.g. a contextual structure of interest is highlighted as shown in Figure la and Figure 1c). We be-lieve that it would be a feasible way to conduct graph sampling in the vectorized space, and the contextual structures would be preserved as far as possible (e.g. the contextual structure is well preserved in the sampled graph as shown in Figure 1d and Figure 1b)."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 5,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            87,
-                            888,
-                            594,
-                            888,
-                            594,
-                            1166,
-                            87,
-                            1166
-                        ],
-                        "outline_level": -1,
-                        "text": "However,there are still severa problems to overcome for the p-reservation of contextual structures in the vectorized space obtained through GRL.P1: GRL is able to encode the contextual structures with vectorizied representation, but the vectorized space is too compli-cated to gaininsights due to its high dimensions. P2: It is a difficult task to define a graph sampling model to preserve contextual structures captured by GRL,since they are represented with data distributions in the vectorized space rather than topological relationships in the origi-nal network space. P3: It is also difficult to conduct a unified graph sampling scheme to preserve various kinds of contextual structures in the vectorized space due to their respective characteristics. P4: It is another tough task to evaluate the sampled graphs from a variety of perspectives,and further demonstrate that the contextual structures of significance are well retained in the sampled graphs."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 6,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            87,
-                            1168,
-                            594,
-                            1168,
-                            594,
-                            1486,
-                            87,
-                            1486
-                        ],
-                        "outline_level": -1,
-                        "text": "In this paper, we propose a novel graph sampling method to simpli-fy large graphs, especially with the contextual structures identified and preserved in the sampled graphs. Firstly, a GRL model is employed to encode contextual structures and a dimensionality reduction method is applied to transform the contextual structures into a low-dimensional vectorized space,where nodes sharing similar contextual features are visually distributed close to each other (P1). Then, we propose a novel blue noise sampling model to generate a subset of nodes in the vec-torized space, guaranteeing that nodes with tight relationships are re-tained and the contextual features are well preserved in the sampled graph (P2). A set of desired objectives are further integrated into the sampling model to optimize the sampled graphs, in which topological features of significance are enhanced such as bridging nodes and graph connection (P3). Also, we utilize a group of metrics to evaluate the va-lidity of our sampling method in contextual feature preservation from different perspectives, such as node importance, graph connection and"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 7,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            614,
-                            105,
-                            1118,
-                            105,
-                            1118,
-                            258,
-                            614,
-                            258
-                        ],
-                        "outline_level": -1,
-                        "text": "community changes (P4). At last, a graph sampling framework is im-plemented to integrate sampling models, GRL and visual designs of metrics, and a rich set of interactions are also provided allowing users to intuitively evaluate different sampling strategies and easily explore structures of interest in large networks. The effectiveness and use-fulness of our system are further demonstrated with case studies and quantitate comparisons based on real-world datasets. In summary, the main contributions of our work are:"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 8,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            638,
-                            285,
-                            1118,
-                            285,
-                            1118,
-                            364,
-                            638,
-                            364
-                        ],
-                        "outline_level": -1,
-                        "text": "·We utilize a GRL model (node2vec) to quantitate the contextu-al features of networks, offering important clues for graph sam-pling. To the best of our knowledge, it is the first to sample graphs with GRL."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 9,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            640,
-                            381,
-                            1118,
-                            381,
-                            1118,
-                            438,
-                            640,
-                            438
-                        ],
-                        "outline_level": -1,
-                        "text": "·We design a multi-objective blue noise sampling model to simpli-fy large networks, with the contextual structures and their topo-logical features well retained in the sampled graphs."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 10,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            642,
-                            458,
-                            1118,
-                            458,
-                            1118,
-                            535,
-                            642,
-                            535
-                        ],
-                        "outline_level": -1,
-                        "text": "We propose a group of specific metrics enabling users to com-pare sampling strategies from different perspectives, and conduct case studies with real-world datasets to demonstrate the validity of our context-aware graph sampling method."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 11,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            611,
-                            557,
-                            782,
-                            557,
-                            782,
-                            578,
-                            611,
-                            578
-                        ],
-                        "outline_level": 1,
-                        "text": "2 RELATED WORK"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 15,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            611,
-                            585,
-                            1116,
-                            585,
-                            1116,
-                            644,
-                            611,
-                            644
-                        ],
-                        "outline_level": -1,
-                        "text": "We classify existing methods into four categories,including large graph visualization, graph sampling, metrics for graph evaluation and graph representation learning."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 16,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            611,
-                            660,
-                            883,
-                            660,
-                            883,
-                            682,
-                            611,
-                            682
-                        ],
-                        "outline_level": 2,
-                        "text": "2.1 Large Graph Visualization"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 17,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            611,
-                            688,
-                            1118,
-                            688,
-                            1118,
-                            1188,
-                            611,
-                            1188
-                        ],
-                        "outline_level": -1,
-                        "text": "Graph visualization is widely used for network analysis [5].Node-link diagram is a most intuitive layout scheme in which the nodes are rep-resented as points and edges are represented as lines. Force-directed methods are employed to layout the node-link diagrams by optimizing graph drawing aesthetics [10,19,41]. With the increasing size of net-works, the readability of node-link diagrams largely decreases due to visual clutter and scalability issues [9]. Two categories of methods are proposed: (1) Graph clustering methods aggregate groups of nodes and edges with similar properties to reduce the visual complexity of large graphs [7,58]. ASK-GraphView [1] was proposed to organize a large graph into hierarchical structures allowing users to aggregate nodes to reduce visual clutter. To reduce edge crossings and empha-size directional patterns, a set of edge-based clustering methods are proposed in which edges with similar spatial distribution features are bundled together [6,8,15,16]. (2) Graph filtering methods extract subgraphs of interest from original large graphs [20]. Hennessey et al. [14] took a set of graph metrics into account to obtain representa-tive skeletons and simplify the visualization of large graphs, such as shortest path and distance to the central node. Yoghourdjian et al. [51]proposed Graph Thumbnails to enhance the readability of large graph-s with high-level structures described with small icon-like glyphs.It can be seen that the underlying topological structures of networks are changed with clustering methods,which are still not preserved in the simplified graphs with filteringmethods. It might generate a great deal of ambiguity that misleads the exploration of networks [49]."
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 18,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            614,
-                            1201,
-                            802,
-                            1201,
-                            802,
-                            1223,
-                            614,
-                            1223
-                        ],
-                        "outline_level": 2,
-                        "text": "2.2 Graph Sampling"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 19,
-                        "page_id": 2,
-                        "content": 0,
-                        "position": [
-                            614,
-                            1230,
-                            1118,
-                            1230,
-                            1118,
-                            1486,
-                            614,
-                            1486
-                        ],
-                        "outline_level": -1,
-                        "text": "Graph sampling is another kind of filtering method, which also gen-erates a subset of nodes or edges to simplify the original networks.Three categories are covered: (1) Node-based Sampling. Random Node Sampling (RNS) [26] is commonly used to randomly generate nodes from the original network. A set of graph properties are con-sidered to improve the results of node-based sampling. For example,Random PageRank Node (RPN) defines the probability of nodes to be sampled as proportional to their PageRank weights [26,36]. Random Degree Node (RDN) increases the probability of nodes with higher de-gree values to be sampled [4]. Hu et al. [18] designed a graph sampling method based on spectral sparsification, to reduce the number of edges and retain structural properties of original graphs. (2) Edge-based Sampling. Random Edge Sampling (RES) extracts a random subset of"
-                    },
-                    {
-                        "type": "paragraph",
-                        "tags": [],
-                        "paragraph_id": 21,
-                        "page_id": 2,
-                        "content": 1,
-                        "position": [
-                            50,
-                            1541,
-                            1171,
-                            1541,
-                            1171,
-                            1572,
-                            50,
-                            1572
-                        ],
-                        "outline_level": -1,
-                        "text": "1077-2626 (c) 2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.Authorized licensed use limited to: Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply."
-                    }
-                ],
-                "metrics": [
-                    {
-                        "angle": 0,
-                        "status": "Success",
-                        "dpi": 144,
-                        "image_id": "",
-                        "page_id": 1,
-                        "duration": 948.17889404297,
-                        "page_image_width": 1224,
-                        "page_image_height": 1584
-                    },
-                    {
-                        "angle": 0,
-                        "status": "Success",
-                        "dpi": 144,
-                        "image_id": "",
-                        "page_id": 2,
-                        "duration": 1279.3887939453,
-                        "page_image_width": 1224,
-                        "page_image_height": 1584
-                    }
-                ],
-                "dpi": 144
-            }
-        }
-    });
+  return Promise.resolve({
+    // duration: 1478,
+    // message: "Success",
+    // result: {
+    //   markdown:
+    //     "Transactions on Visualization and Computer Graphics\n\n# Context-aware Sampling of Large Networks via Graph\n\nRepresentation Learning\n\nZhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,\n\nYuhua Liu,Ying Zhao and Wei Chen\n\n<!-- a. C. b. d. e. g. f. h.  -->\n![](https://web-api.textin.com/ocr_image/external/3be73b381c700b7c.jpg)\n\nFig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).\n\nAbstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and exploration of large networks.\n\nIndex Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation\n\n\n![](https://web-api.textin.com/ocr_image/external/62552323a502286a.jpg)\n\n## 1 INTRODUCTION\n\n·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and Yuhua Liu are with School of Information,Zhejiang University of Finance and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn.\n\n·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn.\n\n·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University.E-mail:chenwei@cad.zju.edu.cn.\n\n·Ying Zhao and Wei Chen are corresponding authors.\n\nManuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication xx xxx.201x;date of current version xx xxx. 201x. For information on obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx\n\nAs a ubiquitous data structure, network is always employed to encode relationships among entities in a variety of application areas,such as social relationships between people and financial transactions between companies [5,57]. Graph visualization offers an interactive and ex-ploratory means allowing users to gain structural insights [2] and sense implicit contextual features of networks. However, with the increase of data sizes, the visual exploration and analysis of networks are se-riously influenced,because nodes and edges overlap with each other and generate much visual clutter in large graph visualizations, making it a complicated and time-consuming task to visually explore structural features of significance [50].\n\nGraph sampling is commonly used to reduce thevisual clutter and address scalability issues in the visual exploration of large networks,by means of which a subset of nodes and edges are selected on behalf of the original large graph. Over the past few decades, numerous ef-\n\nAuthorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.\n\nforts have been paid on the design of sampling strategies, ranging from node-based and edge-based schemes [4,26] to transversal-based and semantic-based schemes [4,23,56]. However, such strategies largely focus on sampling efficiency and randomness of sampling results, pay-ing little attention to the preservation of significant contextual struc-tures.\n\nContextual structures, formed by nodes and edges with tight rela-tionships, are always of great significance for the exploration and in-terpretation of networks, such as bridging nodes, connected paths and aggregated communities [19,46].For example, it is quite necessary to identify the contextual structures of crowd movement network for the diagnosis and spread prevention of infectious diseases [44]. Howev-er, it is a tough task to preserve contextual structures in the sampled network based on traditional sampling strategies, because contextual structures often have three characteristics: concealment in location, ir-regularity in scale, and complexity in structure. For example, nodes with tight relationships (in a community) may be difficult to find in large networks due to their concealed locations, because they are eas-ily laid out far away from each other. Also, contextual structures are immune to scale, that is few nodes and edges would rather present a tough contextual structure (a small complete graph). Thus,it is re-ally hard to give a comprehensive definition of contextual structures because their formations are too complicated to find a regular pattern.\n\nAs an effective way to represent and identify contextual structures of large networks [5], GRL has been widely applied in a variety of research areas, such as graph classification, graph query, graph min-ing,et al [12,33]. It transforms nodes into vectors to quantitate the structural features of networks. Numerous GRL models have been pro-posed to train and represent nodes according to their local contexts in the network, such as deepwalk [39],node2vec [11],and struc2vec [42].A family of biased random walks are developed in the course of corpus generation allowing an efficient exploration of diverse neighborhoods for given nodes [32]. Thus,network structures are well represented in a vectroized space obtained by GRL (e.g. a contextual structure of interest is highlighted as shown in Figure la and Figure 1c). We be-lieve that it would be a feasible way to conduct graph sampling in the vectorized space, and the contextual structures would be preserved as far as possible (e.g. the contextual structure is well preserved in the sampled graph as shown in Figure 1d and Figure 1b).\n\nHowever,there are still severa problems to overcome for the p-reservation of contextual structures in the vectorized space obtained through GRL.P1: GRL is able to encode the contextual structures with vectorizied representation, but the vectorized space is too compli-cated to gaininsights due to its high dimensions. P2: It is a difficult task to define a graph sampling model to preserve contextual structures captured by GRL,since they are represented with data distributions in the vectorized space rather than topological relationships in the origi-nal network space. P3: It is also difficult to conduct a unified graph sampling scheme to preserve various kinds of contextual structures in the vectorized space due to their respective characteristics. P4: It is another tough task to evaluate the sampled graphs from a variety of perspectives,and further demonstrate that the contextual structures of significance are well retained in the sampled graphs.\n\nIn this paper, we propose a novel graph sampling method to simpli-fy large graphs, especially with the contextual structures identified and preserved in the sampled graphs. Firstly, a GRL model is employed to encode contextual structures and a dimensionality reduction method is applied to transform the contextual structures into a low-dimensional vectorized space,where nodes sharing similar contextual features are visually distributed close to each other (P1). Then, we propose a novel blue noise sampling model to generate a subset of nodes in the vec-torized space, guaranteeing that nodes with tight relationships are re-tained and the contextual features are well preserved in the sampled graph (P2). A set of desired objectives are further integrated into the sampling model to optimize the sampled graphs, in which topological features of significance are enhanced such as bridging nodes and graph connection (P3). Also, we utilize a group of metrics to evaluate the va-lidity of our sampling method in contextual feature preservation from different perspectives, such as node importance, graph connection and\n\ncommunity changes (P4). At last, a graph sampling framework is im-plemented to integrate sampling models, GRL and visual designs of metrics, and a rich set of interactions are also provided allowing users to intuitively evaluate different sampling strategies and easily explore structures of interest in large networks. The effectiveness and use-fulness of our system are further demonstrated with case studies and quantitate comparisons based on real-world datasets. In summary, the main contributions of our work are:\n\n·We utilize a GRL model (node2vec) to quantitate the contextu-al features of networks, offering important clues for graph sam-pling. To the best of our knowledge, it is the first to sample graphs with GRL.\n\n·We design a multi-objective blue noise sampling model to simpli-fy large networks, with the contextual structures and their topo-logical features well retained in the sampled graphs.\n\nWe propose a group of specific metrics enabling users to com-pare sampling strategies from different perspectives, and conduct case studies with real-world datasets to demonstrate the validity of our context-aware graph sampling method.\n\n## 2 RELATED WORK\n\nWe classify existing methods into four categories,including large graph visualization, graph sampling, metrics for graph evaluation and graph representation learning.\n\n### 2.1 Large Graph Visualization\n\nGraph visualization is widely used for network analysis [5].Node-link diagram is a most intuitive layout scheme in which the nodes are rep-resented as points and edges are represented as lines. Force-directed methods are employed to layout the node-link diagrams by optimizing graph drawing aesthetics [10,19,41]. With the increasing size of net-works, the readability of node-link diagrams largely decreases due to visual clutter and scalability issues [9]. Two categories of methods are proposed: (1) Graph clustering methods aggregate groups of nodes and edges with similar properties to reduce the visual complexity of large graphs [7,58]. ASK-GraphView [1] was proposed to organize a large graph into hierarchical structures allowing users to aggregate nodes to reduce visual clutter. To reduce edge crossings and empha-size directional patterns, a set of edge-based clustering methods are proposed in which edges with similar spatial distribution features are bundled together [6,8,15,16]. (2) Graph filtering methods extract subgraphs of interest from original large graphs [20]. Hennessey et al. [14] took a set of graph metrics into account to obtain representa-tive skeletons and simplify the visualization of large graphs, such as shortest path and distance to the central node. Yoghourdjian et al. [51]proposed Graph Thumbnails to enhance the readability of large graph-s with high-level structures described with small icon-like glyphs.It can be seen that the underlying topological structures of networks are changed with clustering methods,which are still not preserved in the simplified graphs with filteringmethods. It might generate a great deal of ambiguity that misleads the exploration of networks [49].\n\n### 2.2 Graph Sampling\n\nGraph sampling is another kind of filtering method, which also gen-erates a subset of nodes or edges to simplify the original networks.Three categories are covered: (1) Node-based Sampling. Random Node Sampling (RNS) [26] is commonly used to randomly generate nodes from the original network. A set of graph properties are con-sidered to improve the results of node-based sampling. For example,Random PageRank Node (RPN) defines the probability of nodes to be sampled as proportional to their PageRank weights [26,36]. Random Degree Node (RDN) increases the probability of nodes with higher de-gree values to be sampled [4]. Hu et al. [18] designed a graph sampling method based on spectral sparsification, to reduce the number of edges and retain structural properties of original graphs. (2) Edge-based Sampling. Random Edge Sampling (RES) extracts a random subset of\n\n",
+    //   success_count: 2,
+    //   catalog: {
+    //     toc: [
+    //       {
+    //         pos: [206, 111, 1032, 111, 1032, 197, 206, 197],
+    //         page_id: 1,
+    //         hierarchy: 2,
+    //         pos_list: [
+    //           [206, 111, 1032, 111, 1032, 153, 206, 153],
+    //           [428, 157, 810, 157, 810, 197, 428, 197],
+    //         ],
+    //         title:
+    //           "Context-aware Sampling of Large Networks via GraphRepresentation Learning",
+    //         sub_type: "text_title",
+    //       },
+    //       {
+    //         pos: [104, 1156, 257, 1156, 257, 1179, 104, 1179],
+    //         page_id: 1,
+    //         hierarchy: 2,
+    //         pos_list: [[104, 1156, 257, 1156, 257, 1179, 104, 1179]],
+    //         title: "1 INTRODUCTION",
+    //         sub_type: "text_title",
+    //       },
+    //       {
+    //         pos: [610, 557, 780, 557, 780, 581, 610, 581],
+    //         page_id: 2,
+    //         hierarchy: 2,
+    //         pos_list: [[610, 557, 780, 557, 780, 581, 610, 581]],
+    //         title: "2 RELATED WORK",
+    //         sub_type: "text_title",
+    //       },
+    //       {
+    //         pos: [610, 661, 882, 661, 882, 684, 610, 684],
+    //         page_id: 2,
+    //         hierarchy: 3,
+    //         pos_list: [[610, 661, 882, 661, 882, 684, 610, 684]],
+    //         title: "2.1 Large Graph Visualization",
+    //         sub_type: "text_title",
+    //       },
+    //       {
+    //         pos: [612, 1202, 800, 1202, 800, 1223, 612, 1223],
+    //         page_id: 2,
+    //         hierarchy: 3,
+    //         pos_list: [[612, 1202, 800, 1202, 800, 1223, 612, 1223]],
+    //         title: "2.2 Graph Sampling",
+    //         sub_type: "text_title",
+    //       },
+    //     ],
+    //   },
+    //   pages: [
+    //     {
+    //       angle: 0,
+    //       page_id: 1,
+    //       content: [
+    //         {
+    //           pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+    //           id: 0,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE",
+    //         },
+    //         {
+    //           pos: [466, 26, 758, 26, 758, 43, 466, 43],
+    //           id: 1,
+    //           score: 0.99800002574921,
+    //           type: "line",
+    //           text: "Transactions on Visualization and Computer Graphics",
+    //         },
+    //         {
+    //           pos: [207, 112, 1035, 114, 1035, 156, 207, 154],
+    //           id: 2,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "Context-aware Sampling of Large Networks via Graph",
+    //         },
+    //         {
+    //           pos: [430, 158, 814, 158, 814, 200, 430, 200],
+    //           id: 3,
+    //           score: 0.9990000128746,
+    //           type: "line",
+    //           text: "Representation Learning",
+    //         },
+    //         {
+    //           pos: [314, 221, 927, 221, 927, 249, 314, 249],
+    //           id: 4,
+    //           score: 0.96399998664856,
+    //           type: "line",
+    //           text: "Zhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,",
+    //         },
+    //         {
+    //           pos: [458, 247, 786, 247, 786, 274, 458, 274],
+    //           id: 5,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "Yuhua Liu,Ying Zhao and Wei Chen",
+    //         },
+    //         {
+    //           pos: [186, 299, 206, 299, 206, 317, 186, 317],
+    //           id: 6,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "a.",
+    //         },
+    //         {
+    //           pos: [541, 299, 562, 299, 562, 317, 541, 317],
+    //           id: 7,
+    //           score: 0.94099998474121,
+    //           type: "line",
+    //           text: "C.",
+    //         },
+    //         {
+    //           pos: [746, 292, 770, 292, 770, 319, 746, 319],
+    //           id: 8,
+    //           score: 0.99599999189377,
+    //           type: "line",
+    //           text: "b.",
+    //         },
+    //         {
+    //           pos: [541, 450, 560, 450, 560, 472, 541, 472],
+    //           id: 9,
+    //           score: 0.91000002622604,
+    //           type: "line",
+    //           text: "d.",
+    //         },
+    //         {
+    //           pos: [183, 606, 201, 606, 201, 623, 183, 623],
+    //           id: 10,
+    //           score: 0.8289999961853,
+    //           type: "line",
+    //           text: "e.",
+    //         },
+    //         {
+    //           pos: [390, 606, 408, 606, 408, 626, 390, 626],
+    //           id: 11,
+    //           score: 0.96499997377396,
+    //           type: "line",
+    //           text: "g.",
+    //         },
+    //         {
+    //           pos: [685, 602, 702, 602, 702, 623, 685, 623],
+    //           id: 12,
+    //           score: 0.98000001907349,
+    //           type: "line",
+    //           text: "f.",
+    //         },
+    //         {
+    //           pos: [889, 602, 913, 602, 913, 625, 889, 625],
+    //           id: 13,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "h.",
+    //         },
+    //         {
+    //           size: [407, 189],
+    //           id: 14,
+    //           pos: [168, 289, 1074, 287, 1078, 710, 171, 712],
+    //           data: {
+    //             base64:
+    //               "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wAARCAGnA4oDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD97/ErMnh2/dGIZbKUqQeQQhwawvD3w1+H0+gWM83gvTGd7OJnZrJCWJQZJJHJrc8T/wDItaj/ANeM3/oBo8Mf8i1p/wD14xf+gCgCh/wq/wCHP/Qj6V/4BJ/hR/wq/wCHP/Qj6V/4BJ/hW7USXMEkjRRzqzx/fRWBK/WgDH/4Vf8ADn/oR9K/8Ak/wo/4Vf8ADn/oR9K/8Ak/wrdooAwv+FX/AA5/6EfSv/AJP8KP+FX/AA5/6EfSv/AJP8K3aKAML/hV/wAOf+hH0r/wCT/Cj/hV/wAOf+hH0r/wCT/Ct2igDC/4Vf8ADn/oR9K/8Ak/wo/4Vf8ADn/oR9K/8Ak/wrdooAwv+FX/AA5/6EfSv/AJP8KP+FX/AA5/6EfSv/AJP8K3aKAML/hV/wAOf+hH0r/wCT/Cj/hV/wAOf+hH0r/wCT/Ct2igDC/4Vf8ADn/oR9K/8Ak/wo/4Vf8ADn/oR9K/8Ak/wrdooAwv+FX/AA5/6EfSv/AJP8KP+FX/AA5/6EfSv/AJP8K3aKAML/hV/wAOf+hH0r/wCT/Cj/hV/wAOf+hH0r/wCT/Ct2vkH9tvXf8AgpZpfxkjvf2XtCaTwnaWNsVWBraQ3U+8+YGSTD87gCB2XOeTgA+of+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACj4baj4x1XwBoupfEHS4rHXZ9Mgk1ezgbKw3BQGRR7Bsit2gDC/4Vf8ADn/oR9K/8Ak/wo/4Vf8ADn/oR9K/8Ak/wrdooAwv+FX/AA5/6EfSv/AJP8KP+FX/AA5/6EfSv/AJP8K3aKAML/hV/wAOf+hH0r/wCT/Cj/hV/wAOf+hH0r/wCT/Ct2igDC/4Vf8ADn/oR9K/8Ak/wo/4Vf8ADn/oR9K/8Ak/wrdooAwv+FX/AA5/6EfSv/AJP8KP+FX/AA5/6EfSv/AJP8K3aKAML/hV/wAOf+hH0r/wCT/Cj/hV/wAOf+hH0r/wCT/Ct2igDC/4Vf8ADn/oR9K/8Ak/wo/4Vf8ADn/oR9K/8Ak/wrdooAwv+FX/AA5/6EfSv/AJP8KP+FX/AA5/6EfSv/AJP8K3aKAML/hV/wAOf+hH0r/wCT/Cj/hV/wAOf+hH0r/wCT/Ct2igDB+GsccPgqzhiXCI0qoPRRK4A+mOK3qw/hz/AMida/8AXSb/ANHPW5QAVyosLvxD4y1e2u9f1KCGzS3WCG0uzEo3IzMeOpzXVVz/AIeA/wCE78RcdrP/ANFGgCT/AIQeL/oaNb/8Gb0f8IPF/wBDRrf/AIM3rcqlq2u6LoFt9u17WbWyg3BfOvLhY0yeg3MQKAKH/CDxf9DRrf8A4M3o/wCEHi/6GjW//Bm9bEcqTIJYpAysoKMpyGB5znpUlAGH/wAIPF/0NGt/+DN6P+EHi/6GjW//AAZvW5Vf7VP9vNp9kfy/K3faMjbuzjb1znv0pPQDHuPB1tawPcTeKtcCopZm/tN+APai38HW1zAlzD4q1wpIgZD/AGm+SCPStiS+tkuhYsxMpiMgTaeRnHXpUR1Gb+z1vYNNld2Cn7NuVXAJ5zk44HvWcqsFOzYWMfU/Csem2E2oDX/EM4ijLeVBqLs7ewFTR+C43QOfE2uDIzhtTfitmW4hhKpJIqs/Eas4G44zgVm6L4lF2trp2uxQafq9xbNO+kfbUklRFbaW+X7ygkZI4BIFVFtyB3MPw34f8Q6leapDr763p8VrqJh02VdeMv2yDYpE2APk5LDaeflrRk8KWEUyW8vjLWEkkyI421dgWI9B3q54t8YeGvAuiSeJfF2sw6fYxOiS3dw21ELMFXcewyQM9BnmuJ8Vabpv7R3w1tfGfwT+KUVjNeRg6F4tsbZLxI4/MxI8aOQjEgMoY5APODjFY4mpVhC1FJy00vbS6v8AgdFDDOraU7xhdJys7J/L8tzr/wDhCo+o8Ta3/wCDR6X/AIQiL/oaNb/8Gb14vL+yJ+0Hpaf2n4W/bw8dnUV5Vdb0vTLuyZvRoUt422+wdT717S/ifSPDP9kaB4u8U2SapqR+z2ayOsJvp0jLuIkLEk7UZtoJIAPUAmqpVakl78eX5p7+h1YzA4ai4rDV1WvfSMZJq2uzS0G/8IRHyf8AhJ9a46f8TN6d/wAIPH/0NGt/+DN6l0jxl4Y17WtR8O6PrUVze6PKkeqW8bfNbu6B0DfVTmteuhpx3R5tmtzD/wCEHi/6GjW//Bm9H/CDxf8AQ0a3/wCDN63KKQGH/wAIPF/0NGt/+DN6P+EHi/6GjW//AAZvW5RQBzmo+DRb6fPcReK9cDRwuyk6m3Xaa0fCN3c3/hTTL69mMk0+nwSTOerMyKSfbk1a1j/kE3X/AF7v/wCgmqXgQAeCNGwP+YVb/wDopaANWiiigArj7Hwl4Y8SeNPEVx4g0C0vXiu7dInurcOUX7NGcDcDgZJOB3NdhWB4W/5G/wATf9f1v/6SxUAO/wCFX/Dn/oR9K/8AAJP8KP8AhV/w5/6EfSv/AACT/Ct2vnL9kH9pHx38Qfip8c/Cvxh8ZaabHwL8TxoPhuVreO0Vbc2kMqoxz+8ctIec88cUAe4f8Kv+HP8A0I+lf+ASf4Uf8Kv+HP8A0I+lf+ASf4VtI4kAZX4IzkHNPoAwv+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACt2igDC/4Vf8Of8AoR9K/wDAJP8ACj/hV/w5/wChH0r/AMAk/wAK3aKAML/hV/w5/wChH0r/AMAk/wAKP+FX/Dn/AKEfSv8AwCT/AArdooAwv+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACt2igDC/4Vf8Of8AoR9K/wDAJP8ACj/hV/w5/wChH0r/AMAk/wAK3aKAML/hV/w5/wChH0r/AMAk/wAKP+FX/Dn/AKEfSv8AwCT/AArdooAwv+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACt2igDC/4Vf8Of8AoR9K/wDAJP8ACj/hV/w5/wChH0r/AMAk/wAK3aKAML/hV/w5/wChH0r/AMAk/wAKP+FX/Dn/AKEfSv8AwCT/AArdooAwv+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACt2igDC/4Vf8Of8AoR9K/wDAJP8ACj/hV/w5/wChH0r/AMAk/wAK3aKAML/hV/w5/wChH0r/AMAk/wAKP+FX/Dn/AKEfSv8AwCT/AArdooAwv+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACt2igDC/4Vf8Of8AoR9K/wDAJP8ACj/hV/w5/wChH0r/AMAk/wAK3aKAML/hV/w5/wChH0r/AMAk/wAKP+FX/Dn/AKEfSv8AwCT/AArdooAwv+FX/Dn/AKEfSv8AwCT/AAo/4Vf8Of8AoR9K/wDAJP8ACt2igDC/4Vf8Of8AoR9K/wDAJP8ACj/hV/w5/wChH0r/AMAk/wAK3aKAML/hV/w5/wChH0r/AMAk/wAKP+FX/Dn/AKEfSv8AwCT/AArdooA5fw3oOi+HvH2pWWhaVb2kL6PaO0VtGEUsZbkbsAYzgAZ9q6isOz/5KVqH/YEs/wD0dc1uUAUfE/8AyLWo/wDXjN/6AaPDH/Itad/14w/+gCjxP/yLWo/9eM3/AKAaPDH/ACLWnf8AXjD/AOgCgDP+JuvaT4Y+HWv+I/EHiz+wbCx0a5nu9aOP9AjSJmacZzygBbng7a/Pjw9BP8Mfjr+yT4n+F+h31lpXi3W72xv/ABnqt/t1fxrbSaW8wub+BAQFc7ZE8yRnGR8seK/RDxn4Q8O/EHwnqngXxdpcd9pWs6fNZalZS52zwSIUdDjnBViOOleHaL/wTO/Zm0XR/BekeZ4wvB8PtW+3eErm/wDGd5LNp6iNohbIxf5INjbPLXGQBknnIB9CqfU0tYngzwRp3gldTXTtU1O6GqarLfy/2nqMlx5LyYzHFvJ8uIY+WNcKuTgVt0AFFFFABRRRQAUUUUAFFFVf7Y0v7aNL/tO3+0sCRb+eu8gHk7c54NAFqiiigAooooAKKKKACvyo/wCCp37Qvx9sf2trvwhDr+u6boHhmW0n0W1sJzArs0Ub+cHT7zF9wBOcDiv1Xrlfin8PrL4g+E7/AEhdE0e6vmiV9PbWrATwx3CHfG7rwSFbB4NAHz7/AMEjvih8YviZ+zjdn4s3lzff2VrT2mlajeS7p5Itqs0b5JbKMcZbnDD0r6srO8O6Za6bpcccFjawyS/Pd/ZIBGkkxHzvgdckd+cVo0AFFFFABRRXNfFL4s/D74J+Dbj4gfFDxPDpOk2rKst3OGYBm+6oCgkk9AMdqAOlorivhD+0J8H/AI7RXs3wq8b22rnTjEt/FCrK1uZF3KGDAEEjP0II6giu1oAKKKKACiiigAooooAKKKKACiiigAooooAw/hz/AMida/8AXWb/ANHPW5WH8Of+ROtf+us3/o563KACsDw9/wAj34i+ln/6KNb9YHh7/ke/EX0s/wD0UaAN+vkyx1/wl8VP+CoXj/4H/HXTbHULfR/hrpFx8P8AQ9XjWWCaGeSc6hcxxuCpk3CBC2NwVOOCa+s68o/aK/Ym/Zn/AGrNR0nW/jh8NYtU1HQyw0vVLe9mtLqBGILRiaB0cxkjlCcHJ45oA2/2cvh98PfhH8J7H4U/C3X7/UtF8O3FxY20+o3xuZIysrFofNI+ZYyxjA/hCBf4a3vHPxJ8FfDa2srzxv4hi06LUb+Oxs5Zgdr3EnCJkA4z6niszTPgX8L9Et/CtloHhw6fa+Cnkbw7Z6fdyww25eJom3IjBZvlZv8AWBuTu+9zXW3VnaX0XkXtrHMmQdkqBhkdDg0ASA55FNzkZziquvnVU0K9bQEU3wtZPsQk+75u07M+27FeE/sJ+Kf2lbP4Q67d/thWN5Y6lY69K1rd6mFBe2YKeAn8CsSF9j7UmtAPQvjLP4tPhU2Oi3KtcD5ryO0O1vLJOGAJzjjnmue+A9r4vvbmae41O7itLby2WOSY4mOHAQ7lJ25POMcqMd69Yu1spIcXezYWwpkwPmJwMe/OBjnniob2x0eGxc3ttGYUIlk3LnlcYbuSeBjucYr47EcMVK3EkM0+sSSircl9GbxrqNHkscd8ULzXdO8LqbG3mtri3liK3YcSfNI2GRGJ3dxzjkcAVo+FrXxjd6Zo99d20FneW4WLVn1K0EktzF5YYiN0k+T5j/FkfKeO9O0P4r+D/FPiw+HPDvivSrloE23dqLnF1HMUWRF8s4I/dksTjjp61ta/q9vpmi3morqdpb/ZoyzzXj4iiOOC5BGB0NfQYfA0qWMliLvmklHXa2+i/Uyc24JHin/BSDWdTg/ZnuvBOj3cltP4y1/SvDb3MJIaKG9vYreZgR0PlO+D2Jr2Pwl4c8O/DrwRY+G/D2nx2Wl6Tp8cNrbQJhYoo0ACqB0wBX51fHX9lr/goKP2kdb+JHhLxePElppuoSarps93qRe2AhAnit2twDsf7iqAnDEFa+tPhr8YvF/7WnwP0/xT8FvGelacblhHrVrqFqTeabLGEWaxmjYMBIXEqMSq7QQQp77wcI45871aVvRN7ffr8j3qyxVbhemqUfcp1JOTX80ox5eZb2tFpN+fmcl4n/4KOmx8ZS2PhzwGl5o8M23z5bgxzSqOCwGMLzz34rX/AG9Tpvjf9jWf48eHgbfVfCCWvi3w5dgkPBNbMsxXPHDx+ZE3YrIaguf+Cdfh258aDXE8ayW+mPcebJp0dsGZB18tXY4xnuR0r1rxD4h+A+tawv7MniTUNJvbrUdDdpPCsyq/mWCFYmLx4wEy6qM4DcgZwcejmn1KeF5KWjatd9+nzPjuBqvE2Czr65jlzwpyUuWKv7qfvX/utaO+mup1nhm6tdS0a11u3gRGvbaOWRlTDMSgxn1I9606qOsemaa/2K0ysEJMUMY6gDhR+WK+I/2JP28f2lP2iP2wNV8DeMtBW28Lizus6dFp+0aY8bZjLS7clm5U7jg9uawV7K56lSUZVG4rTofc9FFFMgKKKKAK+sf8gm6/69n/APQTVLwL/wAiRo3/AGCrf/0UtXdY/wCQTdf9ez/+gmqXgX/kSNG/7BVv/wCiloA1aKKKACsDwt/yN/if/r/t/wD0lirfrA8Lf8jf4n/6/wC3/wDSWKgDfr4R/Zb/AGbvgT+0J8b/ANrLS/jd8OtN8QWo+L0kMX9pxl/sitplvuki/wCeUnPEiYf5R83Ar7ury/XP2P8A4Ca/401f4gSeFLqyv/EWD4lTSNZurO31khdgN3DBIsdwduFLOCSODxQBw3/BK7WPHOsfsN+DJPiBqt1f3EEmoW2mX99KZJrrTob6eOzkZzy+bdYiG5yMHJr6JrmtQ+FXgbUZ/DMw0hrZPCNx52g22n3MlvBbnyWhCmONgjoI3ICMCo4IGRXS0AFFFFABRRRQAUUUUAFFZfjLxh4f8A+FtQ8aeKr422m6ZavcXtwImfy41GSdqgk/gDSaD408LeJ4oZdD1+2uDPapcRwpMPM8twCrFD8wGD3AoA1aKKKACiiigAooooAKKKiubq3tYjNdXCRIoJLyOABwSeT0oAlopkcqzRrNHIGRhlWB4YeufQ07IHegBaKTcufvCjcucbh+dAC0U1pY0HzSKPqwrmfi/wCNNZ+H/wAM9b8ZeGdMtL+/02wkmtbS9v0t4ZHXs8jkBFHJJJHAoA6iivGv2Xv2orj49azrHhK8tdGlu/D+nWMt/qvh/VBc2c086sXjjGMjYVxyT+tey0AFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAYdn/yUrUP+wHZ/wDo65rcrDs/+Slah/2A7P8A9HXNblAFHxP/AMi1qP8A14zf+gGjwx/yLWnf9eMP/oAo8T/8i1qP/XjN/wCgGjwx/wAi1p3/AF4w/wDoAoAvYHpRgelFFABRRRQAUUUUAFFFFABRRSMNwxkjPoaAOK0r9oL4OeJfibe/BXw58RtOufFNjbPLdaXDIWeELt3ZONuRuGVzuHcCvyr1H4AftreGf2srPUJbfxHbazP4ycWHim6tpktZC0/+vMrDaI25O0nkYHevr/4f/wDBMbUvhn+1PcfHTQtctJrD/hLY7+yE+oXH2mGyaOVpo2wAHcysgG4lSuc19M/Gr4Q6F8a/hnqPw71TULmyS+VHgvrNyslvNG6yxyL2yHVTg9aAOh0L+2rTRbS116cXd9FbRpd3MUYjWaUKAzhMnYCQTjPGcVb+0Tcg2zDHTB/+tUVjpy29jBaTXDzNFCqtK/DPxgscetTi1jC7QzAf71ADGvAowUwffI/pQt4hHMkY/wCBV4B+33+2xbfsX+DdKvdN8NNrOs67cyR2NpJOyRxxooLyMVBJClk+XgnJ5rsP2Qv2hLn9p34KWfxP1HwxdaJe/aZbTUdOnPCTx4DFMgHYcgjPPPPrQB6j54IyHj/77p3mORwyZ/3qY1qzdJz+Kj/CmmwGc7l6Y/1YoAlbzz91k9+K/Pr/AIKA/tS/tZeBfif4x0b4fX2raRpWlTaPb6W2n20hjmDB55JvM8vGWICFQ2CoI5Nff0tmyozRugOOoXv+dRy6LDcReTcosinG5XXIP5mgDx39jvU/2i5PB1sfj5Y3k2o6xDNqNxczTW5i08+Yqx2yrHgkMh8wE5xypOa9uxL/AH1/75/+vWQtrdWGofLcYiLAAA/dOPf8a0NmokErMnsc/wD1qAJ/3m77wx/umk8uXOfPP02ioSNUXJHlnjimmfUlO0QxuT0ANAFkrJ187H4CvNP2pf2bfDf7VPwvPw08S6xPYRrqEF5b39vErtE8bZ4DEA5Ulf8AgVegmTUcgy2KsP7okHy/404Xd0q/Ppr8/wB1lP8AWgDyT9mD9kDwt+zBr/inxNpHi6+1m68V3UMtzPf28SNAsYbCL5YGQS36CvZcjGc1hy+J9Xi8VwaEPBuoNZy2Uk0urho/KidWUCIjduJYEsDjGFr5Y/4Kt/tZfF/9nrwVovhz4Rytpb+IBcfbNaMZ863VNuFizwrHdnPUAHigD7DBzzmivlH/AIJO/tK/GL9oj4O6wfi08t/JoOox21lr85Ae+V1LFWAUAlAF+b+LfzyK+rqACiiigAooooAKKKKACiiigAooooAw/hz/AMida/8AXWb/ANHPW5WH8Of+ROtf+us3/o563KACsDw9/wAj34i+ln/6KNb9YHh7/ke/EX0s/wD0UaAN+iiigBCABwK+e/2v/wDgot8Jf2OvEum+D/GGgatq2p6lZ/alt9NRQIod5UMzOQMkq2APQ5xX0LX53f8ABVj9gj48/F34vp8cPhR4fGt2U9hDbXlnBdE3EDINu/Y+Bsx/dJPXitKai5WkeNnuIx+FwDqYSN5JrpfTrofYv7MX7VHwr/az8Bnxx8MNQlZYHWLUbG6TbNZylQdjDoe+GGQcHBrt/Fni3wx4I0WTxD4v1m3sLGOSNJLq6cBAzuEQc9yzAD3NfMn/AASO/Z7j+C/7PFz4nutWFzqXifUWlvljjYJB5DPEI1LKCx4Yk9OeO9fVF5ZWGowfYtQtIZ4yVYwzRhlyCCDgjHBAI9xSqJKVkdWV1sTXwEKmIVptamJ48h+HGs2C6D4/XT54Bc200drdEN+980eS4XqCHAwfatHWtF03xPox064YPG2HhkjwfLdSCjqemQQCPevm/wDa2/Zp+KPxC+IWgeKPDvj6/sNN0u8nknk+25TynG8q4bARVO4Bi2MNtGPlr3D4f6ffeA/ht5fjXVUgtLOw8xy6qjWkYj3ShmRiuAdxXb0XAySM1B3ni37Mn7A978Af2gvEfxal8bC8s9SnaWCLMnmTM4JYuN2F2uzYzvyPSva4/iZ8K4Pi1N8HE1aIeKLvT/7RuNNa3kzJAu1d5YrsPGBgHtTriDxRD4G0cfB3VLK7jja3kEmuTyym7ssZYCXJbzGUja7Aj1pPC3iKbXNFuviB4k+FF9pOsaek9ubWeGGa6ljT5sQuhO9HP3eRnuBScU2mByfxD+O2lax4W8QJ8I/iLpMF/pC3FncXOpWUn2ayvEVX3TzMNkcYTIJIIJYAHPB4PQv2SviFbfFnwv8AtFeBPHek6Fq15diX4gW+iNJ9h1+0Ik2BkAWOV0Vo1WXar4XlyOD6v4y0DwxqKx/Fbx5qU9n4eh8OTrq/h3UrCMwyLKY3LTrtZi6hNpUEgkmtL4Z/Fv4X/EvwJ/wm/wALPENtqWhW3mQrNYRNtQxcMgXAIxjGAKzq06U0nNbanXhMdjMFzKhNrnXLJdGn0af9I5z43+DfjL8Urm18PfBv4/2ng+3tSy+IWtdFivb4hgCnlNI+yBsbuWjfr0rI+HH7EXwX+HdvI73Gravr2oahHf6z4m1fVHk1HVJovuedKMExqT8sa7Y1zworsBr/AML/AAR4J1j446NpLm0vLY6jqV1Y2jPcXSqDztPzEgZAXivJPibrfwX1DUrX9tSy+NfiC0fS9HurOw0i3kIjdlG2QG1ZQ7GNjudcH7mTwKilg6GLfNVs29t2vKy6X6nWs4x9DC/VKM+SHVJJOX+JpXkl0Tdj6RCDAAPH1qCy0fSNPnlutP0y3gkuG3TyQwKrSt6sQOT9a+ffgh8Rvj38WdB8O22hfEd1uFgXVdZ1fVfBy/Zb2zkdljghZJE+chSSwzgAdOh+h1O07d3OORXZVoyoy5X0PI9CrrXiHRvD0KXGt6nDbI7bUaVwAT6VcSRJUEiMCCMgg8H0rD8Z/D7w/wCOkgTXIpWFu5MZhkKnnqDjtWzbWsVpbpawLhUUKg9AK8yjLMHjKkakV7PTlaer73XS3QtqPKrbktFFFd5JX1j/AJBN1/17P/6CapeBf+RI0b/sFW//AKKWrusf8gm6/wCvZ/8A0E1S8C/8iRo3/YKt/wD0UtAGrRRRQAVgeFv+Rv8AE/8A1/2//pLFW/WB4W/5G/xP/wBf9v8A+ksVAG/RRRQAYHXFFFFABRRRQAUUUUAFY/jnxjp3gDwjqPjTWLW8ntdMtmnnhsLVppmUdQqKCWPsK2KCARgigDxfQfjL4B/a58LeKPhKfBXivSra+0Vke41jRJLdbm1nDIs0THIPIJwcHgcV5D8Fv2Lfh3+yj+1B4b8Unxd4k1GbVdLlstKuXhVLdZ0iHmG4d3Jd5MnYqjgL0OAa+wZlEe2ZQBtPzcdqz9f8KeGvEN3p+p69oNreTaXdi40+a4gVmtpcbN6EjKnBPIoAnadVX5tRkH1UH+VONyFOTe8DrujIzVykKq33lB+ooApC6jkbIuRn0MjKOfwpwuY8kCZT9Livn39tDwN+2R458e+D9F+Avjr+w/Cs97GniG800oLu3fzARKwcjfGF42qeTkNkEV7z4U0XUtG8M2OleIdbOrX1vapHdanLbJG11IBhpCq/KpJ7CgC208RADM3T+GfH9acGiA4WX3zKf/iql+zW/wDzwT/vkUwWFkORax/980AIJLYjJMmPT5q8i/bR/Zzk/aY+Db+BNBvYLLUl1CGazvbmeaIRDdiUgp1JjLAAgqa9dOnWZGDbKPpQNOtFBCQ7QeoVyM/lQBjfD3w3pXg3wPpPhC01BrldK06GzW4uSvmSeUgXLY4ycc4rbWK2xgIn6Gq1xpEIf7VbBw3G5fNbDj8+tLFYWd1GHSSX3/enINAFryIRz5Kf98UC3gHIhQe4UVX/ALNhjU/6VIvvkZH6UwWMr8W97Oq/3i38uKALL+TEMso56ADmq2q6Np/iLTZ9H1zTobiyuYmiubW4iDpKhGCrAjGCOopyaZPGMrqcuc53MATTja6ivK6kT/vRD+lAFHw14D8HeCrVrPwV4W07SY2VQyadZpCrgDAyEAzgdK1Y5dxKOu1vSq4g1YD/AJCMTfWD/A153+0ro/x78R+ArfTvgHqljDrY1e2ke4nu2t0SFGLOGYK+5WIVWUDJVjigDv8ARvFHhzxHLdwaBr9nfPYXBgvVs7pJDbyAA7H2k7WwQcHBwelaFfNn7KvwG+O3wd/aI8Z6z4h8M+GNL8J6/bRXSDQZpmWa84BwsjDY3MjMdvORg8V9J0AFFFFABRRRQAUUUUAFFFFABRRRQBh2f/JStQ/7Adn/AOjrmtysOz/5KVqH/YDs/wD0dc1uUAUfE/8AyLWo/wDXjN/6AaPDH/Itad/14w/+gCjxP/yLWo/9eM3/AKAaPDH/ACLWnf8AXjD/AOgCgC9RRRQAUUUUAFFFFABRRRQAUUUUAGAOgpkYCMUxj0p9MkypEoHTr9KAFixt2Y+6cU6vnvV/2qvjx4f/AGopfgrqX7PcMPhy5uoU0rxRd64LdLmJmCs6lkKu5LfLECG+Ujk19ApNHIW8uQNtOGCnofQ+n0oA5j4k/Cj4bfEwafc+P/BWnavLpV0JdMe+tlkNtK2F3LkH8j6Cuh0tII7RRDbpFknzFRAPmzyeO+aNRIKxQgDLzp19ju/pSW37u7ntiepEi/Q//XBoAtUYHpRRQAyT5iqA9W5/Cn0wgGUf7I5/GnEhRkmgCreJmVj/ALKn+Y/rTllFqoD52Nyo9PaknDzT7FyA0TYJHfIp1miPBlhk+/WgCUCR8EsVHp3pyoqjCiovMFt8kjcdjThI7DMacerGgCTIxnNMMy5wuWPoKPKLf61s+3angADAFADAsrD5iF+nNUtc8LeG/FFg2l+JdBs9Qt3Uh4b22WVTkYPDAjkEitCvJ/2i/wBr34efsy65oGmeP9G1mW21xpQ+o6dYNNFZhAMeZt5+ZmAAGT1OOKAPSfDnhjw34Q0uPQvCmg2em2cZJjtLC2WKNfXCqABV+sXwr4ouvE5vZW8O3llbwXCpZ3F0V23sRjVxKmGJC/MR8wB46VtUAFFFFABRRRQAUUUUAFFFFABTFJ7A4NPPTimleOW+tAmYfw6YDwfbD/ppN/6OetzOSORXjHh39sD9mvwpph8M+Ifi3plrfWV1cQ3du5fdG4mcEH5ap/ET9vr9nvw94I1PW/BPxK0nVtUtbRpLLTQ0g+0yAfLHkLxn1rrhl+NqSSjTlr5M8qtneU0Iy568fd3XMr6dLHumeQBWD4e/5HvxF9LP/wBFGsb4FfHfwL8f/A8HjXwRqG4NhLyykIEtpL1MbjsffoRyK2PDv/I9eIvpZ/8Aoo1z1KU6NRwmrNHfhsRQxdCNajJSi9mjoKbntzTqQA7v8azZuNZgi7mfA7knpQCGGc5rxD42+PNfn8U3PhdbmSG1twoWONv9YSPvHH1HB4rR+AfjvWL7X5PDd9cNcRtDlZHJLRbc4Ge4xX51Q8Rcur8TvKFTknzOPN0cl5b28zreEkqPtGz1xFjg/dRKBzwAMf5714b4S/ZW+J+nfthap+0r4r+Ol5f6TNayW+l+GIUeOKCJhtWNxu2kL1BxknmvUviDYeALK1tviL8QLpbWDwsZL+O/lu3ijtQEId32kBht7MCPas3xJrngjXvCmmfHC08UatPpGk2j6panQriUpfwmP+KFOZxg5Ckda/RjjWxb8TfFP4U6b46sfg74s8T2Cazrdo8tlo94Rm6jBIOARg9xg4z75rkviv8AFW4e+s/h54X8R2eia7qWqNFoK6nCs9prEMaL5qNtB2IdzIP4i6YxisT9qrwlbeKPC3hr40aB+z5L4t8Q6BeQ6hplu12bW6s0GJGHynLtgY8vkbscV1HhvQ/+Fs/DW28UP8NIvBevzCMLb6rpcUs2nGOfzDgYCk53MpGQGYMc9KOozoPsN5qWu6No3iC81NLvTbc3ss+kRyQadcMDsEbnJ3dciMntnoBXJ+O/Gn7T+mftF+GfCvg34baTffD29iJ17XnuSLi0cBsjaWAHIXGA2cnpWz4g1fw/4V1TV/B+lav4ii1XUbRtYaSztZr0oodI2EIdXRWJx+6H94kCqfw8+KfhfxD4u1Kw0rU7Wwe4mdZ9O1KV1vjeo7REhGbZ5e2NSAmec5xzW0KE5wcl0LjTlJXRseKNQ8R6l8R9P8Aal8NE1PwpqGmSz3etSSI6W93E6tHE8Z5wwGQ394YrKsHs/g54a1dfBHhy71CNtfCWuh2+nxWkdqZNm5Y9qKDHyXLsSSSRnitTwDonxFj8BXPhX4ifEW11DxAGnV9W0q1WFoY3ZvJby+QrquOvBIryjxb4k8ZW2nv8P/g/4t1TxdrGmatBJqv9oWiyIEjO14/MyApLlW742mvLzLEvB3inffVdX5LqdeEwsa87dmvS3r0PU/Hvgmy1DVtL8c3Or6wtv4fR5m0HSVDJdMw5Dxjl+Cfl71znxL+K2m+CII/GF34d0K8+GKaVcPruswyxu8dxJKI9ixg7XVssH75IHPIq/wDBRfCHh3RZGg8TTXWtatdbdS/tC+Nw8d4I9xgJwoXaO2BxXLeC9U8V6hd6/wCCfiloVmdUTQJUtPCegusmkXqHzGLj93mOZiNpVyccYzk105e6TXO1q97O/wCPexliFNT5b3S26f1qcn8O/i9qPifxnD40/ZO0s6j4L1GS2j1Qa3q5t7K3hRn+0SWkMg3xvGNoIT92QwwMium+GF7B8Zf2o7v43eCvFyat4Us/D/8AZ0BtdReNbe9V8PHLbnBL4ZzuYYAYYwQa5zWf2RtN8dfs8aLpnjHwlcaDqWlNJLpOm6BL5U6m4hWPyLh48KW3kF3XC/uwTgZrofgl8FfE3w68aLrvxOtLG1sfCmjP/Yd5pF/NHaxxSGRXEsbACaXy0VnlYkkleOMn16kqDg5Retref/BMHax7N4v8YaP4G0GXxLr/ANp+ywFfNa2tJJnQEgbtiAtgZyTjivFYv+ClH7M938fIv2edP1bUrnVptRFhHfW9jutDdFtvlb92c5PJxt4616T8Cvjp4I/aD8GyeM/A7TGCG8ltbmK4iKskiMRjkAMCMMCOxFVk/ZY/Z4T4lR/GCL4RaIviSGUypqiWgDiUnJkwPl35534znvXmJWViT0GiiimBX1j/AJBN1/17P/6CapeBf+RI0b/sFW//AKKWrusf8gm6/wCvZ/8A0E1S8C/8iRo3/YKt/wD0UtAGrRRRQAVgeFv+Rv8AE/8A1/2//pLFW/WB4W/5G/xP/wBf9v8A+ksVAG/RRRQAUUUUAFFFFABRRRQAUUUUABAIwQCD1BqGNd8TwOcFflz7djU1VdQgklhkjiuWhMsbR+dHjchI4YZ4yPegCeJy8Ssx5I5x60+vFPBHhz4vfDn42aT4X8UfGXxP4g0FdAmd3vNAg+zyTeZwZ7pACsnzDaoHIQ5Ne1K6uNyMCPY0AVr9BLNbxY6yMev+yRn9RU8Lb4wzdcc/WoJirarCn92J2/UCpo/kkePtncKAJKKKKACiimPMqnYPmb+6OtAD/wAPrVS4LRObizXJ/wCWgz8v1qby3lyZ2+X+4Dx+dSAKowAAAKAIrcJMglZt5/QfhU2B6VTlc28he1Bb+8qjj8alR5bhdxk2AdVXrQBK0kcY+d8UzzJX/wBXHgf3npyQxx/dUfU9afgelAEf2cMd0zlz79Pyp+1RwFH5UtYXxD+I3g/4WeFLvxr451yGw0+zhaSSWVxlsAttUfxMccKOTQBu4HpRWL4H8d+GfiP4atvF3g/VEu7G6QFHU/Mh7o46o46FTgjuBW1QAUUUUAFFFFABRRRQAUUUUAFFFFAGHZ/8lK1D/sB2f/o65rcrDs/+Slah/wBgOz/9HXNblAFHxP8A8i1qP/XjN/6AaPDH/Itad/14w/8AoAo8T/8AItaj/wBeM3/oBo8Mf8i1p3/XjD/6AKAL1FFFABRRRQAUUUUAFFFFABRSZwMn+dLQAmT0BqKe5t7dQbmdIw7BF3uBknooz3PpXln7YXwz+M/xL+Fyw/AL4gz6B4n0m/S+04xyBEvHVWXyZCeAvzbueNyrmvib4/fFj9oIn+xv2tte1Ky1j4e3EOr+H7fSfDm7TtbltjCrtJLlXIZnALjCDd06CgD9G/FXhLQPGmjSaH4j09LiIsdhPDxPghZI26pIucq4wQRkGsD4UfB7Rfgh4dk8O+DLy+u45ryS6vJ9WvTcXNxM+Mu8jH5iAAO3CivF/wBjj/goBF+0vrz6V4vsvD+hS6oz/wDCNabb6v519cCPJcSR4+QrgsGONw6LX06hDqGx1FAGc2pQXF1bxOu1hIzFW4Iwp/xqS+mgtLiK/klVUCssjlsDHUc/hRfWcF3qMPmDDKjEMpwQeO9cL8SvjJpfw/8AiN4R+FGs6Xc3dz4zkvFsLq3C7YRbQee4kGcnKgqMA1FScaavJ22X36I6cLha+Lq8lKN3Zuy7RTlJ/JJs4bU/+Cm/7HljqEllZ/Em51JYpGRrrR9BvryBmU4O2SGFkbHsTXqfwi+M/gP45eCV+IXw7v7q40x5pIlkutPmtn3IcMNkyI344rX0nSvD0FkkelaVbLEB8sUEQUL+Aq6i28URTYEVRny1GKypRxCleck16f8ABOvGVcnnTUcNSnGV95TTuvRRWvzPBNQ/4KZ/soaVqdxplz4o1wzQTtFLs8IamyqVODytucjINenfBX47/Dr9oHwtN4x+G2oXd1ZQXbW0j3mmT2pEiqCQEnRGPDA5xg5611S6dYvGM2SHjOStZ2s+LPB3hUFNZ120tsOqMjSgFSQSAQOnAPX0rKdV4Vc+IqRUfu/N9B4mtlFSjyYehOM+7mpL7lFfmePeLf8AgpB+y54Q8UXnhnV/EmtfbNOu5LW7WHwlqUgSRDhlDLblTgjqCRXd/Aj9ov4Y/tDaVqGtfC/VLy4t9OuBDd/bNJubRkZhuUATohPHoCB0rtfsul3ix3UMUMgL8OMEHgipPIt7W4XyYVUOMYAx0/8A11pT9s5czknHyX63DEVsnlh+WjRlGel25prz05V+Z4547/b7/Ze+HPijUPCHjTxvc2N7pdyYL55tCvTHC46kyCIptH97dj3r0/wF8QvBnxK8MW3jLwB4ostY0q9jElpf6ddLLDKvqrKcfXuDmtW70zTr1GS7sIpFYYYOgINcj8Ofhn8GvhFrmr6D8NdN0/R7zXLw6tqOlWcwXdKQI2nWDdhA20biqgE5JyxJpxWIjU95px+5hUeU1cE/ZU5xqq3VSi116Jx8t+3mdru5yzfhT6gQhCSwOB1B7Gp66Op5Kstg6V8Rft/fsCfHL9oz4yv8S/BPjBBoIsLSObR4riRJmlRwjsqswjJ2MWDfLwvc9ftedndhBH1P3j6VKqKibABgCgZw/wCz98F7X4B/Da2+G9j4y1jW4LWV3hu9auRLKgbH7sMAPlHOB2zXc0yP7u0jJBxT6ACiiigDC8cfEz4ffDSyh1H4g+NdM0W3uZhDbzanepCskh6KpYjJ+la9ne2uo2sV/YXSTQTRh4ZYnDI6noQR1BFfGf8AwU2/Yc+M37SvjXSfGvwtt7fVooNHeym0y+1UwLZy79y3MYJCsSMqR34r3v8AYn+HPxN+FH7M3hbwF8Wr8y61p9kUliJUm2j3Hy4Cykh9i4G6gD1eiiigAooooAKa2SCoxyOM06m7g39KOomfmt40/YH/AGl/HHjfXPF/h3whaS2Gpa1eT2sr6pEpaNp3IJBOa5nxr+wb+0n8P/Cl9418T+FLWHT9NtmnupV1SJyEHXAByTX6Z/DsH/hD7YHoZJv/AEc9aeqaTp2t6fLpWr6fFc2s6bZreeMMjr6EHgivp6HFePoRjDljyrTzPzrGeGuSYqpUqqUlKV3vs2fIX/BNL9l/4ieBnf41+LtVvdLttStPLsdCU7RdRt0lmU9AOqjrznp1+qfD3/I9+IvpZ/8Aoo1toixoEQAAdh2rE8Pf8j34i+ln/wCijXiY/G1cwxMq01a59fkmUYfI8uhhaN2lu31fVm/TcHOMmnUhB7H864meucx40+FHhTxteLf6pA6XCDAnibBIHY54NWfBnw+8PeBkePRYmDSD95JJgsx9yB+nSsbS/j58PtX8X3ngGC7vINYttRexitL3T5YftUyxNKfJZl2yJtVvmHAI69Mv0Xxx4yX4anxH8UdI0zwlq00rwxwXOoC4ghZnKQl3GB83ykqDxnGc15UMiymnj3jY0Iqq/tW1G6s7KFzT+Jmj+JPEvgbUNC8JyWCX13GIopNUtxNbqpYbt8ZGJPl3fKcZOMkdapeIvEF58IPhi2qSeGpdXbTUSOPTtAslhzHvCrtRn2oqIckkgfKegrmLH4e+LIvhXrPwr8SeLpruXU4JoNE1CFxbBi6vICrwDfHg9XPoSvFWdP8AD3jLWvhrafDvW9Z8L6he28sMOp6c7PcRz2SbUkjdpGLmTr85HJABAyTXrCOzn0bw94p1LR/E0s7vNp264sVhvCqjzI9hLKjbZBtbjOQCcivCv2p2+Mv7QGkNoH7IXxchjutKuXtfECWl0Y4lfeAyNMo4kXBBQNkbs44r1LwX8EfhT4R+KWrfErwlC8er3Gn2+nXtvHflobaKJRsVYs4jO3b9QBjvXleiftbeCvA/7XE/7Leg/BO80+fWNRee91e0C7Jblx/rmQD7rKqkvn14zQB3Wr/GDw38MLrwP8CfiZ4vuk8X+JrdIrObTbdmW4lh2lxvZThT0yeSM5wadeafrngPwBq1z4Z8PjxX4vs1/tWy8N6jfQk200pI2xS+WoRchyCRkkHnmuk8cXFt4N8OXXjLxVoM/iGSwmmlt30/To/tFnbsDnYSwPyqDlgdx9Kx7Px18Pbzw54Y+OVjrXiCLSLq1jtLSNvMWN45iFV7mNxnKkD5ycjPfNbUZyjNWV/Lv5DU+TVmz4dvfF/9i6L4m1L4bWtvrmsx2yeJobe7jDWQ8sk5cjMwRiVA9zinJoU/hnxrZweDPAenw2V/58+taqoCOrEg7QAMszMc56fLXH/E/wAM+MPiJ8P9Z+Dng/4w3ljrTTpIfE/lKq2yvOGFsSmMtsJAA5xit3ULf4zeEPg/Y6R4BvNM8UeKbAW1vdz6zcmKOYBlErsV53BORnknr1rDE0o1Jp2tZ3Vu3bUdOta7XXp0MrU9Q1vwtdw6R8NPhpeQ2mpeJpY9UvFU71ZiA9xhgcLklg/I+QDHzVj/AB0+Bvi1vDekeGf2dbmfwzdP4jlv77UdPVSFZ45N0kgdxuyzDjke3AFdvdeP/Edl8ZLHwRN4B8RPYXunSH+2oIoW06KRQGO5s+arnJUZAHt3rmD8ZPjLb/taj4Oy/Ce4bwdPowuIPEywNsSZVLMGfO3liEC8HIzXJ9UtSnTctHbbS3odCxTjOMlHVfO9+5peDr348eHNZtrr4ya94XttBs9IW3uLuzuX8y7vWeNVlbzEURjGRtBPLd+Mdx4j8R2Hh3wxe+K5ree7t7OykuWisYTNJMiqWIRR98kDgDqTXnH7U37PWvftD6XpXhey8YzaXpsUsramsczqXyo8tgq8OVcD5WIGC3fFeg2zaL8O/BMT61qsNtYaNpqi5vJ8RxpHEmC57KMDPtToe2jVlTa91Ws29/8AhhVvZSpxmmuZ7pdCn8JvG3hf4i+AbHxj4N0e5sNPvg7wW15pzWsi4cgkxsARkgn8ad438Xa34bubGDSPDkt+LqUrK0ef3Y444B55P5VhfBz9qL4B/H28vNM+EXxHsdZubCPdd21vuV403Fd21gOMjFd+cA5bGMc5oxtGtiMO6dKfI3bVa9dfv2OdNJ6hlgM5606o4Z4bmMS28odD0ZGyOuDzUldMGmrp3QivrH/IJuv+vZ//AEE1S8C/8iRo3/YKt/8A0UtXdY/5BN1/17P/AOgmqXgX/kSNG/7BVv8A+ilqgNWiiigArA8Lf8jf4n/6/wC3/wDSWKt+sDwt/wAjf4n/AOv+3/8ASWKgDfooooAKKKKACiiigAooooAKKKKACmvGHUqe4p1FAEAYM671BDgqwPr1/wAajfT2hPmWD7P+meflP+FPuAIn39ic/iP/AK1WBg8igDMgvGfWGSRfnS3xtPXqfz/CrbSqZUIPP3Srdef8/rUUcMV1f3G9QdoUA9xxXCftS+NvE3wv/Z08a+P/AAtcINR0bw1e3lhNLGHEc0ULOjFT97BUHHepnJQg5PojbDYeeLxEKMN5NJX83YxvjN8SP2t9J8a/8Iz8BvgBoms2EVqkkuu+I/F32GJ5GzmKOOOCZyVwMlgo54zin/Bfxr+2NrPitrT47/B/wboWjfZmZb7QfF819MZcjanlPaRcEbsndxjoc12Hwf8AFGreNPhZ4d8WX86Neajolrc3RMeFMjxKzFR1HJPFdGs6IwZ0Zmwf3mMqfoe1c8abnL2qm7dtLemx6lbG06FGWDeGp8yunP3ua6635rfgeX/HHxb+2DoniG3t/gJ8JfCOuaU9qGuLvX/Fc1hMku4goI0tZQV2gHduzyRgYqp8HfGn7aWq+NIdO+NfwY8EaJoLROZ7/RPGU95cq+PkAiezjDAngksMds167JKEiMs06xoBktn8uTXN+JPiv4I8KWb3Vzq0UrqceXES3A6sSAcKADkngdzzXNjMThME/aV6/L1s2vy3JhmVN4P6usLTbtbntLm9b81r/I5n46eLv2rdC1Kyh/Z8+FXhXX7SSFjfT+IfE81hJE4PyhES2l3gjnJI+lYXwx8aft1av44sbH4t/AzwLpugOzC/v9L8b3FzPEoUkFIWskD/ADYHLDg16/omv6R4k08apo94s0LHG4DGCPrV4KCMMBnPWt4KNe1anUbi9rNWf4Cp5pSpYN4d4Wm3Zrmalzet1K1100POfjv4j/aW8PxaeP2evhp4Z8Q+b5n9pjxF4jk08QdNmzZbzb85bPTGB1zXI/Cr9pP4yp8TLL4RftE/AK48L6lqyyHRNb0TUf7T0m7aNS7wtMI0eGTaCQJEUNtOCSMV7qcf3vy7Vxfx3+M/hX4B/D+T4keM9Pu7iyi1GysjFZRq0m+6uY7ZDhmUYDyqTz0Bxk8U6sZQvV9o0lutLW+6/wCJtgMRTxVOOAWEjUnPSMk5KfM/h1vZ6205dVp5nZJIXTK/jntUn1qqrEqsin7wBUn+Ieh9/erEcgdc4I9QetdZ4WzHVwH7Q/7O/wAOf2k/Akngr4g6LHcGISS6XdFnVrK5KFVmUqQcgnp3rv6MD0FAHJfBT4dw/Cv4aaZ4MZLE3VrD/wATG60608mO6uf+WkxXJO5yMkkkknJNdbUQwlwQR94bufUcfyqXtnNABRRRQAUUUUAFFFFABRRRQAUUUUAYdn/yUrUP+wHZ/wDo65rcrDs/+Slah/2A7P8A9HXNblAFHxP/AMi1qP8A14zf+gGjwx/yLWnf9eMP/oAo8T/8i1qP/XjN/wCgGjwx/wAi1p3/AF4w/wDoAoAvUUUUAFFFFABRRRQAV4d+2r8Sv2mvh5p/hJP2avBTavcah4gWHW2+wGcQWwAPzY+4Cc5bqMV7jVXVdV0zRLGTU9Y1CG1tosGW4uJQiLkgcsTx6fjQB4F+2EP2gPjd+z3puvfsa+LpotS/tUS3X2a5+yvcQR7xJEpkCsCJFC443fQ10H7DPxk+JXxw+CA8Z/FqOGDXItYurO9soLB4BamJtuw7iRIcDdvBwd1es6dqekXUxttM1C1lBiWbZBMrYRujYB6HqD0PNZ114MiHiYeKNO1i9s3/ALNktBZwSgWu53DCdo8YMgIwG9DjFAHD/taftMzfsv8AgOy8W2fw01bxRcahqi2UFjpan5WZWbc7bWwOMAY5JxXzV4X/AGotJ/4KAa837OXxV+CeoeGL+TS7j7Z4htLtU/s6XJeONt4yY2HksUJ+ZwPlwMj2b9j74zeNJ/G3jD9mX48eKZNV8aeF9Ta5j1C5WJEv7CUBomhVVUkKpG7jgt1rhtC+G3xo+HGtfFrxN8Tfhm3iq38X63K/hnQ9MswsBltUaSG4l+b90r7IhuzktHyPmGe/CrDToShKPvdHfz6eg1bqeVfs7fsDftF/Ab9qfw546k0lILLTNSni1PVNLlhS0vdPSFFQhOXEkrFyyso5zg19jftFfEz4q+D/AIJar4q+AfgNvE3iSECO105XGYcglpWT+PZ12DluAK8T/Ys/a0/aK8c6rbeFf2kdN8O6Wt1Es6XVxdfZ7mT7QxW1hjt8d2jcHLZOR9K9K+LN/wDH3wH8Z9O8ceHJtGT4crp7v4ourzEcumlAxMuSwLqcgkYwAp5rGphZwq+zbV/6/EQ/9nP47/Gfx3dDQ/jZ8BNU8NX2naTF9v1hpY2tbm4ZVYiJQd3IIJGCFIK54rL+Pttea5+138DdU0uymntbK81w3s0cRKwBrAgeYeiZPAzjJr1rwn4p0vX7g3KXSO80KOm1srKpUFWQ98gg/iKoeN/iv4K8IfEfwn8LtetJXvvGE10mktHCDGpt4fOfccgj5emAea87FQjOnyydtY/g1p89j18kxGIw2NlOjT55ezqq3lKnJSf/AG7FuXyOgs9OByIJDC8ZI3IeW7DP+e9TNcNCoi1CEHcdvmgZGPeoP7Fitb8mzuZoFkAYBJPlz0PB/wCA1M9vrSSKFuYJlUZ/eIUP5jP8q3PI8zkv2hPF134N+F11rGlXksUklxDCs0JbKBpBuI2gt90N93nnivkLxp4xvbm4k1DVvtFxMxvwNPuZGdANvVyQSSUYtyOA5U7cA19Y/EbXfC/ifQNY8IJf2o1C2hLeSlwjeTMASpweQwIxkDr1r5v1HQtMv/tOqavoPyxq8NrC9s5GduHUI20bsKQdpIJJBwa/C/E2pXeZ0qiTnRcWvdf2k7NO2nVHp4RR9m09zsv2b/jLq/hGay0PXIzc2epOrMbd92xiwCkK5D7sgkqFIwc54r2/w38S9T1zxS/h7VvCd3ZBpXNlPIjAtEOAzAgYzkH059q4L4JfCzwp4SaLxT4m1GO31N1R9O0qS4x5CCNQoYcbnzk45HTqQWr0vxd44u7TR7xvDWh3N5cwpkboGEY55O7vxkjFfW8K4bOMBk0JYqvy8r5uS3M+W1+V9fNHPXcJ1fdW51CEMobPBFfPgJ/4eaYJ6fCM/h/xMhXsvw48Qa54m8I2usa/p8drcylt0UWdpAYgMMk4BAz171XPw48Aj4rf8LX+xr/wkv8AY39m/aPOOfsnm+bs2Zx9/ndjPbOK+6jOGNw9OrTejtJX00OjLsRDCOspK/NCUVbu7fgdM6ZG4D5h3rG8b+LIPA/hHUPFFza3U6Wdu0hgsrZppWIHARFBLc+graYhVJc8Ac1Xjja4k+2leB/q19R/jXceYjyn9k/QP2r9H0vVZf2nPGGjar9pmWTQxp1uUmiiO4sJTtXnBUAYyMGud0P/AIKCfCDWv2sZ/wBnCLxJaJCtsba1vpFYedqiSskltuJAGAAFOMM2QCTxXpnx0+LP/Cl/hxdeNrLwvd65diaK303R7LiS6uZXCRxg/wAIy3JPAAr4k+EPwe+Gnw0vI/22v2o5YvCfj2+8Sao2ieF9S08JaS3CoVhzEse7crnfvUkHgjk0AdH/AMFJf+ChXx+/Z2+JV98Ivhv4bhsYvsFlf2fiE25eTZuPmqFbKOpbCZ7YI69Poj9hb9qX/hrX4E2nxFv9NWy1e2upLLWrSJW8tJ0wcpnsylWxzgkjtXE+Dfg74m/a102x8ZftU/CPw3Pb6r4TkitNU0fVLlJbdJZQyxLCwGNyBXLEkg5Fe7fCT4WeC/gx8PdM+G/gHS1tdM0y2SKABV3SYGN7lQNzHHJPJoA6aiiql5q2n2l5b6XcahBFc3m4WsEkoV5Noy20Zy2B1xQB5/8AB/xD+0j4i8deIbn4teBtD0Lw3DM0Ph2K1vzPd3AVyBNIR8qqyYIXgr3Fel4HpSKoUADtS0AFFFFABRRRQAUYHpRRQBhfDoZ8HWv/AF0m/wDRz1u4GMVh/Dn/AJE61/66zf8Ao563KAECgdqwfD3/ACPfiL6Wf/oo1v1geHv+R78RfSz/APRRoA36KKKAMrxRb6vc6cU8NXNhFqaMGtZL+AyIoyA3ClTyuRkHvXOPoni/Uvg0+i/Frw9pfinV2tf9O0+wtwtreSB8qAsp6D5Scn+E/SuJPwOu/it8al+P2pnxN4U1bw7eSWGlWFzfrLZ3sSED7SYUbG1wWABI7EjPFex6xLqcWl3EmjwQyXawsbaO4cqjPjjcQCQM9cA0AeJeK9G+KnxB8B6Ve3vhA+FtbkuDY6pbx3TvY29lGGkAbEkaqrEBBIocZx1XIGxZX3w6+Huut8UPiFaQ2hlgjY+Mbe7/ANBld9sJt8K2R87EhWDAtvYHsLHwHj+KvxJ+EWp2Xx6vNPu31iS6hil0xXjAgZnj2iOSNGTAAIJySTnpitz4Ufs/+DfhZ8KrT4Ry3V54g020naYS+IpRcyO5k8wE7hjAbkDsaAI/DHgfWfD3xPuPF/g7VIJPDPiRGvtTgI3yNeFECSK7HIjKgfKBwfbit9dNuZvE2o65/wAIhp8d3BaJDpmqtKrSXIILFGwu6NQ5x1Ock1j+D/ELfEzSPE3ga9+HOueGLLTLmTSLaW5jWAXcOzaJ7YoThADweCMVJ4B+FTfDL4W2Pwv8K+ONTm/s7CQ6rrEou7krv3srM2MnBKj0BHpTVluGqTscr8J4fjNpujaz44+JHjyLU5zq9zBomlXKixt44DMFVZDhtzZU7G7qwz143fEom8XzWVpd+IbbTZbdc3miy2q3cCumJCJWBCgbMFScYOGHTFc/8SfB0Fh4P1HSfBPh67k0+w1uC8ubXRnivJdTmZyZoZI5g3l4LKSQQw6jGK828KWuveL/ABJqeieKGa2fWjNd6rp+hXJeS7tohIhmUrjeRIyxiIMygqxZWyK7adNU6Uqi3W3focrk5zUXt1O/+PWl6Jr+seA/iP4s8cSeGLfQ9Wa6OjX1mlzHfuzxxpu2MUDqSGRsnG7IHFdjp+uaPd/FHWPCOheOLC2k+w291PpNnYqlx5zHcbgyHIlDRhFIxlQQc8isHwHZ2/jTwRe+CbKx8R6Gui6nHjV/EdqjzSTLIGOxZlxtZMDKgACXCkEHGx470bxJqttrOu/DLwZZWPi610qa20PXdYtV8tpGYDYdp3lD5aHnsBXE3J3kunQ66cOaUabaV7LXz6vsS+H9Z8ReBbVtY+MPjzTLO0vDbW+nQXMix+VcMWBjMjEeYzEjA9ulXfF+p+N7Hwwnhvw14m0FvF91E0mnDU4nSCdUkUudiMWwEYDIJwSCeKbr3hPR/F+leH/DvxY8FWuvXCTR3Msq2Ae2tbyJA3nAMSU+bO3qean1XXPEljqmt3OraDpthpWmadHNpWvXl8CJHIYyiRAoaJUwvOec1ftZcyqNLo7WD2fs3b/glvWrLWbnWdI1iDxv/Z1pp8zjVbFIY2S+LpsRGd/mj2sQRjBORmj4k/D7w78WPAWrfDnxbHJJputWT2t4sMmxtjDBIPY15to/wX+I/jz4WeLPDPxH+Io0zWvFd7NcLL4ewP7PgKeXBtyT82FVywIJPfiut/Zy+EOp/Aj4R6X8MdX8e3/iafT/ADA+r6kT5km5ywGCzEKM4AJJwKzvcTtc8r/Y0/4J1+Df2PfHGueONB8fajq0uqW5tLaC5hSNYLfeHUMRne+QOeB7V9FzQxyxmKQZUjBBrO8Lz+L7iO9/4S+wsbdl1CVbD7BcPIJLUH9277lG1yOoGQPWodM8N6pp/i7U/Etz4uvrm11CKBLfSJgnkWRQEM0eBuy+eck9BipklJWYF3QdA0vw3pqaTo1sIbeMkpGCT1PqavUUUQjGEVGKsgK+sf8AIJuv+vZ//QTVLwL/AMiRo3/YKt//AEUtXdY/5BN1/wBez/8AoJql4F/5EjRv+wVb/wDopaoDVooooAKwPC3/ACN/if8A6/7f/wBJYq36wPC3/I3+J/8Ar/t//SWKgDfooooAKKKKACiiigAooooAxPHFx48h0uB/h7Z6bPdm/hFwupyuiC23jzSpQEl9ucDpmtS0vrO/jaWyu45lRyjtE4IVh1U46Edx1FT4Gc4rE8J+CvCvgQXtp4T0SGxj1HUJb+7WBeJbiQ5kkPux5PagDU1CW7hsJpbCASTrExgjZsB3AOAT2ycVxfgH4naxDpHhvQfjeunaF4x16KYrotrOZEd4yWYRtyDhNpPP0ru8D0qGays55Yrm4tI5JIc+U7xglMjBwT0yPSqTitGgFnj81Co69vrXJfFWf4ut4b01/g4NPN+NctRqQ1H7v2HzMT7f9vb0rkvhP8Udc134veItB1m+8RtaXVzMdE0/UPCjWkVgtswilAuM7ZlkYhkJwSM12+kWvxEtvE+sXHiXUNNfQ3eNtHisY3W4iAT975zMdp+bpt/GqlSlTdmBp2epoZp5GjYlpCMqMgYJFcn+0b8PtY+MXwI8XfDLw9dQR3+veHruxs2u3KxrJLEyKWwCQAWHOM+1dF4P13w9rGlDXPDepW91ZzMxFxazCRGO4g4dSQcNkHmsL9pT4jav8KPgD4v+JvhqO3lvtD8OXl/YrcrujaSKFnUMARlcgZ56GueskqUlJdGdmXOuswpew+PmVr97q34mj8LvBVx4M+HOheD9TnSS60rSLW2meJj5bPHEqkgHHGVOPauiSaSEhJh+I/zz+H5VgfC3xBe+NPh14f8AGmpxpFc6ro9vc3CwZVVeSJXOB6ZJ6+1dC6FUJM2V771Bpw5VBKOxliva/Wp+1+K7v631/E4n4+293c/D9v7LzkXkbSeXJtfAz0zxnOM57Zr5l8R2EFvqMMukyxxILW4W6iBiZ4mGHXDNgkEhQCMnj5c5NfSni74geF9d0zVfDFre7pI7bZIZIH+fI6LlcMe3XjOe1eS3+ja/bRwvqenXkYvJR5G+NSVAHOTjBQkHPHIHevwvxB/fZvTxdJudLlt7qulJNxt98kdeFajSts/0JPgR408Q+CtXsfD9nYG8nvwkNzY+X5fluqjczMPlDj5Tg9dzEkHgey+GLz4oQeKJIPEmnK9jcs0iyiRCtuMsVQbeeBtByOeuazfhrovhPwJZJCyKb+afb5scWQCwGFX0BwB2yenaun1O+8W6na3FlpGk/ZJBxFdTTDn3Awa+s4XyXHZXlVNYmvJzjLmUIO9tL8j731Ma9SMpvlWhugegz6814D/wUp0nU9X/AGXLm00qwmupR4s8PMIoIi7EDWLQk4HPHXPt6V7H4Mvtfn0aKLxaI4tRJbdEjjJAPB6DP1AxWb8Zvi34M+CXgd/Hfj6SZNNXULOzJt4DIxluLiO3i+Uf9NJFyew5r7v2tPH5e5fCpR67xuuvax15FiMRgM8w9ejT55xnFqK+0000vmdRbRq1nHG//PMZ55HFHzq+BgPjj0cU9GWRBIg4IBH0p0kYkGO46H0rvWqPJbd2EciyDI4PceleafEj9oW18FfGnwn8GLKyR7zxDc/6TNeRTpEsG1yBFIkbI0uU5RmUY5zXocskgB8kDz8fKp6P7/T3rw/xT4Z8P/BvwpN8bf2g4dT8X65B4liv7e30GG4mW0uOYIRbWxfKARt8y8gnJweKYjkf+CmvxE/aS+HWl+DJv2edZu4Z9b1SfSbq1tljHnyTR4iwzfMrjDlSCAMZPQVg/wDBJT9p74n/ABj8JeI/hz8XJdU1HVfD9+ZI9dvXaVZUc7TA0mMbkYZAzyGGOhr1/wDZqX4pfEuXV/ib8YXvn0251Jm8JaDr3hqK0n06AElZeHZmLKwG5grfKeOa9I8DfDrwR8O47+DwV4YtNLXUtQe8v1s4tgnnbAMhA7kBckUAb9FFFABRRRQAUUUUAFFFFABRRRQBh2f/ACUrUP8AsB2f/o65rcrDs/8AkpWof9gOz/8AR1zW5QBR8T/8i1qP/XjN/wCgGjwx/wAi1p3/AF4w/wDoAo8T/wDItaj/ANeM3/oBo8Mf8i1p3/XjD/6AKAL1FFFABRRRQAUUUUAFfN//AAUIi1DVvhnrPgnxH8W/CWiaDr2htFZ6brNkWvLi9icSYhfzFU5AVRkfK2DzX0hXnPx+/Ze+D37R+jvp/wASfDUM94tlJbWGqqgNxZq/LGMsCAfwNAHwh/wTs8eeOPhr+0vpvhj46NrmleKfENnBZac/iCGQW9xpkcTBIIkyNr7o12MQVADDGWFfpmyq4244I6ivjT9r74c/An9li48D/G/xBD4v1ZfDSpp3hLR7DUg62skZlne6cyktINvUZ6KOQBXbfsJft3+Hf2hfDUPhv4heKdKt/F8tzIbfT4JI0+0QksyCNQ7EsqAbsgHJ6UWA4f8A4KL+Eh8Cfit4R/by0Syv5n0W4Ww8QxWF75TPGVZYWw3BUlmVl/iBAyOtasHxz8dftx/ss6RpP7P/AMetJ8NeO72Az63aTr5Nw0UblJNoRmaFdxVtwzkYAIqT/gsR4yttD/ZdbwlfeFNRvY9d1KJVv7RysNhJEwdWmIByGOFCnGT34FfK/wAMf2Jvii3hbxV8UPgfe+J/Cet6NptoNP0rULdom1K2ntN1xhsZZXbdtXqMAMASK7acKsacKt1a/Udtj6T8V/traV4A8L6B8FPAV7pnxU+LtxbwWyXtrbIbTz1kKB5Xyu3acgcjnBJGTVQ/8FEPiL4j+IS/s/eI/wBmGfW/K0n7L40jiulUTSssccywo2VKBnZCpYk44xivIP2Fv7C+DXj1/A37QfglPClqmgTWetX9/NBAt1NOnm7Z3fDvmNlCrGw2MhyOeP0Ef4a/C7VfDlto0vhOznsY4YBAWgJOyFleLMmCThlVhk8kZrTHOhF8kFrvcchvhX4T+CfDUN5b+GNL+yJczJIY4p3KxlI1iQIrMRGoVAMLgce9eM/tBS6vov7YfwHbVYJZrSHUNdVr2OIlYwdPbBfAwOR1/wD119B6ZKXRiI2Jzng9eT/Suf8AGXxT8D+F/HHhz4deI5tuqeKXuo9GjaEurmCIyy5ODt+QEjOM4xXj4qKq01zytrF/NNNL52PWyPFVsJjZTp0+dunVjbylTlFv/t1Nv5HT3E6MsNzDKrgHGVI6H/69D3qnc8mUxwcjAGOxP1ridS1O60Z5YPC0RvoNpM8AYhYPcP0X/dHPtXnfxj8N/tYfE2302X9nn4laBpMCb31SLWtPZsyZBRFADEr94MWH0rff8jx9dzpfEHwj03XfiNFrekW8GoWkt39purWbIVG77SByCwycnHJ9qufGT4d+O9bsbeDwvDHPKWzsiKxx2+CPlUFhweSW5Pt2q5oE/wAW/hf8NtIfxnbad4g1K1jZ/FGoaWWth5aI7NLHEQS7cKu3jOc8dK+cvHP/AAWf+DOhxBvCPgLWdRmkgJzqA+zIsquAYScNzs3HPQHAr5+tw3l1XDVKFO8VOXPddJaXt9xqq01I+i/DfgC+LreeLNZMt1b3Kh0RAFQKPkJOO7dcDuPSuv8AF3jfwp8PvCN5408b6/Dp+madame8u7hhtjRRyc45OAcDqa+Nbj/gq34V+JN/Bonwk+F+v/2tqsKwtcSaZ9pht7koxwVQhpQMdtv3Sema7nw38FNd/bu8Bnxd8cbzWtAiTVpLSTwi8zPatFCpVJWhYL5cpdt2QzDCgAnNejgsuwuBpuFJb7t6tvz7kSm5u57p8JfGPgv4t6BZfE3wH46bV9Oulc20tsdqbTj5HTGQy7hkNgg8EV5p9puf+Hlxi3uyf8KjPycgZ/tIdq7f9ln9nLRP2V/hNY/Cbw/rTX6288txPfS24jaeR3OSVBODgqo57Vpx+BfhxqHxif4y6VdCfxGmitokrw3YeOKATCUhlHRhJ369qtYSNOCVJWV03+R6OXYulhnV9ovihKK9XY7CVrq6n8gRr5a/6wlup7L/AI1neNfHWh/D3Qzr3ijUI7a38+KBHOWzJI4RFwBnliBn3qzf6zaaNbbTJlsfKkXLsf8AP/668g/aI/aL8MfA7RIfFnjy1N4skuI9MtLqPzYhhisjBiGKlgq5AIBbJNa18RRw1J1KjskcNGhVxFRU6au2angq6+I2seJ73xr8RNNK6jo0c9rbadpGorLYXUTBZFnKPhklAGzBOeW7EV8h/wDBT747+IvD1lo13Zahrmna5qMdpqmmR3L28baRCyyJJAqKC6lyqO3zHt9K+kPgV4i8afH3wp4ru9Y+DI8CHxPpCB9TKu8lwSssClw23cVRUIHAIPWuX1r/AIJb+FPiH4gsvFHxe+I19qU1pd2vn2FnDstby1t444oo5EJJVtiuCUIH7w08PXp4mkqkNn5WHXozw9V057r5kv8AwTa/blvP2l9GuPCXxL8ZWd14ut7Vbj+zbPSmhWO3X5C5kyRIzEhiBjaDxmvqmOeJcqXHB447V5z8H/2Sf2ePgDrU/ib4U/DCx0u+uAyvexl5JVRguUVnJIT5QcA1yHwL/aY+Nnjr4oeJ/DvxP+CVxo2iab4k/sXQ9TsYJZftUm6QmSQnhYwiIS4GMyDmtjE958xO7r/31VG60TRdT1y01q90q3lu9OR/sd08Ss8PmAB9pIyuQuDjrV8hepFQwRRlmkKAbj6f59aAJ8jrmimiKMdFx9KPKXqC34MaAHVT1jWdN0HSrnW9Z1GK1tLOFprq5nYKkUajLMxPQAc5q15fOfMb86+Zf29v2Tvi58avhT4nuPBfx28QgfZXurfwf5MZtboxhWEAKKHOQrYB3As9AHq/wu/as/Z/+NOtxeG/hf8AFDT9Xv5bOS5WztmbeIkfYzEEZXn1xkEHuDXotfkz/wAE0P2dPjjY/te6Dqk/hPxD4TtdEs3udZm1CwmRLpV+UwncqjEm5cA5A255PFfrNQAUUUUAYfw5/wCROtf+us3/AKOetysP4c/8ida/9dZv/Rz1uUAFYHh7/ke/EX0s/wD0Ua36wPD3/I9+IvpZ/wDoo0Ab9FFFABxWBpvxJ8E6z451L4Z6X4ghm1vSbWK41LT0B3wRSZ2MeMc4Pet+qCxaBZa0ZEitYtQvY+WAUSzKn/jzBc/hmqjyWd73tp6+Y1YwviD4i+J+i654etPh/wCBbbWbG81Axa/NNfiBrG3wP3qA/fOc/LWpq9v4oTVodX0rUw1lbWc3n6Stuu+7lOPLIlZh5eMNx0O4ZIxVrVLjWoZrVdJ02G4jkugt40lzs8mLBy6/Kdxzj5eOvXiuc+LOp/GTTrbRx8G/DelahNNrUMesHV7lo0t7IgmSRQvJcHGBz9KlaCTNTwrqXje9vdSHi7w5a6dbRXSJpDQX3nPPCUBLSDaAjbyVwCeBnNc/4Q+DPhH4Wa14l8eaZLq+p3et6nJqs8N5dmcwy7Cpjt1OAgIyAue4GcCtr4leHPCnizwwug+N9SltbOa8tyHgv3tmaUSK0ah0IPLADb3FV/iHpV/qs2lW+l6ZcvcrcyG21CKfbFYv5LhZZUDqZVycbeQScnGKunCM2ky6UVOoosz9ThtPF+j6V4j+HF9aWgl8QRXV7MrKvmhd8cyuFyJH6pg/xD2BqSLwvo1tqWoeGNG8MZmg09pNNmurMJZRJMcNboY8cbo9zDr83Wue0bxZ8MRqlp+yx8TfFVjqPiv+zBctaNH5TXsYBJnjCnKtjJPIOdxGQM12usTa7P4cTRLHSL20lvTJZi4tpY3awUq4S4JZhkDCnAyfmGRVOcFKSg72di6+GdPEJSVovVNrdX0fmjP8WTeHvD/hz+3PiJpel29nfGEeJJ73UQtrbBV+U5kwGHmbVHAPzZ7U/UdP8UeILXUrLTr4WsesWskVhrWl3xf7HF5X7mYRuNu8szHK5HC5PFYvw9+A0OkfA+H4I/GfxRP4/SRJF1C916EM12pkLqGGTwvAHOeBU3j34w+AvhloN5oWnLHKuj6aJJ7WwuEjFrbqwjYAg/KypvcKBkiJsdKzVWnGlGb92V762t0/W5s8P+/cKF6lm7NJ2a6O2/3lvwj4a1rQfh1B8IdQ+Mdzf+JrTSQJddkSE3pBO0XBiOR14yRgketdDqfh59Tv9LubjxDeIums8k1tE6ql6WjKfvRjkDJbAwM4z0rn/C/iLwJpGNWkvtLjtTYWkema7PfrJNf2rgCMySsATmQkAFjuJz3qWy+Cvhaz+NF38dotX1htWvdKTT5LR9SY2awqQQVh+6GyM59z60SqOrJye7OerCpGV5Lc09B02wu9f1HxVJ4NOm6kT9gW+mCM91bxkmNwVJ/d5YkA4PXiltfD/im88Dv4c8SeL2Oqy28kcusaVbC3aNmJ2vGjFwpAx1yCR715h+1t+0D46+EVxpPhvwPpYibVIJZrrX7qz8y2sFjeIAPuZUy4Z1HzZ3beDXr/AIcGpLoNkur6gl1dC1j+0XMUYRZX2jLAAkAE5PBpPYzJdLtprHToLK5v5bmSGJUe5nxvlIABdtoAyepxxTdNg1SGa4bUbxJUeYm3VI9vlpjofU+9Z+j+FNQ0vxdq3iifxjqN3BqaQCDSrgp9nsvLUqTFhdw35y2SfatzA9OnSolCMpJ32AKKKKsCvrH/ACCbr/r2f/0E1S8C/wDIkaN/2Crf/wBFLV3WP+QTdf8AXs//AKCapeBf+RI0b/sFW/8A6KWgDVooooAKwPC3/I3+J/8Ar/t//SWKt+sDwt/yN/if/r/t/wD0lioA36KKKACiiigAooooAKz9R8S+H9H1Cy0jVtdtba61KRo7C3nuFV7l1GSEUkFiAMkAVoVnax4d8O6xe2eo6toNpd3VhK0mnzXFurvbuy7WZCRlCVOCR1HFAEunazpWsxmfR9Vt7pFZlZra4VwCpII+U9QQQfcVYnBCiRRyhyAO9eIfGj4UeGPgZ8KvFXxD+Bz6T4J1a5jik1bWt5jiSFJ98rhcOu/DSYAXLFsdSK7f4SftG/BL402Z/wCFafE/TNZmt4Y2uoY5tsyBguC0bBWXO4dhyce1AD/Hv7Qvwr+GnxC8NfDDxf4ie31jxY8g0a3S3eQSbMZLFQQgOeCcDg+hrrbfXNIvNPfVrHU4Li2jDFpreUOvy/e5XPI9K8u+JPgLxL4q+N+i6jqfwf8ADmt6PpNnJPpXiCa/MN/pd4FbAYY+aJyQo25wQSegrgfgz+yR43+CmjG98A/FHU/Dl9rBSfWdDNzHqVklwbjzZTH5iptLJ+63AcDGeea0dOKs7j0PV9C/aX+GviCwutcga/g0iG2hls9YvbIw2+otLuxFbl8GSXKldmA2TgA10/hfxNpHjLwjaeKrC1u7SDULQTR29/bNbzIrDo8bj5T6giuF8GeA7TXfEHiDxF8S/DNhc3d7rMUlrY+fPPDFFbgC3l8mYFIZhkkmPgnBzXf314yWUmLWYZTHIBHPH8JIp1PZp+6GhH4R8KaN4R0RNG8L6Ta2FpGxZLa0hWKMM3LHaoxkkkn1Jrzr9qDwj8UviT8NPGHwn8JeEbR7HXvBN/Bbam+oeWw1B0ZEiMePuENkvnivSrW5eOJmRoxljhfOAOM+n/1q5b47/ErxP8Lfg54n+Ifh/S4Lu90bQrq9s7KdWAnkjiZwhxtIBIAOOa56vK6cubZpnXlzrxx9J0bc/NHlvte+hofCvRtQ8H/Czw/4S1KWJr3TNEtbe4VH+USRxKpw3QjctbcupxuoklBww4P8P4f41xvwt+I6fFH4Y+H/AIhqYEtdd0m2vVaAbo1aWJXwpb5nwW4/rzXTWGiJI7GXUJowOAjvhmB5yemB7LilT5HTVtrEYxVoYyoqqtK7v631Mi18CWtx4z/4SzSZ2LZ3SCVVMavjGUHUHk8H9Kf4p+GsmsXiTafqao7OWu57hQXwTk7eOB7cdua6YWJtlGbYOoHVGIP5U22a3QbnARyckTJyPxryamQ5ZUw86KhZSlzOzt7z3fzMVUnc5yLw14fivkur1AbmC4X7RKJD8xHCyYzxx/M11BkjRiZElII+8m7j/CqGsIUuBcrbgrIm1wpyGI6jj2z+Iq7ot+t5aBRKHaM7SfUdj+IIP416dLDUKKfs4pX+8m7erKun+H7K0u21GJriaZyxWaSTJUH+EZ4xXhv/AAUxhvJP2U7nYrN/xVvhzh8H/mMWg7CvoaSJF/eA7D1JHTPv61yXxa+KXw8+FnhqHXPibeRRafc6paWMBeAyCS6uJ0igQKASSZHUcA46nGKxrYaisJOmvdUk7v1PXyHF1sFnWHxFOHPKE4yUVu7NO3zOls47/wCyRDzox+7Xhkz2/Cs3xt4rfwT4YvfE1zbXN6LG3ab7FptmZriYKPuogbLN7VcudVjhQKrGWRh8kEB5/E9h78VzXiX4lfDfwXr1joXxF8eaZpd9qg/0DTbi7CNKAcZJOM88c4GRjmumc4Uo3m7I8pRnVm+VXfYTwEvji5hvNW1bxHJqX9o3putOjnsFtTplu6KVtm25MhXnJPzZJ4GK87/aOv8Awz4PdPiR4jt/GjXs+k3emx6n4SEszabBt3tc+V91T8p2yEMeeuK9lkv7XU9PiTRLuM29zGDHcQuCvlEfeTH6Vyfw7/Z+8K+DNQHivUNR1PXtZ+zTWseqa9eedKLR5TIIMABNoJwPlyB3rS6auiLNaMp/stfHzw38fPhgniHw5cm4awnNlcKdTiuZzs4SSVkwFd1AcqcY3V6OZRHOD5TjeMH5e9UPD/hHwr4WilHg/wANafpYmcNcRWFmkKyMBgFggGTjjNcPpvjT4zz/ALUeqeBb3w2p8DxeFYLyw1MWrKVvvNKvEXIwxI52g8AA96APTPtCDqG/74P+FN+1wD70gH+8MVIrB1DDvS0AR/aYf+eyf99D/Gn5Hagqp6qD9RTfs9vnPkJn12igB2ecZpu89zQbaDsmP93isbxD4D0nxJreka9eX+pQy6LdPPbR2moyRRysyFCJVU4kXByA2eRmgCnJ8ZPhlF8RZPhNJ41sV8Qw6f8AbptMM3zxwbtu9j0HJHGc456c10qOrqGVsqehB4Oa+Gf2rP8Agnf8R7jx94m+IXwN8JaJr9nr8UN5f2Wu6nc/bvtEcpZ4YpPMXKyBhwXUAIB1Az9nfDrT9T0jwFoula5YW9pd2+k28Vza2pYxwyLGAUUsSSAcgEkk0AbdFFFAGHZ/8lK1D/sB2f8A6Oua3Kw7P/kpWof9gOz/APR1zW5QBR8T/wDItaj/ANeM3/oBo8Mf8i1p3/XjD/6AKPE//Itaj/14zf8AoBo8Mf8AItad/wBeMP8A6AKAL1FFFABRRTNwHBb9fyoAfRRR0oATPv8AWmY80jj5O49aMeceR8o7HuakwB0FAHkP7ZX7K+i/tZ/CaTwJeavJYahZyPc6NdhsJHcmN0XzQASyfNyB1r5V/Z1/4I7+L/hX8aNO+I/xK+JtjPpuiakk0MOlRyJLdYTht+R5O2Qr6k7SRiv0IwDwRTZYkmiaFxkMMHigD4E/aH/aU+FGvazD+z5p3gT4ieJfDvh+W4j1SfRtSj1GO8iWbY3nxuHZsMpwWZHU4K9RVD9m/wDaP+PfgLxbqHgDxXqVzcaPptlBpfh3wvregyxX3nSI7QyybS8iw9FaY7h04GM17/8AtU/Dv9qLUtP1HS/2YLfQtLtbrRrj+3JLaOOHUdRu2GyIJJgbCEOd5YHKn2r4m+J/wa/bx/Zk8Z/Dr4oeLre48TXiXMc0MtuHnljuGlMrWNxIvzuCTwNxX5mAwAaLu1gPoj9u68+BfxE8P3HhL4oS3Gj+PtG0e1fRNWltriTT7d5Z05VhhGbI2sxG4Kehxx6t8C/j1458MfDTULr42C5v5/D80sV3fQaFNbfaI06PbK2TcKOm4AE9QK86+Lv7ZfwK8f3em/s8fGz4V3k2s6rZwDxJYxxb7fTp5I1cQCXgmQMyKCuNrMDnPFdF8Ifjld/Grxb/AMK9/wCETl03QrWw/cy2+pea0UUeVQSbgdxPy/dOetcWIx+Fw1eFKpK0p6I7KGBxWJozq01eMd9T0zwb8cV1bxTd+Fdcs9MinupPM8J2dlfGW4vbVUBkkmRlHlEFx8uSRn2rzL9rv4e/E34sNofir4cXa23jzwN4l+1+G9FNwoh1OAwlbmB5MkxrJEzoGYABwvBBFaHj39lnQ5fiHYfG7w54puNBvdKlSS6vbWR1iu4kH+rkTdjnC5IxnHIJrXvPhCviSzvtXvxc+G/Emt3EMy6vaxB3VYlCKquDjfsyCCM/McA7Qa7vY0a/uVHZPr28/kGAzHFZVi44rD6tX0ezTTTT8mrp+TOd0P8AbC8S+DtF0jR/i7+zJ8Rxr1/BLcNpHh/wgbq3swJXQRtJDIyM4C7s5OVZTgVueAP2gofi54/0/Q/D/wAIfid4QnR5ZBqGt+FGtbG4Cq37mWRzgZIOMYORWl8StdvtD+B+s+FfjH4lK6dFpywR+Jbdttxc56Hyx0YHaP8Aa56Zr5n/AGbPFPg7wt8TLXx14p129sdH0eVjaf2jfGYSl1baqrH0YEEnnA545r0sFkmMxEJ141b8vRR0enfz/AMZn+RRh7H6jaUr2l7WXu+kbWaXqfQ/iv8Ab68I+DfEd54D1H4QeO9W1OxnaG/Tw74ca8ii+cqNzBsKWxkA5zmuOt/EX7JX7Rfj9fhh40/Yp8V6ZqHirdJJqOu+BzZKWjRm8xpgQUbGfm7kis79qTxp4K+IHgnVvFdnrMdtcWms2Umnyx2Hkz39uYlZkBJ/e7dwb5sY24PUVZ+B/inwkvj/AML69a63Pql7NocUWiT6rAIDDZ72WZGMYO+VAjAZ65GM1tPIqrpe3jNxj/Ly3s7Lr/Vjno55lMMP9WnhFKo18ftJLd6PltbTtfU7DxRpPwi/YjDTfC74DeML9NbuBdSW3hDQZNQitXhQIWYBv3O5GI4xu59K8r0z/gr98NovGmkeDPh78DfHmrS6xqASSGbQzbNbw72RnUFj5jBxtC/KO2eBXqHj7xr8aNZ+Ieo6a9v4euvAcl3HpeoW2oN5YaKTbuO6TBdyhfhcgdMd6/PP4veEh8P/ANqHV7611LStI0bW9Tnm0We3ZUBtDJtSWEsuYuejcEbH9q8utlmNjVjJVVyu3Retm+h3YXN8kjg5U6uDcqiv73tJLXo1FaOx+gH7Zv7YniTwFo2meF/g54F1rxPeeIbK5BvvDcAuZtOdAg2Oi4CkhiNxYbSK8B/4Jg3fiq5+P3jL4nfFSe+0e/1DR2htLCa6DrbW8MoMpnxlXmdiG3KSAF2jJr5O8O/FG48B3MOm+H5rm+h3yPYXkN40LzSyuoYlicZAymPukkZ3AV6N4Mvfix8UPHEN/wDA34gw6f4jv9Nu0vNA0q8MUscAVt0aswCyTSFM7UHXDZGeOlujSoypSk31slbXbfdrstjGjmCpYR0qVBRlNWlNttuN1Kyi9I6pXa1P0v8Ah/8AGn4O/FOS9f4bfEHStevLTeI9Ms79GlmkWMSYwTknHf7ozg9DXxb/AMFAf2aPjnqXxNn+NFzbzXNhq5s0itJ542ks5pVKC0RUP7wI2BnHc9cE19P/ALJv7DfwR/Zi0yx8eWVg8/ildHKahrGoMd5L5ZyEDMsbc7TtyTtxnk15Rof/AAUL8C6X8Qbfwu0uveKoNS1qYSNrMEAl0qRX2wmBQAsiHnktuGO1fHcQrA1qMKWJnypvT16fmelkLxtOrKph48zS106f0j62+COj+KdI+Ffh7SvHFpaQaraaTBFqENhxCkqoAQmOijHSuwCr2Arw3x/+2T8Hf2cvhToni34reL7++OoTvaxz2+kGO4uXRysshgO3aqkc49RjOa9a8IeN9A8beENO8caDeiTTdTsY7y1ncbcwugdWYH7vynJz0xXvYe3sI2ell+R4tZt1pX3uapHlMBjKH9DWdp6+TqN7b5wrlJh/skjGR7AjpXiHxl/4KWfsx/Bj4h/8Ks8Qa5fXmqpdw2941jbBre1Mm05eUsFwFfccZwBXqPgb4peAPiHq80/gLxTbatb2yJHNc2bF4gzAMgDj5XyCfuk4PHatfQz6nXl/MiBB+9xREcLuOMZPOKhV/KmYjlQN2B/Dk4/p+Fc78Z9C8X+IvhB4h0HwDr82ma1c6PNHpd/bj54Z9h2FfcnAz2zmqpwU5xi3a737eY4q8kmdQSfX681JX50fAPxX8XP2WP2kNO8SftQfH7UNO8P6po8AvtJ17W2vZ2vZ4xsjljxmEK/mPvUYAXBPNfohZXlvqFpFfWdwssU0avFJG2VZSMgg9wRXq5vlEsqqxSnzwkk1JJpPutex0YnDPDSSvdPqT0YHpRRXkHMGB6UUUUAFFFFAGH8Of+ROtf8ArrN/6OetysP4c/8AInWv/XWb/wBHPW5QAVgeHv8Ake/EX0s//RRrfrA8Pf8AI9+IvpZ/+ijQBv0UUUAFVZ9H0q61GDWbjToJLu1V1trlowXiVsbgrdVBwMgdcDNWqKAMfxvfeMdO8NT3XgLQrXUdVBQW1rfXht4mywDFnCsQACTwDnFXrvUINL0uTVNXmSGO3t2lunz8qBRlj64GDVrAPUUkkccsbRSxqysCGVhkEehoA87+BP7SHwW/ak0LUNa+FmsjVLbSdQFvdC4syhSUcqwDjp3Brpn1O88F6FrPifx74kt5bKzknu1mhsjH9ltFXcEYBmMjKAfmGM+lJ4F+F/w7+GUN5bfD7wVpmix39ybi8TTbRIhNKf42CgZOK1Y7jS9bgntVlhuo1ZoLlAwcA/xIw+h5B9aLCbVzmfA8nwd+LkWmfHnwfpOm6lLdWRXTPEJsAtx5JJBQO6h1Gc8VsXWleIV0/Vv7M8Ssbq83NpzXdurR2TGMKoCqAXUMN3JyckZqx4a8MeHPBehweGvCmiW2nafaptt7O0hEcUQznAA4HJJ/GuE+D3wi+IfgP4j+MvGXjH4nTa1Y69qIl0bTGMgXT4Rn5SGdlLdsgDhQKlKK20NJVZyceZ3ttfWyXQp6t8HPiXqMfhXxfqPxJZPE+jwrb65qNnvjtry2PMypbEsgdmVSDjIxjNeM2HwY8R/GTxxp+o2viPSfEmkT6UY7O78Wac1vq2lRhwksnklFM/nESLvYYGFwSM5+oPiJ40g+HfgfU/G9xoWoalHpto07WGlW3nXM4H8EaD7zH0qh4X0bwf48j0j4tv4NlsdSuLGKaD7dCYrq3VkYiOQA8EeY2VPGT7CuWph6c3y/ge7gs3xmFw7q20eiaS0e9rb9dO2xV0f4N+DNNZ7XxEx1pDNnT7fVwsotYw6yLGgIwQki7lJBK8AHAFdbqWp2Gj6bNq2qXkVta2sTSXE8zbUiRQSzEnoAB1qhq3hPwpq2v6b4p1fTIJNQ0tn/ALNu5OHhLrtYKfcHpWpd2dpqFpJYX1tHNBPGySwyoGV1YYKkHgggkEe9dMeVNpdDxatSVRJtt+v6GJ4z8E+APjF4Lk8M+MNHs9a0TUY0kaKT545VyGVgVPqAQQa3LaCG1gS1t0CxxqFRR2A6UlnZ2mnWkVjY20cMEEYSGGJAqooGAoA4AA4xUpAIwRVmIUUUUAFFFFAFfWP+QTdf9ez/APoJql4F/wCRI0b/ALBVv/6KWrusf8gm6/69n/8AQTVLwL/yJGjf9gq3/wDRS0AatFFFABWB4W/5G/xP/wBf9v8A+ksVb9YHhb/kb/E//X/b/wDpLFQBv0UUUAFFFFABRRTJJNgHcn7o9TQASSeX8o5Y/dX1oji25ZzliOTRHGUyzncxPJp+B6UAcv8AGL4WaD8afhrq3ww8SyvHZ6tbeTLLHEjtHyCGAdWXIIyMivFfgP8A8E2PgX8DdU1lLhp/EFrql3a3OmrqahZrAwMXCCWMqXXdhugHHIr6SwB0FQ3cJmh+QfOh3R59RQBA+lxQFZLVim3gjqMVh+PrH4jXI0weCL3To449URtY+3Qs7vaBW3iHbjbJnaQTkcV0sUiXduJAOHXkHt7UiyLHGTKwG04JJ60bh1MlrcawgnjuEjvIQP3gUgnnjPsf0qvea3Pbx/Y9XsUL+YoLqeMbh3x06+/tUfiHVr6wtrm/0KzWcpA7ASvsjc9cFj0/wzXH+BPGet/EFo5PEWg2dpH5SvCltqazOH3MM7V42HHBzznvWFTE04V1Se72NoYec6LqLZHcpcJdwb7a3d1JJDscqOfTnj361i68tpMx0Cytxe3l4jL5MqkQqp4Z3A4CjOD3JOO5FYmu6F4rtfGula1b+Kr1THZSxxaBC6rbXRcrie44LJswcEdd2OuBXbeGbG20qJlmumN5cYa6llUfOwHb0UDgDPAI7k1s7PdGUW4NOL1R4L4J/ZU/aE/Z20HUvC/7Nvxn0K40RowfD2geNNGkuItIdpd0kcUsE0b/AGfaWCRHJQkYYgbaqPaf8FMrPVo9M/4Wh8E/Nf71uPD+oiQgDP3fteelfTLgojSyzR7VGSSnAH5189eMvHXwD+HvxXT4sTSzWb3PmbLuDTTcRauzIoLxShj5YUjZj5V3HFLCZPDENwhKaSWii9Lnu1uMMXBupXo0as5PWU6acn0vdW1636vc9R8fTfFU/D2TTvh5rGh2vi2W2QW1xq1nLJY+aCu8tFHIHK43YG4EZGehrw5fF/8AwUSPixfAA+NPwPm1Z4jIbBfDGptIqgZJbbdEKMepGa9G+N+kavr9t4X+LPhjz7ltF1RJkijhkMkttLhHG0HOVByR0OPY1pfCPw2+g+OPEnhLWddl1S4i+z3cV7fzxtctHIpG1ggDKoIwMkjHTFdU8to1KHtnVkmk9FpqnbX8DgwXENTAylRWGpTUnfmnDmeq2WqttsbfiCH4ly/Cx7TRtS0SLxp/Zg8u8ltZTp4vQoyxiV/M8rdn5d2dp5NeJ2mmf8FObadWT4kfBgCYhFLeGdSGO4/5euOp/OvZtM8T2Oka5rEPifxT5MA1uOz0xLqxNsqyNGGWNG6Tc5O7HtUHjW+8UQvHpvhbQRfm7l8t7ppQkdtkErIe7AP6D+KuOtl8pyS5mtOjt0N8vz54GnO1ClPmd/fgpW8lrovIQ+J/iV4f8G2HhjxbcWD+NbzSZT/adrpkzaRHdov3mUuXWMsR8u7ccEA55r5z+G/w1/ao+LP7Tela5+1xq9tr2ieEppbjR7DQNL+w6faX+GEV08bySSTsEJEZbAUuGAz81fTfhc+IrPw+uqeLUhj1C3iY6k8ExdYWTOSNwHygfmDUfguWaDSm1fU9NK3mpzG7m8xCGiD/AHFYj+JYwg9tv41dShQdozXNbz0b726k4XOcZhI1Hh1GEqmt1Bc0U9Gov7KabTtrY6aG3t7ONpIYtkrA7Fz+8dvfPXPqelfOn7Qn7NfxY+PenWHivWYtPi16KdCuiy3uLe1gTzA4WeNBI/mAplc4BJxivoOC5gVXluLsjAJk84B+O+e4HH5fWvm3w18dXg+N/ibQfA+neLtY1+718WC6bqGpGbSrWAMrmUFVP2fKFyqnP3SOK8nNVhpxjTxGqk7aP7tO4sueIhKVWjvFJ3fb/I9r/Zv8B+J/AXwq0nwl4w1a0u7yytwHWyg2Q26fwQJySyoOAzfM3U816PgelZ9tJCqrCSPMHZTtb8jirAuWjwHOc9mG1v8AA/hXp0acaNKMFskefVqSq1ZTe7d/vHyIUfz0HP8AEPUVAQGuPtcDDO4L9Rjofxo0rW9J122a70bVbe6iWR42ktpQ4DqcMpI7gggiszSfGPhbXtV1XQNB162u77SJlXVrKCTc9s7jem8DoSOR6jmtCDZtZFYNGuRtP3T2z2qQkY25JqvKD5kd5bsMsMH0YdqnSRZBlRgjqDSAZJcRxYEkigscAE4yalx6HrXzl+0f8Ifi1+0n8SNG0vRdMu/DWleEddWU+If7YMctwGRXE9vEmUcqylCso7nGK928H+LvDXjHSP7Q8LeJbfVIIJntpbm1mV182NtjqSvRgwORXdiMJGhhqc1O7a1S+z2u/Nams6SjTTTv38jX56dx60uB1xSHIbOeKWuFX6mQYHpRgEYIFFFMAooooAw7P/kpWof9gOz/APR1zW5WHZ/8lK1D/sB2f/o65rcoAo+J/wDkWtR/68Zv/QDR4Y/5FrTv+vGH/wBAFHif/kWtR/68Zv8A0A0eGP8AkWtO/wCvGH/0AUAXqKKKACvz0/a3+E/7ePin9ta+ufBB8Tx+F9VNpa6Vq2k38y2mn2+YgzusLLgq+8sDknJ64r9C6TAHPpQBBpkFxa6db213c+bLHCqyyjPzsAAT+NSMDMcchR196aVZjmMfJ3X+9/hUqsrAFf8A9VAC4GMYooooAKZvUHBIGfugnr/jT6+KvFX7Nn7aGuf8FH7T4kQePdQ/4Qi1u476C/NyUt4LTBDWQiBwz/eXJXBDAnqaAPpH4h/tFfCH4afEzS/ht4n8XRWviHWLffp2ltC+66RmKja2NmdynAJzWF+0J8adR+GfhWDXdas57WO/lMFjFbxh3Mm0sDIdwwuBk454967PV/g38MtY1Gz8S+J/Ctnqmp6Vc/abLVNSiEs8EoH30Yj5OOgGBwK8u0TxN8Mv22/Beq6Xq+mXemTeEtYns9QiuJQJrR0JHmDadrK6KSG+uOlcWYLFywU1hmlO2jex1YJ4ZYqH1hPkvrbc86+PNz4h+IvgLSpPhL8L7aXT9aujPqd1b2aSyXkwZCkj4RnjO6PqefyFa/wi0xfhDovhqDx94Uso7y5142bTPmGeFnBDOx6SZIUdcYAPeq3iLxr4U+F1lqXif9nn4k6LaaZHpaQS2oUyTPcxuQuEbAOcklh0ANeG/Enxv4s8U+Jo/GOteL0uNUlWOS3RVyyKCOikFVAIGQepIr89xeZrC45VpSc6tl25UtLtetj7vC5e8ThHTjFRp3ffmb6J+lz7x0X7V47vXg1bSvs+naXeyL5ST71uZVf5Dx1VQA2P72M/dIrl/iN4U+L/AIc0+5n8KamNcttU1OK3+xrYxA6VbPIQZ0yR5pjBUkE5IUkDNVPgb8bLeTwvo/hXxTp09ndjRoZ1v3jAiucnaSGzyckZP8RJrofh1efFAeLNfn+IXim0utL+0qmgpaW4iYx5ZiXHXcAVX321+m5ZioYjDe2hJbLR79Onc/Pcdh54fEeynHq9tvvPnT4o/HHwZpHiPXP2X57afxDLqcUMttPHI1zJdXbSRrKsa4IXb1KEgrz7V57448BeEPh94G1G714JcWFxdvLa6dpwRNTsZmOLe2mEmQF+8T6bScgYrpbL9nPWYf2otU1i+8YwWFnd6zc2llcxO0sk7XIkkEKFRmKUR5OWIC56EkVc/aN/Y91HwP4As7r4TadqniG9GoltWeU+ZdANhYsRoRlVcksQMjqcCvvcDiMHha0aHtbKVndd7K9+iPl8RRxGIpup7O9rr5X6HlWheBvHngy0ttV8ReDZL+zvvNSEO2QyKhDJGejHaQysCQdoPIzWVqE+h2GqWVudX1C5hhUxWlvJKYJ7fcuQFJGAAxOcYzntkV21z+1tofwI8RaR8H/jd4B1rS5vCXkvf65YMmoxz3XlIu2LzAFiQptHykkbiMd69P8AD9h8DviVeP8AF/QLC1v7LxDow1C9gu9SguH02VGJEbKCSmSQTzgbcdiK75Z26Sc6kLp7W66/5akTyWpyp7K/9fieGar8T/F9/oD/AA/8feJ9Ql0ZzE8TW84na2KBhHkD5W5bJwcsBXH/ABf+Dek/GCy0y70PVNI0/UfD/h6aPUI9akmae9hDO8c8SAkKFDgKMZ3c5NemQ+B7vV/ipafDi3gh04alo6i5nubiJ4YIWxMz/IoBKjdjJyCy844rlvjZ4J8O21prPhvUPB+o2l01vNa6Nqct+LiMTQjh5ovvbDHnDBSAduAaxzlYXEYN046N+8rem9jPLnWo4hSevTX8dTwL4Q+F9SvZ5PB2o/DZvEejram/1X7Lst7q2iRmAlNxtJiTswJIKnOOhr6E/YX8Y2Oh6z4e0P4L/BjR7nVtakllXW/FOspcppn2aRjIwSOJWjbbLtUlssGXjtXjvgX9lP48eI57fQfhrebrHUoZ7e+8SWF8yWlwiBWaGQgAgox2bSPmPQcGvoH9nT9j7VNa8MadFovgGOIFTBrkvi0yLJIryRtLLbeSygrsRY0JIOC9fnsl7z6n1id99Dv/ANsS18XeLVtPF2ifEK0bxbpkNtD4n8OeHtfdIoYPOyAEADMpEmWkYAKq8etfIWj+BLy4+NUmlJdjTJbXUleJFvY5ZGJkUpGjZKySNkYP8R7V9QfFv/gn3rfiXRrRvhX4V0bWJYdSNvNqehao0FykfnOGS4klZ/MCphT/ABFgTgACtK+/4Jc+DL34yzQeNvFus6N4V0vSbG7s9RheCMTXe/a8TTFQAQwBBAydw54GfhM3yueYZjHlvycyu+nXVH2OV5lDA4B87XPyuy69LJnutx+zB8NvGXh3UPDeu+GtT8TW2rbXu/8AhIr6VlilwNzwgkmEs3zHbjnpgVY8Y/s2eNvHFtaeE9W8bzaL4V0pbZdJ0XwwPJZY1jaOWCZ2z5kTqQMYGMZzXtdjaxWVnFYRMxWGJUUyPliAMZJPU1W0fxR4b19rhNF1+zvGs7k292La5WTyZR1R9p+Vh6HBr7aEYwgox2R8hKTnJyfU8P8Ah9+w1+zd8O/CzeENQ8GS6zC2opeJLr6rO8bqRtC/KNqgAdffNekeI9A0i48E3XhDwqYtMjms5oLdtGZbZrZpFdd8ZAwj5bORnnmuzkkR3RQC2STwK5H41at/wiPw113xpaeEzql1pWlTXcNlEQrztGhYKrds4x+XWtYz9nJSXQUW1JNHK/sgfCPXvgd8E7LwZ4s8U6jqeozXMl3cHVbtZ5LdpSN0IdfvhfX3rgv2jP2uvGnw0+PKeD/h1rHh7UdK0Lw7car410y/ilSa1jjAZds65RWkDqFBBGRg9azP2Nf25NB/a9urz4av4U1bwr4mtdNluJU8wz22wFV3IX5BVnX5SAODzWb8KP8Agndr/wALPj7b+Mbj4jy+I/DF/oM9l4o0/XC0n23fkogiIYNHvJcgtwSa+hyutl2IxNbFY6SvZtRtpJv8Fbp52O7Dyw86kqlZrVaL+vwPJv2d/Gujf8FVde174fftGXRs5tLu01Xwz/YksUMkECybHhIKsXIBUF25wRgCv0M0LSLPw/otpoWn5EFlaxwQBjk7EUKuT3OBXwr+3L8HPDv7Clppn7UP7Kvw003TdUGpPb6lfKZZYrJJRgbbcsYwrN8ueAuRjk17J8R/2kv2kYP2KtC+Pnwm+Hmm6lr99pVtc6lZtI85iWQAGSKKIfvCWIOzPyg99pFevnmE/tVYevgGoYeo+WMZNJQnpe/ZOyZ1Yyl9a5J0dIN2SfRn0jkgnJFOrzv9l7x58UviT8EtE8X/ABo8FP4f8RXNu39oac8ZQ5ViA+w8puADbTyM16JXxVehPDV50pWvFtaarTs+qPInB05uL6BRRRWRIUUUUAYfw5/5E61/66zf+jnrcrD+HP8AyJ1r/wBdZv8A0c9blABXH2vibw94f8ea7HruuWtm0yWjRC6uFj3qIyMjJ55612FI0cbHLICfUigDG/4WR8Pv+h20r/wOj/xo/wCFkfD7/odtK/8AA6P/ABrY8mL/AJ5L/wB80eTF/wA8l/75oAx/+FkfD7/odtK/8Do/8aP+FkfD7/odtK/8Do/8a2PJi/55L/3zR5MX/PJf++aAMf8A4WR8Pv8AodtK/wDA6P8Axo/4WR8Pv+h20r/wOj/xrY8mL/nkv/fNHkxf88l/75oAxv8AhZHw+/6HXSv/AAOj/wAap6T4p+EuiG4bR/EWiWxvLhri5MF3GvmyNjc7YPJOBkn0rpfJi/55L/3zR5MR6xL/AN80XYHKQeP9KXxXPcXHxE8PtozWMYtbVZ1Fws4Zt7F9+CpXbgAZBB9areNPi1o2j21leeHPFXhmRDqES6m+qa2sCw2pOHdSMguOMA4B9a7TyYcY8pf++a8N/wCCi8Ua/sk+JWCAHfacgf8ATzHXRhKKxOKhSbtzNL7zgzTFywGXVcQldwi3b0Vz02z+Mfwl1Gc29h8S9Ankxkxw6tCzY9cBs4q3/wALG+HpHPjXSh/2/R/41+fX/BLJFb9paVcD/kXbjt/tRV+j/kxf88l/75rrzfLoZZjPYxldWTv6nlcLZ7V4hyz61OChq1ZO+xyuteIvhV4ge2fU/F2mO1nOJ4CNRQbWHQ8HmtEfEj4fAY/4TbS//A6P/GtnyYv+eS/980eTF/zyX/vmvIjSpwk5RWr3PpW2zH/4WR8Pv+h20r/wOj/xo/4WR8Pv+h20r/wOj/xrY8mL/nkv/fNHkxf88l/75rQRj/8ACyPh9/0O2lf+B0f+NH/CyPh9/wBDtpX/AIHR/wCNbHkxf88l/wC+aPJi/wCeS/8AfNAGP/wsj4ff9DtpX/gdH/jR/wALI+H3/Q7aV/4HR/41seTF/wA8l/75o8mL/nkv/fNAHPar8RvAL6Xcxp400wk27gD7cnJIPvV3wOrx+C9HjcEEaXACpHOfLXP0rU8mL/nkv/fNLtUDAAxQAtFFFABWB4W/5G/xP/1/2/8A6SxVv1geFv8Akb/E/wD1/wBv/wCksVAG/RRRQAUUU2RxGPUnoKAEeQRgdyeg9TRFFtJkk5Yjk0RxEfO+C56n0p9ABRRRQAUnHU1jfEHRfEviTwTqug+DvFL6Jqt3YyR6fq6QiQ2kpGFk2tw2DXz1+xN8Kf20fD/jPxPrf7UfxT1LUrQE2Gn2k1yCk5RwRcxKnyojKcZwrZGOlAHvGjfEbw1rXiXV/Cnhi8N9faRdLDqVukbKLaVkDbWYjByCDxnrirOsSPZxNNfXEE11MjG0sWmEayyKMhRn8axPjf8AETT/AIEfCfU/iPD4ae+TSljkNnausbyKXVScsOcBs9ycVeGlaT8Q7XTvFusafGsUMf2jTzIvzx71HOT046j+VRU5+X3S6fLze9seU+OPEn7QPiHUrmysfDmoaVaT26qxsTDdQxKilnAbjDsflweo6Zq7a+K7XwX4/wBI0bQfBlub/WfDbNphkxBKZkBPkv8Awoozk9TzgZ4FQfHzxgvwX0qz0v4WeNrSyvrrUTc3ejXVxvaZH3MzAtuKrkc4Hf3APkHhKPULD4zaV46g8W6ffahqeoLNqg+z7be2LHLRI0pwGAyBgg/NxnrXxGKxv1DFqLk5Sco3ejsm+n9fkfXYXCfXMLeyjHldt1dpbv8Ar8z668Habe22jR3PiSJG1G6hVtSdG3DzAOUHoqkkAD8eTV2e2e2ACDzYTggDqvp+FYehfECHUg39oaTc6dKbp4LaO5ZC1xt5yu0kkY9M1sx63YEFzMFGfmcIdv4ivtqU4VIpp3/rqfI1Izpz95WOT1nxhpfjXw1e3fw68bG5fSboNeLowjmlk8vlrch8A7+BmuBg+EHibxRo0eofE7xbaWmlQafMbOzsbZbWS2E0gbMvBQFFGOB1zmujj/Zn+D+n2WvwaBBc283iON1u54b1yUDtuzHzhcHkZ9McivGvjX+y98TrO/020+Dt9c6kktsf7dvdX1bDXUocMiSDdjaQF7EYzX0uAeF5/Z063J5teWuvTqjxsTHEOClOF/JM7zwB/wAUvoF18TPG3jPXru1h1C7CQlpEAtyfKVfKA+cAAEEd+Rmq3ww+NHgT4S67N4K1P4l2Wsi9Z3t9RuFc3yMzkiOZyNqRqO5IwT05FYlr+17rXhTxLYfD740/s5a74U814LKTUbTyriykkeSOOMRS8Blbf2GQBnnt2vxJ8BeDfDfie58cW+j6dDG2msXmmiUK20lSWYDgE7Qx68mspVrTlCvB8strWt5HRLC1KcIuFk1rr+Jxvgb4meKdVu9S8S6891rkuu3T2OjXmmWX2i20yeJnEbsufLIAZWynJAOcmvUPgT8RPFvjPwbcx+NtBvIL3SZ/s017eWXkfa8gEt5Y+51XGCc4GPSuI8MeGnNwlpZfE+XRNb1DTxc2+ixRJNp1vCWBLRAKpzjOGJz83frWp+z7b+L9H8Qar4f8R/Ca+0vSixMur32rNcS386ttVirchSuecADHU5FbY14ath5uKV1a26tbstvLQ5sN7WnUhds7XxffXl7NbeH7eMqut3C214znH7pcs8nHTMalM9iw+tdtFsth9lt9rOBwqLnb9SelcNbG11nxNqF8WVbbSYhZW/lS4V3fEkj5HXH7peO4aui0a7mu7LyIoJWEY5wSqY+p5P8A9avnd9T12rOxyH7QHgjwdqOgXXjHxpLr99b6fpssc2i6DcyKs6MyZcxx4Luu0YOQAM15p4Z8e+GvC/7S+m6X4N8DTXWjeONFilOq6NpqmOCSPIEkk4z5oAIVgcbSR1ya9U+LvhvxV4i8NJYaLb6lO41C1aW00fUEtnaNZV3BnfjYF3bl6sMgVVi+Eeq+Hfjt4b1bwRodvZeF9N8PXcF3HHLtjWR3QoiQqQoPBbdtPXFePi6NWWIUqemsb6Xe+vysephqlKNBxnrpK3bbT8djtnsr1gV027eZewljyv8AhWHqHhv4vt4ysdUs/FNrHoUVpKl/o8dsrPcSkqUcOxGwAA5AyDmu54HqR60rMiD5nA+pxXsXueXds808M/C/wf4A8TTeLdI8PajpzS2skc1nZSslkWeUyvN5KfJ5pYkl+4ODXVaJqfhyzlklshZx3Fxt+1HylhmkIGAWP8eBwPatu5niMRCMSSQBsGe9MurCy1BPLvNJjlB6iWNSP1o+QjA8K694qu9Q1ez8UaBbafYwX2zRriG8803UG0HzHGAIzuyNuT0qfxB8Q/Cvh7xHpHhTUNWWDU9c84adB5bFZvKXdJlgCFwOeSM9BXmOt/F7Q/h78Z4PhD4qsYLe/wDEOrwQeGrTw9fSSzfZHiO65uom2rEodGXIB6ipfEn7PPjXxB8U7HxX4o+OniCXQ9M1T7bp2haakVoikKu2KaRPmlUHJ5xndg9K7MPDDVqj9tLkST87u353Noqk5Nzdkc7rn7Ut342/aa0X4UfB25m1O308ebrSade2rW95A7mKUu7ZaN7dwGKDDPnivZ/hr8L/AA18KtOvdK8LG68jUNVuNQmW5uTJtmmfe4XP3Vyc7RXC/ED4TeEPh5pOt/Gr4O/Cnw+3jSy02ea0mj08QzXTY3FHZOWyVHbJ7dayv2Yf2h/jd8cvhjea9rHwjGn6hY6fstr3Urj7LFqGoAMHjEI3yRRqwUFj1ycDjFeriqUcVgFVwS5aUeWMuZq7k7u7Xbex1VIKpR5qStFWT737nuij1Ofxp1eF/s3/ALRPx1+MPxH1/wAP+NPgcNE8PaSzW0HiCO7bbNeRbVmjCSBXZNxba4XGF5r3SvHxeEq4Kt7Kpa9k9Gnv5rqclWlOjLlkFFFFcxmFFFFAGHZ/8lK1D/sB2f8A6Oua3Kw7P/kpWof9gOz/APR1zW5QBR8T/wDItaj/ANeM3/oBo8Mf8i1p3/XjD/6AKPE//Itaj/14zf8AoBo8Mf8AItad/wBeMP8A6AKAL1FFFAHmH7Wv7TXhr9lH4PXfxR8Radc3r+aLXTbO2UEzXTqxRWJI2r8pJPPHQGs39j79pDxH+078NoPHuq+BG0u0NpAPt/2hTFeXO0+eI0BLKiMAMtgnPQYNeifEX4eeDvip4OvvAXjzRINQ0zUYTHcW86Ajn+IZ6MDyD1BGaj+GHwy8F/B3wLp/w6+H+ix2Gk6ZAI7a3QfiWY92JySTySc0AdDgYximuhHzx9e49adRQAiOHHTB7g0tNaME7l4b1oV8na3DelADqzPFuj3viDwvqWg6brEun3N9YzQW9/Afnt3dCqyL7qSD+FadFAHzf+w5+zR8dvgbP4w0v45/E268S215q0UmmSXE7Si5xEMzZZiyjJ27DjlM17T428LWeoeGtW0yyvF0o6hYyQ3GoW8aq6KyFd5OOdoJ69K6fA7isfxst4fCWpHTdKS+uPsMwisnxtnbYcIc9ieKyrW9lK6voy6d/aRt3X5nxZYfBz4b+G5fEEGjfGjw/rOmpYOt8m9lnUF05RTnc4C8Mp5JxXB/DzSdE0K71PxXqt7CfK06URWeqZLzSOjhEXGcgK2c92wepxXq/wCzZ+ytceOhfeOviLoctrb20zQ6NoxzGbiVfvF89I1xtGOuCewryzxJZarN4tvrT4n3b6W2mXHlSWaWqhjIdzBFXoECkcg8g8Zr8ex2Fq4TD0avsVDmbsru1t9W9t72P1TB4inia1WkqznypXdle/Wy632uej/s3/GWO00658C+JPCcmpWKzfaLc8kxHeqhNhBxlgGU9jXqsfjnx34vntbldIudF0uKZJJopSr3Uu3/AJZf7C5Bz3I6Yro/gB8LvhhaeBYPE/gm1MqatEsxmuLVQ+MYZenyrkE7ea1jp+iXHi+58NWGkapC0FrFMb42w+yvuLDy1ZvvOm3JUdmB71+mcNUMTgssiq8lOTWj7Ldeuh+f5/Xw+LzGToxcVfW/fS+nQ8t+MH7Xvw0+Ct5HoEPhvVNQ1y9iNxa6NpGnFp5wAVZt3TgKcknIxXz58e/2xvFPxv8Agbd65ZeJdX+GF7p3ixdPEhuJH+1FVJeOZokDRlcZGM85BxXqX7eH7OHxs1vxP4Y+NPwz1/SYofDFvdLeLdXaWhhR1OZzKRgoMZIJwMcZya+Mfi/4L1v4W/suaXpXib4saNr1xq3i9tQXTtK1CO6ECCJ0ZzIvIJbgjkZxyDzX3mW4bDVVGbs5XXn+Gx5UEraHA/E288WePrMeK5PFut63axokFxLeyTSiKYZdwGbO5SMvk4IV+gxV39l/Q9cf4qabeQ/ECDw1aWOoQnUL2e9WFhGzZKiNiPN3AEYwRgjOK87jvbq1iaGG9ljiIO1Vc8k5H6jj6HFami+Lns9Vs5tX0a01OC0bDW10D+8UrjBZSH6Djng19XKjUlQcIpar53NbH374rnm8Y/HbVfCPhDwi1rcaroptbyZpMAAbHFwQBhVZVj6c5xS6T+y38TpNNj8N+FdM0+4v7TUZ7nWNTjnymZQqFHZurgDcQBkAqQDWP8KP2zPG8Hh7QdYh/Z51K80GLR7ZPEfi+GOTYkKABiJJFy6IinOWySpxmvonwV4o8F/tN6DqMvwK8fRrptrrsSa3qFlaSRG6AVXaNJPkzkbVLcnAI4r5ueZVcLWpxcUrJavXbRv/AIB4dTLrRld3u+n3/mVfhWPgnrNlo+g/DjxbFpsmiQyx6rpFnabBcSxwsrLiRdwTf84KkElfqK7/AMIJJoOgaTZ6jbDdHp8BSQj5WBjXcp/DpXkvx2+G+sfAvR77xd4P0aS80q/hmt5fD9jbhPLaSEqJGlXLsvyff68n1qD9p79tPwh8EfgVpN7oN1Zy+Ib3Sv8AiQWkkMtzGJItqSLKVAwFwwGSMkV5GYYejG1ag/dl36M6sLVqO9Opo4nfpP8AtC6X8YtJtfhz8No9O8J3FzJ/bsl1cQG3KeaxNxEI8OJXyDg8YA4yc17Jqmn2Osac2l+JLCG4tZMF4bqESwvggjt2IB59K8M/YL/aQ8dfGj4MWXjD4h+E5dNlnvJYQRA0ccwXBEsIYkmMhgvU/MpxWX+2p+0t8Y/hD400qw+DWmxX0UGlvqOpQ/Y5JhIpcxKr7BwmTnORggZPNcWV5XVxWIdGnL4tfe0S0PocFhK+cYqNCkoxlbdu23dmD/wUQ/bf8ffAOe08PfA7VNMl1O0s2u/EKXNus4t4XkVImX5xyGDBlAOFOcjAz8w/8E8/jB4c1D9oe0vvF/xIv/BGr67q8l89xp12HstcaaYf6JPC5IhJOQrYzzjj5Saf/BUHwPb6R4n8J/EeH4brouo+NNAS+1eSO5YB7/IacNC3+rILL0ODuNfN/wANINT0P4raFYXW+OeLX7TLRwiRkIlQ5C87iPTvUTg6c3B7pnmVISpTcJbrT7j985vMYlYWAcIdhPTJr8n/ABf+0D+2X8JPir4p+Jes+K/EN8LG71exu/7QtLmHS7CViViaEP8AIxPylFII6Z9a/V60nRolk8wtuUAHHXAr5Z/4KcfDfx78TvCPh218HQT31pbauV1XQ1kcR3fmAJCzrGrFgj5YnjABI5qSD5Q/Yk/bX1f4c/EGP4nfHP8AaEhlspreaC+0K60ueWQRE53KY0CrMXVSoJ5UnOMAH9RPDHiHRfGvhnTvFnhy6Wex1KzjuLKYcbkdcqSOccHp6jBr8K28BfF3TvC2qW2p/DDVJLN5Ynur650+YG3ZW8vO4hQCxkC4Oc7h0NfsD+wF8JvFnwW/ZO8LeA/Ghj+3xW73DLGZMxrK5kRGEmGDgMAwwMEEYoewHhH/AAVF8GfG34x+PPCHws0PSZ7LwGmLrxL4gnuRDYxl5NhM7tgL5agkDkkydMgGvRP2IfB37YPw+8XXfgb4mv4cf4a6dosUfhWXR5FkDHCbBHJw7rs37mcAk4I61r/8FJ/hM/xc/Zxn0y7+KVn4R0qy1KG71rUr4SGNoFDJsYJ975mQgeqj0FX/APgnx49+E/ib9n+DwZ8G9Z1HUtK8H3cmkHVNRhKG8kUCRpkBYkIxkyoOMDjFfa1cfUqcIU6cIx5YycWuV6X15ub+Z3tbsevKtJ5XFJKy0en437nu+AQcDP1pw6U1SMYIz9KdXxKPHQUUUUxhRRRQBh/Dn/kTrX/rrN/6OetysP4c/wDInWv/AF1m/wDRz1uUAFFFYV/43gstan0O20HU76a2SNp2s7cMib8lQSzDnAoA3aKwP+E6uf8AoQ9f/wDASP8A+OUf8J1c/wDQh6//AOAkf/xygDforA/4Tq5/6EPX/wDwEj/+OUf8J1c/9CHr/wD4CR//ABygDforA/4Tq5/6EPX/APwEj/8AjlH/AAnVz/0Iev8A/gJH/wDHKAN+isD/AITq5/6EPX//AAEj/wDjlH/CdXP/AEIev/8AgJH/APHKAN+vm7/gpF8S/Ath8Add+G994mt4tbvFtZbXTZGIllQXCEso7gAH6Yr3L/hOrn/oQ9f/APASP/45XnP7R/wm8IftI+B5fC/if4fa3DexKX0vU0s4vNtJPUfvOVOPmXuB6gV25dVo0MdTqVdk09DxuIMNi8Zk9ahhrc0ota+aPiv/AIJ0fEHwX8Nfj8+v+OvEVvplm+izQR3N0+1WkZ48L9Tg4+lfppa3UF5bR3ltJujlQMjYxkHnNfF/7H/7D1x8LfFcvxA+NXgbUNRv7G5K6LYW9tHJBHtPFw+XGW7qvbqeeB9ajxxOOB4B1/8A8BI//jlenxHi8JjMcp0HfRJ9vkfP8A5bmWV5M6WLio3k2l1t5nQUVgf8J1c/9CHr/wD4CR//AByj/hOrn/oQ9f8A/ASP/wCOV8+fcm/RWB/wnVz/ANCHr/8A4CR//HKP+E6uf+hD1/8A8BI//jlAG/RWB/wnVz/0Iev/APgJH/8AHKP+E6uf+hD1/wD8BI//AI5QBv0Vgf8ACdXP/Qh6/wD+Akf/AMco/wCE6uf+hD1//wABI/8A45QBv0Vz03j6aCJp5fA2vBUUlm+yx8ADP/PStnTNQt9W0631SzcmK5hSWIkclWAI/Q0AWKKKKACsDwt/yN/if/r/ALf/ANJYq36wPC3/ACN/if8A6/7f/wBJYqAN+iiigDB+InjQ+B/DM+rWllFfagyMmlaS99HbvqFxglYI2k43Njjr06VpaPNd3em22oalYNa3M0CPNavIHMDEAmPcODgkjI61DrvhPw14mls5vEOhWl6+nXa3dg11AHNvOv3ZEz0YZOCORmtIgHgigAooooAKKKKADA9K8t/a4+CPj74+fCaTwV8NvirfeE9V+1JLHe2k7okycq8Upj+YqVYnjuBXqVBAPUUAcB8A/hj4y+Hnwt0jwf8AFjxrH4p1jTbUWz6r9nKB4l4UEMWLMBgFzye9aPxOutBt/Cl/4f1q7EUOoWkkaj7QItikYLljwiLkZY9BjqSAd/WtZXS1SCC3Nxd3BItbVTguRjJJ7KMgk9h7kA4Hin4W6N438J32heLibqTUUAu5lyNuDuVE9EU8gHr1bOTWGJUnQlypN2dk9n5GtBxVeLk7K6u108zyJ/DPgHTPhlJcW3im18aatHL5Gi39tZRT3UTDCoikt91OvPBBJ5rywfDvxZ4d+Gnibxb43guAZL6JltpJSsysXb98wwQvzHtzgcda+gPA/wCzboHgL4fnRrWK1vdatZprqz1FrUBo5SCE4J5x0APHtXPeC9KXXvE2keM/FfiTS7e2vlSz1PTZLZN97qMIKkMCNuOhGO/uM18Xi8rqV6lJ1YKM+W1l8Kvpdvq02rI+twuZQowqQpycoKV9d3bWyXS6uHwb8U6L4m0XTtDufDs99PoNnFJb6wJ1KliuCUZyMEDqM+legya6bYhp7GaUf3vJDMB9ULVp2PgPwfoz3D6L4esrf7RP51ykEHLN/eOM4PTp6U+XwvbRRmTT5SEY/ddCFP0JOfxr6/A0KlDDRp1Hdrr+X4aHy+MrU69dzpqy7HkHxe/bF8IfCvQtUvdO0bU9Zu9JvIba/wBM0m1bzUeZS0ZO4DKnGCwB6968VT9ou+/af0vw34vi+LGt/CkXF7qFkdNtYftS322MHzGkKKqMPmGDk9NvNfXGoaTpViZbnVoLe0jVGe6nuGGCB3ZugHGST6V8if8ABUF/g/p/gvwpa2sun2V0t1Pf2H9nwuJrtFVTsglQGNCzMpLEHOOO9fQ5d7KrVjTUNX1/4BzxPGPjZ4Z8WeOPAPhHxLpnxa1nXNJ1zxVcy6GNTuriTUIvJQJFCEAdQ58skNkckcDmtT9g/Tf2hvGmqSan4g+Iev6R4UsLpo5oLmcSwzzMytLE8M4Jw45LKOCDjrXh1npHxh8Lag/jfwrouswWMdldXVpqk7nekcnytcIFZQpDHb5ijBPrX0z8D/FPxW8Rz+DvBHx+0ufSfh7rtgH8NagXZrnVbgFWgWe4VtyNlHb+EHcFwQRX0OKjUpYRxja3fquunmVNXjY+gYr7V/iR4x1vQvCeiatoutWmnraS6hcqBbQIZBtdV/hZ1JII7+leraHPD4e8ITvL4ma9Gi2/l30AmEkwkVejN/eb6DOcVt2lgH05b23vZWBhxJyDuxweR1PQj8axNY8J2Fp4ks9E0Oxs4Zr+8Oo6hdrb485IsEGTB+bc5iH4NXytfExrRtayX9f0jkp0pU3e97mn4Q0PTvD+k2bXMSvdyrv1A5LMZpDucq3puJ/DFXLm6nsL1obXc4ALrvGM4/h/EfrR4mu9Yj8N3t1puhJeajb2zPDpsU4jaeQAlVRm4XJAwx4rltR8davpfw0f4jeKfCtxaz6XphvdR05ZVllSVU3GHK8O3GMjPPTg1xu9zc6zwXrmv6te6ra6j4Qn01LS6VLW8uZVdb2PYCJIwpyACduGxyK6Hy5HGTNjHdV/xrkPgj8UrT4ufDvSPiFbaDe6VHrNr566bqCbZbdgSGVh74JB7iue/ar+MVx8KfBcEuia7LaaxcXHmafBDpzXJuxEN7wkBTsVlGC/8Oc1rhMLWxNaNGGsmdWFwtXHYqNCktZfd6+nc9PEKnG4s2f7zHH5VIsEKfdiUfhXBfs2fE3xN8Xvg5pPxA8X6Eum31+sjSWioyqoDsARu5wQAc+9d+TgZpV6M8PXlSlunZ22ujPE4ephMROjPeLadtVp2ZFNnfGnq+fyFLcXENpA9zcyqkcalndzgADqfypjyxrcKGkHCkj8TXO/F6J9T+GWuaRbrqBlvNMmgiGmSiKcsykYjdhgN6E8VmYnNfBf41fDD4963q3jP4d2k13Bpl4NNGuS6cY47kAElYZGGXVXyD7mvQ5okkRy6khZCWA/z+NfI37IPir496J+0Vr/AMHb3wdb6N4RstFtZrLQL6SKG605TFuE6iNAtwzyZWRgeGr69tGSWIycEOxPNLYDzL9qLxH4k8I/Ce6fQvAF/wCIxeXEVlfWelXTw3SW0zBHmjZFZty5HAx69jXnHifRP2tPhJqGg+A/2Vfhd4Ui8IJqcH225urovdSxOitPLOjbAG3bsuGZmJBxya+g/FOlahrHhbUdH0m8a2u5rKWG1uVcqYnZCEfI5GCRyPSvnX9izxV4C+HHia4+Enir40/8Jn8R9deSbXb2yEk8UAtf3KwO+MIVAPLAFjn2z9Jlk+XL5zjTU3DeLTle6+JpWS5Unr5nfhnag2le3Tvfr8j6eiBCDKAMRk4HepKaMjoePWnDpzXzm7OC9wooooAKKKKAMOz/AOSlah/2A7P/ANHXNblYdn/yUrUP+wHZ/wDo65rcoAo+J/8AkWtR/wCvGb/0A0eGP+Ra07/rxh/9AFHif/kWtR/68Zv/AEA0eGP+Ra07/rxh/wDQBQBeooooAAAOgowPSiigAor40/aW/wCCtVh8Dfij4n+Gfhz4Uf2w/hiWCG6vJ9WSESSMy+YFQAswAYAYBIO4kACvoT9lr9ofTv2nfg9Y/FnS/Dk+mLd3E0L2U06yeW8blThxgMDgHPvQB6PUEN3Z3pkFpdxy+S5jl8twxjcDlTg8Eeh5riP2kvG/xN+H3wX1vxV8H/B0uueJLeFBpWmxwGbzJGdVyUUglQCScdhXFfsT3uojwnqUXjvwxc+H/G2u37eIfFGi3ML7YJLhjGpQsMBWEIbYCSpJBoA9wVyG2P17H1p+R61GYQ64kct+lN2xwjEgBHZjzQBIZY+7Vx/xc1PxdP4T1Lwz8NCi6/c6XO9lNccJbtsIRjnHLPhV98notdFretwaHpkmoTIxC4WONfvSuThUUdyScCszRdPuIFZLvY+oX7iXU5w3AGOI0JwSoHyjpwCepoA+ZP2af2hPiz8MNQ8LfAX9pbUdEm8daxfuLexTVUWe1sGV3RmVE8vPy7UQNuYbao/tHfC7QfFHxt1jxpP400+DTrcQz6uF3vLbjaiH5QCGZnwMDkZ6Vl/tTf8ABMbXPjL+1BJ8a/BHxRsbKK82y6naXFzIlxZXSQ7YmiMfIUlEOOCMHFe7/C74FeAvB3wO0z9nrxtLaa1qNtoKjUpGlIubsCQu8gJPmbPNJweB/KvGzvKo5thVSfR310WifY9XKMylluJdS+6t97Xc6DwX4N0TUfh54f0/wZ4+1B9K0uaOaC5s7pQLyJc5hlbbyhBwQMY2jkYrqmEUDsmnQrt24D4+VSf8On414mnx70z4beCrnVPCXgVk8OaI9hZnQL+yuLXUEuJ33ORGyHzfkdSFHLPkEitv4DDV/ihql38edf8AFy3cOpo9t4b0GxSSBNLtVkO+O4jLENcbgA5x8hTA4r0sLTdLDwg0k0ktNtunkcGJmqteU02023d7/PzPSdS0DSPEGi3egeKrSK706+t2t7mCdQyTREEMhB6huenvXzB49/4I3/s3+Nb+51Hw7q2seHYnRfslpZSrJFBgNuJ8zLNksD1GNtfV0Nq0vzTzEsOM46eh/HH51NDLc3DmzBUlMZ3Aj8T6n1Fd1DFV8M705WMk2j87/jL/AMEpfGPgv4Y6D8M/hD4ctPE+p6nrzXGveMrpktnsLdVwkaxs+QhyWJBJ3J05Fdz+zj/wTY+AvhSe8+H/AMcPDVnq/iZYzd2ypPcEi03GPzGxiPczjIVclA2CT1r6b+Nf7Q+h/BvxF4c8BpodxqniDxfcSQaLaRyCKOQx7S++V/lTCtkDksRjFbHxA+Hlt8WtHTR9R1TV9MjS7huGuNHvvs8xEZyIt4GQp5yARmuueb42dLkb+Y+ZnLaX8KPBUXg2P4Qr4Ws/+EfXT57WXSlXEbR8jbgn0PBz1FM/Zn+Afwm/Z58KXvg/4d+H5NOttRnF1LNPO8pkl27eXYnBA7fWuia0vrfVdRe2YkoyOgkbJPrz+tM8Q+Kl8KeDr3xJdabdz/2dZPeNb2qhpJwqkmJOeWbHH1x3rzm23dki/E2WR/hvq8HmYknsZILWTP3S/wAoz7EsP8iuS8ZfD++vfHWjeDF+FnhrXPCs2oCW/tLy2US2Enzu12hbIkHCrsA3fMW6VzHwr+Omgftlfs83vik+GL7w4NR1mLTzbR3p88RfaYkMsciqu0kMcMuQDW948+PHgPwt478KfDrw78R7P+1La/jiv4rmN7mQ2vlyDa0ikCNyYz8zH+Fs9RRzNK19BWT1sO/aS+IOifs8/ChNJ0a1i055LmGy8Oi3tVZLUnuIgQSiBfurnqM8Cvkfw5+3D8dE+L83irw94Z8P6hqGtaULK0ZhtXy45XdS5LfKwG7IzzweoFe4ePf+CkP7I/ji8ufC9yDd61pd2F0WPUtM3R3NztKqUbB8o+YdhL7cV5n+zj+xx8J7q6TxP+0cW0rW5b6a8ttBj1mPyzaIVLM6IDsAZ1BUtkDHSvteHsVkeEyyrPGU+Z3t3bv2XZWR+j8LYzhzBZPWqY+kpSulrq3fol2Vkz2jVfDfwU/4Ke/A+z0a81pbDUNHv4JdV+x2qST2j4zJDG8ighJMffXrtHoRXE/sh/8ABLLUPgt+0Jf/ABd+KOp6HqenafI3/CLabaWxbYQ37uZgQAjIqrjG7LZNek+J/hb4e8Y/AK1+IH7ImqnwtFLHHqFrLpVr5D38MOR5Tj7xBAOAepxk4NT/AAg/4KXfsxfFPUbXwva+Jb2x1F4k+0jUbB0igcgAK8nKg7iEBzgsQATmvlsb9TlVc8NdRbfuvdL1Picx+oSruphbqMm/de8V67dz6DZxFA0h75NcpG76nfzzxH553+y2voFH32/If+PVseKdRGn6K7xHLldqgf3m4H88+vFVvB2nBc3JX5LdfKhJ/ibq7f8AfRIz6VxHnlbW9B0uLyrC60+Ge3OEaKeMMpIxtbBGMhgpB/2a6aF1ljSRV4ZQazvFdp5+mvKi/MgyMfp/X86n0C7F5pkcvAPcent+fFJ3A5z4zfBbwD8fPBM/w5+JelSXmk3E0c0lvHdPCWZDuXlCDwecdCar/AT9n/4Z/s3fD6H4c/CzRTZafHKZZGd98s8hxl3b+JsADPoAO1dtKAFDr/D6elO4Nb/WsR9W+r875L35el+5ftZ8nJfQBx1xS03GW29qdWCICiiimAUUUUAYfw5/5E61/wCus3/o563Kw/hz/wAida/9dZv/AEc9blABXP8Ah4D/AITrxEMdrT/0Ua6CsDw9/wAj34i+ln/6KNAG/VLW9d0vw5o1z4g1u7EFpZwNNczkEhIwMlsDJPSrteDa/wDtB/En4qXXj7TfgD4U0HUtF8CXVxpGu3er6hLHNqN+lvvuLa1CIVQx70UySEqz7l2gDfQB6p8JPi14A+Ofw70v4sfCzxEureH9ahabS9SjheNbiMMybgrqrYyp6gV0tfM3/BHED/h2Z8IT6+GTn/v/AC19M0AFAz3NFMnE5iIt3UP2LgkfpSewD6jjeQsyvGQAflbP3hilmeSNMxpuORwT781Th1zTptSm01NQhM0KBpIs4ZR3Jz26VlUrUoTUZSSvovNjSbL5OKr27XDITdRqrb2AC8jGeD9cUxr+KO1acy/aCib8W67mYHpgDOaq3Op3lnIZFglvlmu44o4bSNQ1upABZyzAEAgknqAcYNNSi5pX17BZkpt9a/t03h1KL+z/ALKEW0Fv+887dkuXzjG3A249Tmsf4s/Fbwr8FfAt58RfG73n9n2ZRZF0/T5rqZ2ZgqqkUKs7EsQMAHrWJ+1B8brf9nb4Ga/8Wm0xr+4022VdO05G+a8u5HWKCBfd5XRfxrQ+B8PxJl+EPh+T40XFvceJ5tNil1w29uscSXDjcyKoLAKpO0HJyFz3qZVOao6cX71r+na56FLBSp4OGPrK9Jz5bXs5WScraO1k1d/3keTt/wAFI/hZYqL/AMUfB34r6Hph661q/wANtRjtUX+8zLESg92A/rX0Dpmp2usafBqunXAkguoVlgkHRkYAg/iDUs1vFJH5UkSsg/hI4ryX9rP41eNv2efDeg/FHRdLs7rw1Z+I7W28aRyRnzobC4cQC4iIOAY5Xidsg5QP0IzWadXD03OrK6Xla3f7jtlTwWc4unhsuoeynLRJzclJ9ErpNNvTs21seukke5HanVl6brd3qGrXNgdDnitoYIZINRd0MVyXBJVQrFgVwM5A+8MZrU6V1tNbnhOLi7MKKKKBBRRRQBW1gD+ybrj/AJd3/wDQTVPwL/yJGjf9gq3/APRS1d1j/kE3X/Xs/wD6CapeBf8AkSNG/wCwVb/+iloA1aKKKACsDwt/yN/if/r/ALf/ANJYq36wPC3/ACN/if8A6/7f/wBJYqAN+iiigAwPSiiszxf4ki8HeFtR8V3GnXd5Hp1nJcva2MPmTyhFLFUXPzMQOBQBp0V5l8J/2o/APxY1UafZn+y1vLOC70H+1buKKbU4HQFnSDd5ihGOw7gPmHGa9J89P4VdvopoAkorC8e6fr2teDr/AE/w94rl0C8eE+Tq6RRyG2wcltrgg8Dv2qfwl4g03xZ4bstf8O+ILXUrO5gBh1C1lWSOfjBYFeDznpQBrVQ1nWk0qOOKKIz3Vw221tUPMh9SeyjqWPQe5ALNZ1b+yolQF57mYlbW1jwGlbGfwA6lugFRaPoS2Dvq2ryCe/mUCaZskIuciNAc4UfmTyaAHaLpi2Tyajqd2k9/cY8+ZRgKAciNAeVUZ6HnPJrL+J2pfEWw8PRzfCqx0u51MX8Hmw6w0iRtbbx520qM79pO3tXRbiFLACJB/ERz+Xb8agilFxLutI2ZVOPNI6n8aAOfg8WeJLfx3/wiVz4Evo7OXTftR1sSxtB5vmbfs+A28PjJ+7jHevN9Wj8a/wDC/LbUfE2sadaeGLO9UWFvMUkDzspVQvG5ZeWJ/DGa9quYiI/OdwoH3yOWx9TWHP8AD/wRNHLPdeGrVhLfi8uXuVLbpxjEvJ4IwPQYzXBj8LPFKHK/hkn626HbgsTDDc918St95rrm5XbCX8sdCPlH/wBf8KLe2USbEQPgfLIecDuMnt9K42D45+AdZ13wzpfhJxrNt4nuLyC11Wzuolhhktgd6kMysxyCMICQQc4rfsPBl7pnijVPEb+M9Uul1QQiLTbqUNbWPlqQxhXGV3dWyTk4rvtY4nuaN74e0vXtMudM12yjubW9ieK4tZUykkbAgqQeoIJ4968K8V/8E/fAni3SfFlrcz6fDd6pewy+FryLS+dAjiijSOOMb+g2Z+XbnIznFfQUfnFMiVfoUxg/nTs3GfmiQj2Y/wCFa0q9WhK8HYadj5r+Jf7JXwy8KfC7QvBMfwkPjDWIbdtI0vXtVhku1tS5aUzXQDhlhDjPGdu7A4NdT4L/AGPPhh4e1rTfHOoLLqOr6XbFLOK6u3nsbAbVAit4XOIkRgSmQSuTzzXp3j/xlL4O0eG/TwtqeqGe/gtjb6ZCskiiSQL5rAsPkXOSeoArSuUtLz959imDj7skabW/OreKrOFr+f3hdnO6BLdx20losAZo8sPLYE/L8p4PUYK1V8Eajaa3qOoa7ckxLLILbS5JQQGihyGIzjrI0mPYCqvivVdY8JW95e2MHnTBlW0R/lZpZCIlHHH32Uk8cAntVixe28PaFF4dlnkQWVvmRngwWVB8xOepJzyPeucRtXbNdYu4pPLmjJS1cc4bvn1Fcj8X/D1n4u8LR+B9X+HB8Qw3+q2v2+xXUhbeSgkUm43kjeqYDbRyaxfg58aPh1+1N8OL7xh8LfEF7p+xp7CeLaouNPlGQH2/Mgb+NQcjbitPxJrWu+GtI0DwX4P8TaXr3ia2a2knOsXyQXU9mjBZ7nbGPmbBzgLt3HGaTDfQreKrrwv+zH8J7uy8H+Hvs9pp640W1iDlVnkkwoJJJwZG5POOeteG2P7cus6p8WvC114++E2iyZ1e506DVI7kl7UExxO6EnCgsWzu6qBjHU/RfxM+IHwYk8P3Fl8TPEWgqllB9rubLUbqI/u0ZT5mxjnhipzjgketcF8A/hL4Z8M643xJ1O40rTrDxbLK0PhS60m0jcyLIXilSRGPmFYwW4HIYsckV9DleJyvD4OpLEUnKeyadtGrW/U+pybG5PhcBVliqLlPZNO2klb/ADf4HrXgz4p/Drx5qV9oPgzxtp99daZL5d7bWUys0Ld1I9unH866ZYEbl9zfVq5DS/hJ8LrDW77xz4E8MaRp+t3MMkMmr2Fsm4Meu7bwxDAE55/Ot/wnZeINM0C1sPE+srqN/FAour5LcQidx1cICQufTNePiFh3K9Fu2m9r367dDwMSsLKXNQb5dNJb367dC9DHGJpCqgYAXgfj/Ws7VZVu9Zgs+qWyedJ/vHhB/WtJCqK87sAu4lifQcZ/IVlaCjX8smpSA5upTJyOiDhR+X865zlJTp9tb3B1MWsYuCPml8sbjHn7uepGece9WtHkRrZ4hn93MwGfTOR/OpruNXi5BwOv0PWqejOfNeNgMnr7kHH8sUAXZlAcN2YbWx+leT/CT9jr4X/Bv4sa58YtAu9SudT1neB9uut62qyOZJFXgFgznPz7iOgwK9bkQSIUPpTYz5qAuB6NW9LGYnD0p06cmozVpJdUaQq1IRcYvR7js44A496dTTzkkfiKdXOjIKKKKYwooooAw7P/AJKVqH/YDs//AEdc1uVh2f8AyUrUP+wHZ/8Ao65rcoAo+J/+Ra1H/rxm/wDQDR4Y/wCRa07/AK8Yf/QBR4n/AORa1H/rxm/9ANHhj/kWtO/68Yf/AEAUAXqKKKACiiigD5c+O/8AwSp+Bnx4+M1x8ZtV8R6vpd5fXcM19ZackSxSlFAYjK5DuwDFueh45r6U8OeHNG8KaNBoXh/TYbW2t12pFBCqLnucKAMk8k1fwB0FRzzw2sD3NzKqRxoXkdzgKo5yT2wBQBJgdcVT1DUtL0mSGbUr2C2E8ghjaaQJvc/dQZPJPOBUXhzxT4b8X6bFrfhbxDZ6jaTIrxXFlcrKjAjIIKk9aNb0Dw/4hFsPEOkW12lndJc2YuYQ3lTrnbIuejDJww5GaALZnZ/lgQn/AGj0pCG53tk/079uO9YPxHvPF6eAtak+G1uk2uppk50eKU/u3udh8sNkgAbsdx9a+Z/2KfhJ+214c8RavY/tMfEi4vLTU7JWbTG1Xz2sUMpYnI+VGk3Mg2tlVUnstAH0jbzQaxqZ8UXqtJZWTMmlRHnzH5DTAd8nKr7Bj0YVw/7TP7NOq/tH+HdItNL+Kes+E77TNT+1rfaLMQZVYBHjbBX+DIU5yCckGvULCztWlSO3tVW2tRsiRB8uQPT0A4q8XVDuVseqnj+dAHyX+1l+zD8L/C0fhbU9R8Zah4W0afVLKy1nXdIuJ5tZ1e9+WG1jd+RtxuZn6gheDiuP/al/aF8d/sua9ofhT4f/AAz1OLRNJ05rHWPHN8Yru+u7JVjBZZlYmBg7k7pAMuB8pwRX3Be6fpGrxxf2pYW9ysMyzRC4iVxHIv3XAIOGHYjkV8k/8FBfgN4i0r4Sa1pX7NnwIgu5fGNwX8aavY5e6SBZUlPlxl8yMz/NhQfutQB0X7D37QfwJ+MR1L/hE/Etxr3jKSBV1vVL/SXhlube2cx2zycmPdsI+YEFjkkDoPTl8SeL9L+Otj8PPDXg4R+H49CuL7WNVa02xpctKoiRJMhS5/fMwwSAVPc15H+xj8CvjX+zr4Wj8Ial4U8LQ/amtJdU162jKSzQKroYCFOZLhP3bbyFU7iOTX0X4I8N6j4d8MQaLrXiG61a4jZ995ehBLKS5PzhABwCBx2GaALksLzPvilby2Ub3Ax8vfH+PWrSWcKRjyYwrJkgjnPv+NEMZt2Nq54PKN7+lORzG2xv4cke6+n4GgDO8Q2Wkal9klvdLt5rm3n320ksQZ4CeCyEjKkg4yOxrQEZtLEj+Jh83bk1RRTc6it+ozGr/Lk8YAOP8an1q6Ast0RyzKdgzjk8D+dAHm/7Q1h8TZvg3rEvwe1S0svEdxZTHT7i9QNGG5IGSQFbYrAMeAcE8V+d0f7T/wC0t8L/AIA+IfA3xft9b8QWl/eWH9j+IV1I7NNulVbgRmQKfNVhgMFYg7cA96/UrxlYwnQBaTIDGsO11x2xtP6Ma+INA/4J8eB/jBrY8MeK/jzPH4XtfEl4mi6Lp+su5uok6RpFPny3i2TIxXIYLuAHNAHjf7H/AMavGPw+8Haz8fta8RaLdWmgWtpp9n4aado7pEOorKpGQVSEu7Zf5mYqBXaeBvhD8Fv28ZPGHhHwjZHwR40sfF89/qIh1J7myu0kYrvUZBZh8+1VwFyTyDXrvif9gPS9T+Plt4f8R+GdNh+HVppdvougWFhcyxzzoIpJZGm2MAzLIC+WySWVu1e4fDL9i/4K/BrxfpfiX4SeFbLR4LNrh723a2M81xI8XlqwmkYtFtBbIXht/NAH5wfDf9njVPEHxUsPh/YfAO5gntdal0eHxJfahLEl3Mu8+e0bo4DFFcoygIG2Z9/of4W/C+DTvhV8RPgL+0t8S08K6T4p8ftbeGdWvrpmv7lxIonw8yrmNwiDf0OSemM+++Iv2ebD4dftL3n7YOtfFXxBJY22iTRXPh4K88SpsO7ywpLY4D+WF+8uc189/wDBWPxYPD954Ul1t5NW8M+JLppJft+jpJFYIsKqBC6lZBLljJg4zxzwRQB7Z+zT+wr8Hfh/N4c+JHww+O/jPWtJsYi+n258Rh9PugdwJMaKFK9BtHHy+5rw/wD4KufsrXHhGfSvj/8As+/Dy/h1F9QaXxJqGjyMEgESKYZDEM7cYYlgMArk16T/AMEt/wBp7SvEX7NeieDfG9lHor6Xfz6VoVxMrRx6lHGpmZwSNoKBiG5wcA8ZxX1ENV8MeNfDJvbK5sNV0i+gYO6SrNBPEQQRlcqwPIPUUAfA37BPijS5P2hv+EN074/+INdlvfDqXzaJqF2bi2e+dVLsj5ORCOPmwxK+lfoXp9pFYWkdlAPliUAe/vXmPwl+Bnws07xvP8YNB+HekafqbQm3tby0sVR1iPG0YwB8oAPGetepFR/FI31yB/Kk7iGXcQmtniLAblx1rH8N3Asru60qVwpjbcoLcbTk/wCNecftE/tS2/wu8QWHwk+GPg2fxl8QtaiL6Z4Zs5wi28IODdXkpyLaAHjeQWY/KqseBsaJ4b8eat4IsdI+PL6W2ra3Yy2fiH/hGTNBbL5ob5ImLeYpCkLvyGJ+YY6DGNeE6jhHVpa9vS/c9OeV4ihhIYmvaEZ/Dd+81/Mo78vm7JvYzf2gP22/gJ+zRruieH/id4huYptenZIWs7UyrCqkBnkI6KCyg4yeelerWdzDeW63NvMHjZQUdTwVIyD+VfPuqf8ABKf9g7Wo4RrPwB067khYlLi4u7h5W7nc5k3N+Jr1rRvh0fhb8JR8Ovgv5Fg+m6dJBoP9rPNdxW74Jj8zdJ5kiBuo3g44BFTTlibv2kV5W/4JrjKOSuEFg6k3Juz54qK9VZtnYZOevbsadXhXwV/ap8UXPxCH7P37THg2Lwn46MLS6bJbSmTS/EES/flsZmAJZerQviRAc4YfNXuoIIyK0o1YVY3j/wAH5roc2YZbi8sr+zrrdXTTvGSezi1o0/8AgbhRRRWpwhRRRQBh/Dn/AJE61/66zf8Ao563Kw/hz/yJ1r/11m/9HPW5QAVgeHv+R78RfSz/APRRrfrA8Pf8j34i+ln/AOijQBv18i/Cv4UftTfstfFb4mfDHwP8H7bxh4D+JHiy/wDEuieJo/EMNq+h3V4g+0293FITJIodQUaMEkHBxjj66owPSgD5s/4J7+Afj5+zZ+yP8IvgH8QfhAFv9Os57HxRcwa9bumkoolljlIBPnb2Kx7UOV3ZPFfSdFFAGX4c1bXtVW5TXfDMmmSQXbRRbrlJVuIxysqFTkAjswDA54xgm5LqNlBfRabNfRLcTo7wwNIA7hcbiF7gZGfTNWMD0ri9e+FV1qXxR074oaT4oNrNbIkN1aS2Mc6zQKJQURmw0JJlBLL12AUAdZd228M6qWLKFKF+MZ64rjdN+G8lr4xk1Rr6UxFt0mDkzZ5KsMYC89M44rsbSXUZHmW+s44lSYrAyTF/MQAYY8Dac5+Xnp15qcDGAQK8nH5RhMwqU6lVawfMvUuM3HYz1spGs0i0txBAF2rAYNu1ANoUDjaM1h+DPBmsWGgPpXiC/PlXSZktLeSRWhbamdsivkDKsTg9Wxnjmn4j+LugaZqkOialcRpNdNIbe1jeXz02GMAzbUKwrvbaWY4+ZOfmxXYSXJju47MW0hEqM3mqvyrtxwT2znj6V2KjSp1VNrXv6iu2jy39sX4aaX8SvhTZw6943sdB03Q/FGk63qd9qbYgNvZ3kVw6OxIC5CYDE4BxmvUra5s2sUuo7tGhMYYTK4Klcfez0x3zWd478FeG/iN4O1TwF4v0yO90vWLKW0v7SZcrLE6lWU+xBNfPfwHk+L3wB8TL+zJ8ZfA2oeMPBzIbHwr4/tglxGlgELpa6pEWzG6KSgn2lJAF3bSeZnNUMRzNaSsr+a7+R7uHoSzPJ/ZQqe/RbkoOyvGSXM4vq04q63a1WzOl+OnxR+Jth8QrfQvAWutCUaF47D7Mv75Sx3yE5JeMbQTjbw3cEGul/aJ+FvjD9oD9lPxN8KbW701Na8R+GprWGeV2Fqk8kZCsWUMdoJByAelZfxl+IP7Mn7Ml/o+v+PNMddauIWi0O10vSZ7q+u1iAAjjjt0YsFDKACMDisn4TfFH9ob4heMp/jR8QvCN54J+HtvZ/ZtD8IXuniXWNRmkkTbd3KpuNuAPlSFct87FyDgDfGYvCTh7C2tney2XW55eQ5JneCrTzeU1GEZJwcnZOUXdKK3k7720VtWj2/w5p1xpGg2Wl3c/my21rHHJIOjMqgE/pWhUaMskayKOGAPI5qStI7aHNOcqk3KW7YUUUUyQooooAr6x/wAgm6/69n/9BNUvAv8AyJGjf9gq3/8ARS1d1j/kE3X/AF7P/wCgmqXgX/kSNG/7BVv/AOiloA1aKKKACsDwt/yN/if/AK/7f/0lirfrA8Lf8jf4n/6/7f8A9JYqAN+iiigArJ8a6Jf+JvCGqeHdK1UWNzf6fNbwXhhWTyGdCofYThsZ6GtajA9KAPDvgz+wR8CPhfpfhy71/wAOQeIfEnhyJVtvEt3GY5dyyGRSEVtoCk4GcnHWvcaMD0ooAbJFHLG0UsasrAhlYZBB6g1iiXQvAeiw6Po2kwwRxMYtO02zjWMMSd2xVGAo5JJ6Ac1d1vW4NFtxLIjyyyNst7aLl5m64H6knooBJwBXP+G/hrpekeLNQ+JerPLJrmsQxxXRNw7Qwxx52RxRscJgHlhgsRk+lAGto2n3MUz6rqD+ffTACSVRhYl6iOMHoo9TyTyfQXwJN3yEFx1bqR+PQV5d+1B8aviv8GPB0XiP4ZfBy98as/mJcW2nyHfbNtzG7IqlnQtw20cY5612vgDX/EPibwRpWu+KPDzaPfXdhFPe6WXybWUqC0Z7nBJHvQBszRxK4DkyzHhe+38DxUiu2PKjOMdFjGT+fQU23S3+9Nncw+64xgfTpVpdgGExx2FAEKwyMchQuRjLfM1RLbIjFJiXH3WLnjGOD/SrlQzooxKR7Nj0oA5y0sPhdquvrp1lZ6PNq/hmQssUEMbT6a8y53AAZjMi89t1Z/gv4oXvjX4oeJvB+nafZPYeHBBby38V+Hl+1uN7xPFgFNqlCDnnNc/ceOPEGu+MfEWjfCT4YSWOqrDPa33jDVtPENt9vhVRArrkS3MZDfK65AAwDXofhnTL6z0S2fVha/2m8CNqM9pFsSWcqA7AHnaTnryBj0oAvGOZJNzThVc87Vxg+vNSfZ42GXZm+rHFClZoyjDnGGHoaWFyQUb7y8H396AGTxooRI1C5kHQfj/SpqimGZogB/ET+lPZgil2YAAZJJ6UAeMftS+J/iZ4csJNX+EXguDxBquiWjX8ml3ErKJtwKKq7QdzYMzheuUX1APgfhP9pL9pT47fCjxF8LfiB8K9f0LxlYyWc/8Aa3hrTd6xxSTREQSxs4KOUJymTlN3Awa+tNHhOqabc+LpEIOq3XnwFuogX93EfbKYfHbea1PC15puq+dc2E8M0btl3hdWBcZRwSO6kEfWgDxP9krwna/B3wrqGheEr2ysPCNhJK0V/r0TWd5d3fnus7ToyKFiB2qjgnIxXFx/BTQv2hPiT4w1bQPjD4l8L+IDqL2Wv6ddzQXc9pYMSyLa4O+1hmJDBlOSK9x+NP7N3w++OGg6tp/iG1e31HUNH/sz+1oMtJFbiVZVCqTtLCRQw4yOlXvhj+zx8PvhZ4u8QeP9AS7l1XxTHbDWLm6n3K/kR+WhVcAICOSBQB86eDf2KfhH4s+I/if4Q/Frwzqmv32l39prv/CYTvsOowSAoliWCklERFDDdyeeK734ZS+Ap/2kdf8AhdBoE+q2Xhy3guINU1C4ja30K6aIRR2louNyM0JJY7jg16V4y+HHifWfjF4S8c6b44n0+x0aO7h1HTYmYLqIlQeWWAbaShBxuVutcR+2B4Q+HZ0rQm8ZeH9Jew1XxTbW+o3EuovYTCSRGSOVHiG6WYHAUE4xn0oA7X4ZfAiH4OSaVonw48STWfh62+2T6tpd3ELibUbqZgwmadjuVlOeB1yPSvQ22qpJA45ryb9nP40af4rtvEXg7UbvS7ePwl4gGi6dJBqEkvnwrGnlb5JQN8pzhtpPINerTn9y3PUYznp2oAzfENy0WkpZo2JbthGuOoB+8f8AvnNXNNtlgtlGMZAwPQdhWc4Oq+JzCP8AVWMewnsWOC36bR+JrZLDuv1pPRCEY7u3X1FZkY+y3iEnGXPX6kZ/UflUXjjx/wCC/hp4bufGHj/xTY6Ppdmhe5v9RuViiiX1LMcCsDxV4u1rxF8IF+IPwRstP1+7vNPjutDjvr5rW3ukkAZWaXY5RSpznaT04FQ6kE7Pda2W500sJXqRjK1oyduZ6Rv67abs7fPUimYCy4HR+a8Dg8Wf8FJ5I1v/APhVHwmkjdA4tV8X34kP+zv+x4z74xXqev8AxKsfhv8ACv8A4WT8Z7my0COwsop9ddJ2nt7J22hgJAoLIGON+0DHJAGcZ08RGom2mvVWO3F5RWwsoRjUhUctEoSUnftZHW5Oc7h7U6svwx4q8OeM9EtvE3hPXLTUtPvYhJa3llOJYpUPIZWXII961K3jKMo3T0PMnCdObhNWa0aCiiimSFFFFAGHZ/8AJStQ/wCwHZ/+jrmtysOz/wCSlah/2A7P/wBHXNblAFHxP/yLWo/9eM3/AKAaPDH/ACLWnf8AXjD/AOgCjxP/AMi1qP8A14zf+gGjwx/yLWnf9eMP/oAoAvUUUUAFFFFABXI/HGG8ufhJ4gs7S606HztOkjml1a+ktrdIm4kZpY/mjwhbDDuB0rrq5r4r/CnwN8bfAd/8NviPo/2/SNRQLdWwlZCSDkEMhBBBAIx0xQB+NfwK8PfHzxd+0FN8OP2cfFV/bSyeISUvtHvbg6fEqTsUkcrkNEAuQXB9+tfs14N0TxFpvhbTrLxZqaanqUNlEl/dj5FmmCgOwUDABYHt3rgf2RP2SPBP7I3gjUPCXhWYXU2p6xPeXF88ZDmNnPlQ5JJwke0e5ye9esvJHFGZJHAVQSXJwAOuc9qAM7XteOhaeJ0sfMmkcRWlsjczSHoo9uMk9lBPaqmm2c+h2PkSStLf3kvm3lwR99yOW9gAAqj0UDrmsy88Z+FtI3/EXx14msdM0+KF/wCyzqFykQEIGXm+Y8lwOPRMf3jWp4N8X+F/G1lFr/hzxDZ6hFeWiXFs9tcK4aBxlHGP4W7HHNOzI9rT5uW6v2NaCKCGBYrcMoVeoFOe6SMfvgR6YQmqdtr+hXms3Phi11K3l1Gyhjlu7RZAZIUkzsZl6gNtbHrtNW2WNG2x5aQ8gBulIoyfGjeIIvC2pXPgkWb62LCU6TBeORC8+wlBJtOdpbGSOleY/spfF3x7468NX/hf41eKvDc/jnR9Vni1TTtDvFYwRghgrKACpTeFOMg7QcknFeo69qlpoGj3uv3195drY2stxe3DLlUjjUs/A7gD8a+E/in+0Fov7T/w01Tx9+xF4LvPDXiyDxBHaeLPEEekW0N19ilWQtK9wJMxpmMMzZzwBxQM+8bm2ZL2NWCt8pcBTgAgY2gH1/pUDeLdOsfE1j4YuLa7+0ajbSzQOlo7QosWzIeQZVGO9cAkZwcZxXy1/wAEoPEv7QfiX4b61o/xt8TfahpN0kOm2epg/wBoQgoHWR24LwtubaSCcg4OK+ivjN4F8T/Ef4c6n4O8I+Pr3wtf6gi/Z9b035prRg6lioJxyAw/4EaUm1G6RpRhCrVjCcuVNq77eZ1t9PZwweZdXUaLkYZ3AGewzXxn/wAFDf2qv2k/AXxI0HwV+zvbalaWdrcwQ+KNYm8O+bZq9w6CEecwwQFJDBcfexuzwM39qv8AY2/bE1OLQfDPg/4oX/jrw2beG0vrbWtWNrPa3e1UN9ujHKpsD4beQzsdpr5k/bZ/aL+L/gLU9S/Z7g+L1xfaVd6NbnVIbe9e6jiu1KK0MVywDvGPK5/2i6nnOPn8yzGpToyUouFra/ofrvBHBuEx2ZUalCvTxEpKTcGmlFaK7Xe12k+p7b8Xv2vP2iPhj+z94B1n4n/EDUbLxHrV/rFtf2GkaMkTyoYpIrdnbOEKSFGUqRuB/wBkmvoL4BfGfWPhJ+xh4c+IX7UlzqGnXWkWgXxBJqEUklzhJjGkjDJZiwKEnnOQelfkBpPi7xT4j13RNI0u+a1nglgtrG4MzYSbztyyZckKwZgSy4GD0r9K73wV8E/2tfhrpHwo/aK/acvbTxXNJCV0uPWraI/aQqRHy4UyskcpTzUDZYebnjOK4ctzGriKk3B6qKSTdleyvf5n1PGnBmAyfC4ajXgowlUlKpKEW5KN3ZRSWitJ6t9EfWfgr4n+DPjf8OLH4i/DrVvt+jatbsbK6ETJvG8owIYAghlIII6iviDxhr/xbu/+CgGp+N/g5ZaXq2v6VqUOmWfhaZGiYWzRMtxdSqQDgbyVmXI6jkV9i/Bv4e+BPgP8PtJ+AHw/1ppYNGt1WBby5WS4VDI0jMwHqW44xggV8keF/hb4x8Pf8FQ9Vt/G/wASPEB1CWyQeG/E0egK8RWRFfyWIHlplDJGDg8ZOQ1fV0nN01zWv1t36n4BjqdCni5xoX9nd8t1ZuN/db82j7Y8Q28p1Tw0kxUOt3K8yKMjcLeUHn/gR/OuktsKwRnbBAIOcCuW8VeJNE074p+FvD2p3oil1W11BrGMg/vZESLIz2O1mPOBx61T+KvibxB4D0aH4jWDanf2WkQyJeeHNKsUkk1AuyrG+98GIIcndkDBJOMVoch4V/wVik/aXsfgw198F9TgtPDEVjP/AMJnMHRbhVLxiIRsct8xJGF5554JrlP+CTXg7wx8dP2RtZ0T4yWNr4rsj4wkdLTWomnMJEURGfMBwc8jBOBj1NfaGm3Vj4n0CG6uLSOSG8tlZ4JdrqVYA7TjKt6cZB7Zpvhnwh4W8GWL6Z4R8OWOmW0kzSyQWFskSNIerEKACT3NAHGfG/4HWnj34E6z8IfAC6d4ea/sHt7CeKxAitGYjLhIwMHqMj1zXk/7IfwJ+IH7LHwf1X4BeJ0+13Euvk6ZrkFwWgvop0QtsjJ3ReWqEMMYJ55zX04wXHzAYxzmvHvD37VPwC8YftB3nwdtPiBaPr+j5t4LJs4uJSA0nlv91mUYUjOeG44NAHrGj6ZDpGlw6bAMLFGB9T3NQa74h0Hw3ZLfeItZtbG3aaKBZ7y4WNWkkcJGgLEDczsqqOpJAHJq9vGPun/vg189/tiA+MPjX8EPhDcBjZan46l1XUIypxIun2c08an1HnGFuf7tYYir7GlzJa3Vvm0v1PRyrAf2ljVRbsrSk32UIuT/AATseoeAPgZ8Ofhx4u8SfEXw7pTnWvFuoJdazql3M000pVVSONWbJSJVGFjGFXJIGSa6PxZp8l/oksVsp86MeZCf9teR/hV0lY41ROgIHT3rhf2kfixefBz4Sal430qJJbyFoo7RJ49yb3kC5IyMgDcevatqVJL3II87HY+coyxGIk5cq69krJeiSsjuNMvY9QsIb2MDbLEr/TIzUrKGX6jrXxX4I/4KMeM/D/j0eFvFmiafPoq6sYUms4mDmFmGPLO4ghS/fnC19pRSx3ECTxnKOoZCO4PNbVaFSilzHm5fmuDzLm9i9YvVWtY5H4ufBH4dfHLSbDTfiFoxmfSdUg1DTLuCZobizuYXDJJFKhDIeMHBG5SQcgkV0GjeKPD+t3d7pOia7a3lxpdwLbUYre4V3tpdiuI3APyNsZGwcHDA96vjar4IGG5H1r59+Fkv/CF/8FCviZ4OtV22vinwfo2v7FPH2mN57OVvqUS3/wC+K4aso0qkXFfE7P7mfVYKjPMcFWhOo/3MHOMd1rOKkl20bl6rzPoUkng/kKcOlNO4cjrTq6TxkFFFFAzD+HP/ACJ1r/11m/8ARz1uVh/Dn/kTrX/rrN/6OetygArA8Pf8j34i+ln/AOijW/WB4e/5HvxF9LP/ANFGgDfooooAKKKKACjAPUUUUAFGB6UVHNNHbwtPNIFRFJdj0AAzmgDD1Twt4V8UeIUvL+zd7rTo2jlHluscscq/6uQEbZl4BxyAQDwav69Lr8FpFJ4csraeYXEYlhupTGDEWw5DAHDBSSMjnFVbLxHcx6TfeJdX+znT0bzdPk08STvLbbFIcqFyWJJwqg8Y61pwXsE9nHqG5o45UVx5ylGAPIBB6HnoaAK+ta7oGhi2j1zV7ez+3XS2toJ5gnnTPnbGmfvMcHAHNc9dfA/4c6h4Rk8FahpElxYylfMEty5kYLjAL5yR8vT3PrXSNp4w0t032tlm863SaNP3TYwApAGOcnJ5+Y81zPgHxN48uvFOqeGPiA2gRzw28Fzp9vpU8huBC4IYzK3C/OCqlWIOCcCi9hWubxmW518adJ4dcxQ2wdL+XbsDZx5ajO7OBk8VX1f4geC9E8SWHgrVNdgj1TUmxY2GCZJQAxyFA+6AhJPQY5Iqj4i8e2vgSxgXxzqsMNxqOpG00s2ls772dj5Y288heW7fKT0o+yfEK60uePVW0WC/ZiulXUJLPADBgvh0wzh88YAK8n0rOk4TbTdzWakku3Q3v7e0VVRzrFqA9wbdCZ1G6UEgxjJ5bIIx1z2q5kjrXnHhnwR4i8V67a3fxWuLK6bSIxL/AGPHoi/ZI7tyx+0RTugLsFJUhcYJz9etPjbS28bDwJHFO959gF27ogMaRlio3c5GSOOOex4ONpQSehmO8UeJ7rw/9mS20S4vDdTCMND92Mk/xeg/wrZByAabgbuQKdXLSp1o15zlO8Xaytt/w421ayCiiiugRX1j/kE3X/Xs/wD6CapeBf8AkSNG/wCwVb/+ilq7rH/IJuv+vZ//AEE1S8C/8iRo3/YKt/8A0UtAGrRRRQAVgeFv+Rv8T/8AX/b/APpLFW/WB4W/5G/xP/1/2/8A6SxUAb9FFFABRRRQAV4f+33+0B4x/Zy+Alx438GQxpcz3qWj6i7oWsFcHEyRP/rmBAAT3yeBXses6xBo1sJpVeSR22W9vEMvM/J2KPXAyewAJ4AJr55/a+/Y78f/ALR9tBdN8StW8i7uLS31Lwxb3kUNjFbCffJICYyzuoAOMjcVHQACgDI/Yh/aC+IP7SHiu48aXU2o6jpy+FLKK5v57BILSHUFZhNFCoH3jlWb5yOmQMAD6aihjB3XdvcSOTyWXj8hVL4dfDnwb8KPB1j4D8A6DBpumafCI7e2gTAwOpPcsepJ5JrdwPSgCCO8s+Qny4P93FQNNay3BtXkXb97B459KtTkKuNoLNwoI71G9nFFECqcrzkcE0AAk2ghZFkUdQWGR/jTkS2kOVGCv93II/LrSCCNwNrnGOM8/wA802SyViGIQns2zB/SgCbypBykx/Hmm4n2lXjVgf7px/OoPLuYRzF5gHeKQgj8O9fPP7Z/7XXxE+Aetw+EvBHhzT45Ljw/c6tHrerXe+IC2y0sBgX5gWG1Q+fvOOODQB9Ayy7pRHIGXy+GYjv/AAGo7DxN4fvtZn8NWuuWj6hbQJNNYpcKZo4nPysydQCQcHHOK5D9m34ma58a/gb4b+LPiHSF0261+wE9zZR5ZIwWIXBYA4wAf+BVp+LvCGqS22qar4BbStN8UXtkLaDW7vTRLt2klfMAIMijJIXcB81JtpXKhFTmot2v329WdY6kHzY/vAc+hFea/GD9pLw18JPiX4K+G+oaXLd3vjO8ntrcW067rdY4929kPJUnAyOhNXfCHjTxf4ev9K+H3xcurSXxLqpu5rabQbK4Nm0ETDBZ3BEb7WXIJGTnbmvmv/goX+1b4M8FXl/4Guvhh9r8caLPbz+B9Sht4rqWKWSMst0I87kVXGzawJY87SBXHi8UqGH572t/Vj6Th7IqmZZvHC8ntE0/haX91Su/sqVm/I9n8TftOeIvCHijwDZ+P9CsfC0XifV7yyvbfVJZJ2G3It9ksK+WjyHYcSEfe29a9P8AiBqQtvDhsY7kJLqLi1jk3Y2K3Mj57BYw7Z/2a+J/Av7c/gb9pqbwt+z74x0y1j183+n/ANqt4z0zy47m5jYu6QpCx8uXcoKFsLzj2r1748fs+/tEftL/ANq+CYfjVa+EdO026kjgfQbJ5PttvPEMRT72Uq6p94LlSsoA71jh8X7aEp0nzrpbvZaHo5tw5/ZuKo4bHxWGlrzN3aceb3ZLdve3okfQlpNo2raDBLoF3BcWTwbbaW3cPGybcDBHUcAV83/Df4k/E3SP2ipvhJ8DPhXpj+DdG1mY+Jrq1ulK5uCrM6vjbHLHIzFoT8zLgjGa9w+CHwosvgd8HNC+FelzxzR6HpyQeekIiWVxyz7cnbubJ6965X4I/CDxn4d+JniT4t+O49MsdR16CO2Oi6OztDCIpHZZ2c4EjuCuWKgjGORXowcnFOW58biIUYV5xoy5opuz7ro/mj1i6AhlW5UezU6HCMYhjHVPpTmAuIPlH3hxmoomZo+PvxHIHtVGRyH7QOp/FXSfhTqV18FPCkeseJ8KulW01wkcaOWH7xi5AIX723POK4P4OeKdH/a9+GmsfDz4+fC22lv9EvjZa8ohZ7F7sBgWtpiAS6jqy4KFuCRzXualXAcd+hpsNvb24ZYIEQMxZgigZJ6k470AcJov7NfwQ8K+ArP4b6L8PbOPRNP1AX1vZsXfZcBt4m3sSxcNzuJrB+B+n/Fj4f8Ainx54X+JF7qGqaJFrY1Lwvrl5P5m+1mUu9sCTuBiZSMYxgjBr1wgHqK5zWde0G68S23w7l1m1F/JCb17EzqJTbIwG/bnO3dhc4xzQBoeF7KW30z7RdDE90xmlHoWOcfrWhISqEoM8HGaFlhYYWVMexFeUfGb4y+L/C3x3+GXwZ8Fx2ZfxXf39zrkl3EXMWm2lvlymGGHaaW3UE5xuPFZ1akaUby8l97sdeCwVfH1/ZUt0pSfpCLlL8EzjfDn7N3jn9oD4sz/ABj/AGtrGF9O0LVZV8BeAFuRPZWcaMVW/uV+7PdSY3LnKxKQF+bcx+goLKFdPS0iiVEEe0KowAPapjjaRkZxzimwuPIQg5yo5z7VNGjTpXcd3u3uzbMM0xWYyjGbShBWjFaRivJee7b1b1bKmgykWj2cn34JSjA/mP51ZvrC01O0ksNQtI54JVKyxSoGVweoIPUV4x8Uf2v/AAB8K/E8KWdlLrNtqNuXefTplKpJGxVh+WCfYZGa9b8JeKNG8beHLPxT4fuxPZ30Cywup7EdPqK6Z0akYKUlozwsPmOErYmVKjNOcdWluux4XoH7Nfjf9mz422fiX9miOH/hBPEWpH/hM/A0915dvp7OCf7QsAeImDf6yEYVwcqFYfN9Ch88YI+tRz5XEioeMgnFeT/sy/Gfxl8RPFnxI+HHxDFv/a3gjxnLYxvbw7FlsJoo7m0cjJ58qUIT3MZrihGlhZKEftN2Xnvp5aXPpsTWzDPKEsVVs3RjFSl9ppysnL+Zq6jd67Xueuk54zinU04A4FOHIzXSeKFFFFMDDs/+Slah/wBgOz/9HXNblYdn/wAlK1D/ALAdn/6Oua3KAKPif/kWtR/68Zv/AEA0eGP+Ra07/rxh/wDQBR4n/wCRa1H/AK8Zv/QDR4Y/5FrTv+vGH/0AUAXqKKKACiiigAooooAMD0rA1xm8S6n/AMIpbt/osQD6vJ6qfuwD3bq3oo/2waueI9am0izVbGITXt1J5NjbseHk55PooAJJ9B714t8fv20Pgp+yNr+h/DL4gS39zqHiCF55rqziVvLLSBPPm+YEKzFsFc4CY7CgD4j/AOCvureI/FX7U9xofia4trHRdD8DGbw40jx7bti37zBz97fuUD72U6Adef8A2Lf2nvHvwH+NepXngf4Z3Hiizfw5ounXyWjALa2iiIG4LKG7t16Df83avvfU/wDgnR+y74v8Oiw1Xw3fzRz2FxEsg1qdyq3PlmRk3swGTGpHbOTjmux+A/7JHwU/Z1ivH+Hnhxhc6hp1rZXt5fSebJLBbxCNEyRgLgZIHBPNbKcVGzPl6mT4yWPlWhOybvfrt2ML9mD9pXRf2mNM8R/E7w54es9L8P292tjaavJdoLm4EancZlGfKCk5TJOVcHFcj8GP2oNF8WfFofAzR/ilHEfDPia70a6ttRJvr/X0SDcs3mqB5IEm4FzkHZjg4r27xH8HfAOtfDPWPhXp3hmx0zS9asJra4t9Ps0hT95Hs3bUAGQMc+wr5U/4J1/8E9fH/wCzT8ZfE3xL+JGtTySQvPY6M6XKuuqQOVJuGUMShBU/K2cl88beZXK0ztrPMoV6FOK5k780ux7H/wAFEfiN8SfhL+yb4i8YfCm2jF7AIormV7ZZVgtXYJLIVbK4CnHIIwa/JXw/B8TPAHge08f6P4aLWXie9eC3uYJTLDPKhBFu8KHZuB+YK4PB6EV+4njjwR4d+JPhDU/A3jLTEvNM1ayktb61kGQ8bggj688GvzE+Kf8AwTn/AG3vgh4h0zQ/hIh8S+H4fE51DQ4dOlDpazoy+XLcRSBQpKqATkjjrWZ7SdzzT4cfGT40/DD4+Wc2pfEi+0bX0vbG2uY7u/ZoUz5ZkW4RFA8pVGPLOCoyBnBr6b+Af7X3xZ+Jv7X8Hwi+JHxts9R8O+ItPvrTT30WCJLO5mCukbxkAujEh8ZIP3c9cV3g/wCCPnwr8eaHdeIPjJ4/13UvGOrW5e+1mGRUSK5Ll94jO7cQGCHJwQueK5L48fs963+wd4G8CP8AsqfB3UPFfiyzu7wy+MZLNrhod+3McsKfLtdWbb0CmMnPNHUd7H0J8GdA+PPwC/Z01LQ/iD4hh8aaxpUdz/wj9rbqY5TaxoRDbPJj53woG7HBbHOM18A/Hc63+1N8QLD4maf+zf4nubbSbi0kv9A0/SzDZpY4D3Kq2xXlna4lcHAJAXIzzj6z+GX7UHxC8PfGP4cv8XbxLuL4raHGn2cTLHbaLeQRhHSMIGEjSSMcgsMZUfw86nju6/bLT9qjStPm+CtjrngTTfFkV1put2Opi3a3tZYDG5kj3gyNGXZvmBB/I15WZ4VYmMYybtfor/f5H6BwJnX9jVq1SnCLqKLalKbhp1Stu302Z+ef7OH7IfxI/aW8Z6xN4V0XQ7WbwrNDP/wjOpMbee+iMhIhKnnZgYZ25+YDPIFdh4E/Yk1zx5fnxJ4S+JOheEbvTdduLLxXqN3evbpZgKHElqHVG8so+woSTkA7sGvvX9sODSPgrYar+0v8K/Dkd14u8P6S7ajp9rfLbxT20o2Ge7RcNMEVDsBPXGM4r5C8A/sEfGb9tjwb4M8bWHxfFv4RJv2vLS7tv32j3AuPngChg0xbHyu3KqqgjpXmPJIYfDP3XOV+jt1R9xS8UMTm+cRvXjh6HI780eZp2s4/3rvVfK+x9QfAv9k3S/2VLPVvF8XxRt/FHxG8UWnkaRcavdLAl2YogY4YgzO2NwUswJz8vAxXqf7NnxX1nxxpDeGviOLeDxtoUcUHiexjaPIm2nEqqjNhG+bbyCcdBXmHx/8AA3xT8Xa9oHgn4PeCrLW5fhlBZzS6trLLHeXE8i7ESKR4tgwqrK7IckgLgHivNLD4M2v7Ir+Ff2stWtfFv/CStZx3/wAQLW8Ms0HluFguTJIoOJA0/mhWzu8s4219DQoU6KSirLsfjuZ5ricyrTnWak2171rOy0SVtEvI+o/jB4ls9D8XQyavp9pNpUOg3K6/LdagLf7JZzyIHlBPJOYwuAQTu4rxXTv+Ch/wAuPBMuj658Ltes/AzW02mW9zf2pkGo7WW3FvFHktLldxbPIC88muv+FHg34P/tNfHG7/AGotA+Id74i0q48N21pDosu0WUaP5yvBNEVy5DJvw3Rmzg4FZv7VH/BP7S/jNpfh74dfCX+x/BeiW+o3d/ql3a27NL5ssewiKIEJ8/8AESQRtGO9b7HknLaVr37V/wCzp44vrr4O/BabxT4D1m+LeF/C2n3Comn2IVHknLnJSR3kKrEzcbW44FfVvhHxjF4m0uxl1DT5NK1O6sEup9DvpEF1bK3BDorHo2RkZHHWsr4HfCjSPgT8KNF+FWiXc91baPZiL7XcNmSdySzufTLFjjtXQLoegNr7eJbfSrb+0zai2e/EQ83yQ24JuxkruJOOmeaAOR/aZ174j+F/gT4o1/4SpbSeILPSZZrCO8BKEoNz4wQd2wNt5+8BXyR+zj8Nf2ev2ev2Ov8AhrD4p6fNqniSTUYNR1rVvD+orcXtq8l0hjgR1k+QYZC653EF92ckVl/8FQ/2ndL8deLov2fPhp4417Q/EvhbVEkmAi8m01CWVQuwy7wV2K5OSCrbsYJxWN+wn4W/aG1P4H2eh/AuDw3ok9p4wng8aad4mhdjqilIcZSZMM0YEpwhGMDjNAH6AfCn4meFvjH8PNL+JnguaeTTNXtvOtGuIGjfbkrhlbkEEH8q5L4i6l8KdP8AijovxB+Jt3bW0mgX6aT4avLhmAXUb9QrRjHG508pBu4y/qRXoMslh4a0Np2iigt7K2LFIUCoqKuTtA4H0rzL42fACT45fs36r8NrrVH07V9WT+0LTVEXL2OpCUXEMy+vlSrHgeiAVlWUvZvlV2tUu7Wx35Z7H6/TjWm4Qk+WUluoy0b+56rqtD1d2R0VgeCRXmf7VfwIuv2gfhh/wiWl6klpf297Hc2UsxPl7l4IYDqCpavIPht+3H8cPEt14O+GUX7OGrX/AIpi1R9M+IrLGYbXTJrdQJmSRvlKsrxToxOGjkAGT0+rVx1P41eHrc0Y1IddTkzbLHRq1cFiVe2js7p+aa3T3T7HxL4J/wCCcvxQXxfBH42vdNfR7fXhcXBiuifNty2XjVVCt8wHO7u3TvX2raWsFjax2VtFsihjVEReiqBgCpQDkgYzQQccEZ9DXRWxFStbmPJwGWYXLVL2Sfvau7uNk5TI6ryBXGv4P+H+vfEW9+IfhSewPi7TrNNNvLyObe0cQPnrbTIDwp3h+QDhgw7VU/aP+PXhj9nb4V3nxD8QRS3UxZLXR9KtBuuNSvZTthtoUHLO7EDjoMk8AmvJP2WfFnw9/Z0Fj8L/AI5/ESwT4s/EjVpdc8QWCuzH7Zc8x2+eQqRxrHBHkjcIgR1rgnVUq6ppbat9v+H/AMz6mhgalPKZ46c3G7UIrrN7y/7dirX82l3PovRdZi1eJt8bQ3EDbLq1f70T+h9QeoPcYNaNZGt6RdyzprOjOiX0KlQG4SdOvlv7eh7H2yDb0jVoNZtPPgDIysUmhk4eJx1Vh69PbBBGQQT069Tx0XKKKKBmH8Of+ROtf+us3/o563Kw/hz/AMida/8AXWb/ANHPW5QAVgeHv+R78RfSz/8ARRrfrA8Pf8j34i+ln/6KNAG/RRRSYDJJkjjMjthR1Jrnl+JOiG6Ns8VwhM3lozxnaxyBnPb159K2dTgluLUrDK6nIP7s8tjnb1HWvP8AStC1618Womo6TLNFGpkWZoGZVkIzubkjuBjOeBXy+e5nmOCxFGGHi7SlZvlv/wAMbUowknzHpO/ahYZbjP1qro2pTatpsd/PpdzZPIDutbtVEiYJHIVmHbPBPWpLGGSC0jik5ZUAJGcH8+asAAdBX01OTlBNmNrGTfalrOp+FLnUPC8PkXz2shsU1K1cBZQCF3pkNjI6ZBrK0hPGPijSrHXb7bpl/BZSEQx3fmwPcMCp81FxuUYBA3cFiOozWyLPUbOe/wBSbUZ7sTIDa2PyKsW1fuqfVmz8xPcdhWZ4U0Pwt8KfAKWtjp7adY2sb3FzGW8xxI7F5CxXO5i5OcdSeKsC2mpP4jS3XQNVYRJOxuL61SN43MUmx4DuJIyQwyAfunkGs7x1oHhr4r+Hz4O1S8vRp93ITNNYzCMSeU4zCzEEnJByAOinkYFP8I+ONL+JGji+8EXz20STxuJJLdGWaInJKYYgq2GXdnqp4rBSw8R6p8UrnULS4uriztbET21jrmkusMV0DKoMM20CM4cAkBiV6gcE604QnfmdrIqKT3OluJPB/i7VT4ZttcVr/wAP3cFxPa2l3iW2YqSgcA5CsueD1FUvHfi7TvD9nq1xqPiE6fDbaZuknaNY/KOSNyyPwScqAOgPftXRWEVkWe+ihg8+VQs8sQB3Edi3U4ycZ9a57x14RuvGEsula7fRpoE9oI7uBmUGRiW5O5DwPl4yOfpg8eMco02qad/+B18rmtBU3VXPsaOj6hba5psVtaTTOfsimPUGjyNxBXcpYDceCc4xz6Vkap4C1TxBa2Oua2EbxBoCXK6JfJcHaWdPLEzjaFDMo5G0hdzY7Vd8H6fD4F06Tw40bW2k6csUen3F1c+Y0gI5y7MT944A49BxXPakb7wf46ufG2rMdH0h7yO0mH2trpdU80qEkKkgW21yVwFJOfeqw9TlpXlutyakX7T3Vp0Mdb7xW62vjP4kW17eXCXhtm0/w1dSQLabZCyGSMygzMT028FecNkV2Hw+1qbxXez65qscH2uHdCv2G5Z47dDtfypVJwlwARvGOOMVqabL4J0fU49L0g2Ftc6grOkVuqq04iVVPA67QVHtxTbbwH4e0bUr/wAR+GNGs7HVb+JxJeLASruSW3OqkbvmwSeCcDJrpdWnNNIzaknqWfFVn4jvdIaHwnrMVjeiRWSae3EqMAclSvoR3HIrwX4e6b/wUFm/amutZ8e6ro8Hw/Er/wDEsjeN08g7hGIWUeY0oIUsXCj5sZ7V7h4A0vxpo/h9bXx54jttS1AuXkmtLcxoueoAJJIznHoCBzjJ3cgcZxzWTaQhaKKKYFfWP+QTdf8AXs//AKCao+BTjwToxJ/5hVv/AOi1q9rH/IJuv+vZ/wD0E1neCiw8D6OVwcaTbnn/AK5LSdxSaSuzXO7sarajqdho9o19ql/FbwIQHnmkCKpJAGSeOpAr86/iN/wUT/ah8P8AxA1zQdM8U2CW1jrFzbwIdJjbCJKyqCccnA/WuO8f/t3/ALRvxM8HX3gXxX4ls5dO1CIR3KRabHG20MG4YDIOQOlfU0uE8xqcrbST8z84xXiZklDnioyco36aXP1MVw43g5HbBrD8Lf8AI3+J/wDr+t//AElir5p/4JvftVeOPilbS/CDx1pl7qEukWge015YyyiIHaI527N/dPJPIPINfS/hb/kb/E//AF/2/wD6SxV4WOwdXAYmVGpuvyPs8mzbD51gI4qjez79H1Rv0UUVyHqhVLV9Xt9HtPPnLu7NtghiGXlc5wqjuf04JOACQuraxbaRam5uCxLMEhiQZaVz0RR3J/LHJ4BIq6NpN01yde10hrx12xxA5S1Tuiep4+ZupI44AFAC6RpFz9pOua0Ve9kXaiKfkt0/55pnr05bqx9BgDVwPSiigAwPSgkAZNFYfjXSPGmrxWCeDvFMGlmHU4pdRM1l5/2m2BPmQryNjNxh+cY6UAa8WZXM5HGPkHtT2QSIULHkYJFOAA4AxRQBh+APBWj/AA98OJ4T0S4vJba3lkeN9QvHuJfncuQXckkAkgegArcqJxslSQDr8rf0/WpaACvlD9r74neAvin8WtI/Z20PxXqeneIbXVFtJ1bQlaxuJp4fMhinmbDGDKLvSPO4HB6cfV9chq3wP+G+t/FjT/jZqmiGXxBpdm1tYXLTt5cKtnc4T7u/BI3EZxxQBjeFPC/xk8G+PNN0a2OgTeCDoEdvc2FnbC2bS7uJesCgHfHITwpxsA71s/GWLxY3wu1q58E6zcWGsW1jJJZ3VpZrcSh0G4BY24Ytjb/wKuvwPSopVAcMRkMNrUAc78IfFmueOvhponi7xR4Zn0fUr/TYp7zTbr/WW7sOQ3A574wMV5l8QvC3xA8Q/tBW+g6toS2fhvWbO5tm1XQNPV7iaMW4IN1cnDWzJIzeVs3ZzzivTpPHPhvS/HFp8Mb29kXV760mvLGIW7lWijIDsXxtHUcE55roEk3na67WHX3rKrSVVJXsd2Bx88BUc4q7aa9L7Neh+cmrfsHeGPAHxouPFHwD0LxB4hg8MpcxapreoXcSz6TqiHzhcBbgKl1iNhgKNu4ZJzXrXjLx1+1l8MrbRvDHwk8N6xceJfieUu5dQ8SKk9p4fuxGN8DRxD90NgDbiSoI6HoPqXxmq3rWfhaGP59Uux9pAHS3j+eQn2OFT6yCvAv2rZ/2zPF3x00Hwd+zn4f1HRtLskSbVPFE17brZXKNIhaJo2R3LKqkcYPzn0Bry54Kng6UnSum39n9Pkfc4XifG8S4+lDHuElTg9ar0dldc3f3rOy9O59EeD7XxHb+ENOtPGl7Dc6qlhEup3Fum1JZ9gEjKOwLZwKtbgt3C2cb0/DI/wD1/pU8IkECiU5baN5x3rA8f+NvD3w90KPxL4luJYrWPUYbfdDbvKwaWQIo2oCerD2x1r14qysfndSXPNy79tvkdBCcFoj/AAtx9K4m6/aE+Ddj4nTw+/jq0+0vd3NtIRu8uKaAJ50ckmNiMoZThjzk4roH8P663jxPFMfjC4Gmrphtn0IW6eU82/cLgvjfux8u3OMc15x+1v8Asqj9qDwJa/D6x8cSeGLQar9r1V7G0DNeDYwCsAyg/MVY7s5xVEHoml6t4un8ZXum3XhmGHQUsoZdP1Zb8M88rE70MQHyhRtIbODmt6uc+FPhLXPAPw70nwd4j8VnWrvTLRbeTUzaLB5wXhfkBIGFwOvauheRYxlvwFAEV9exafZTX8+4xwRNI+xcnCjJwB1OK+Svh94Q8dftXfG7Uf2x/A3i7VvCem6VYyaX4Rj1KFHS+Cbg7yICCsBkHzRt825cgivq3W9V0/QtGu/EOuTiK0sbeS4uG2lgiIpZjgcnAHSsvwXZ+APEPw8tj4Q0u0XQNXsTNFBa2vkxSxTgsTsAGCwYk8ZyTQAnw18U6Z4t8E2eqQ+MtI16aOBY9Q1LSHQwPOoG8gKzBBnnaTkCvP734WeIfGn7W3hz482q2v8Awjuh+ENR0qJpXIlluLi4tXEka4wY9sJXcTk9gQQa6H4a/CD4beBtLm8HfCbwbZ6H4c+1eZfLYqR9umACkZJJKjADMfvYIHGc8v8AtkfEnx98DfDnhn4y+F71l8OeHPEcDeObGOBW8zSJVaCSXpkeS0kcxxj5YmzxXPivZxpc81pGz+5nrZKsXVx3sMM0p1FKCv15k1Zectl5s9kktrXYT5CfdP8AAKjuLBJbB4IFVWaEqhA+6cYFYPjX4qeDvA/gNviBq2piWyeANZpaESS3jMu5I4UyDK7fwqvJ7Vt6HqkWtaNaavBbTxJdWySrFcxGORAyghWU8q3OCK3TVk0eTOLu4S+Z8OXfw58aiWy8AXfw21uAW9rqEB1GfT5HWS5dmZXRgPm3EDJxgc9c5H1T+yz4M1jwH8D9E0PXZpTcvB57wyx7DBvO7y8deM9+ea9G2YPQe1Awe1ddbFSrU1BrQ8HL8ipYDFvEc7cmrfLT/IRlDDDc57V5F8L/AIWax4G/ar+I3xDv7u3+xeN9P0p9PiiY7w9lE0MpcYxkiSPGCeB7V6T4y8XaF4D8K6h4x8WatFY6dplpJc3t3cOFSKNFLMzE9AAK8o+AHxF+I3xc+BWmfHvxxpcdpcXWp3Oq6JYxWxjdNHaRhCkgJJMjWhDn/bYccV5dT2U68IvWS95eXTX7z7TBxx1DK8RXhZU58tOV+t2ppLvZwTfbTue2Z4z+fFOqKGaO4jWeF9yOoZWU/eGMipa6jyEFFFFAzDs/+Slah/2A7P8A9HXNblYdn/yUrUP+wHZ/+jrmtygCj4n/AORa1H/rxm/9ANHhj/kWtO/68Yf/AEAUeJ/+Ra1H/rxm/wDQDR4Y/wCRa07/AK8Yf/QBQBeooooAKKKKACorm5gs4HurqYJHGhaR2OAAO/0qWsDUQPFetHQFG7T7Fw+ot2mkIysHuACGb1yqnqaAHeHbebVr1/F+owMjTx+Xp8Mg5ht+uT6M+Ax9AFXsa8m+LX7J3hT9qv4jNrHx7+G0FvYeGLuIeE9SsdWb7Vep9+TzlUbViLEAIfmBUnIzXu2B6UYHpQA2OGOJBHGgAUYAxTgAOgFFFADXHynCA8cCvlD9iL9snxZ8TPjr48+BXxc8L6xp/iCPXLrUNLhuYy0VrZLtUQEn7oAAZT0feSOor6xqtFo2kQanLrUGl26Xk6BJrpIFEkijoGbGSB2BNAFnA9KMD0oooAMD0rzP9pj4rWfw68LafoJitHufFOrwaPF9vBNvGs7bGMuw7lUglAQPvsueK6/4leMR8P8A4f6143aOCT+ydNluvKubsQRsUUsFaQghAcDk1+b1l8bv2gf23f2uvC/xR8E/D/R9OTQpWsdIN+zXtnA7bnV5vLBO4fO6kgLujGCDQBe/bN+MPhT4Iftp+CPAOnahfWvhjwFLazx6RbWSW8emO6KzGBwA0qMoQsCcdea+u/Df7Xura9+x7e/tXS/CqW0Fvp817DoNzqSqbi3jkK+YJNuFBALAFeg7kivJ/jH/AMEzvFvxM/a70D9oPW/HdvrmmTapBN4m03UrdB5UUWSI4l27ZIvlVApG7BJOa96/ab+C/ir4jfA9/h/8HtTsNDvrKSF9Ngni22TxJlXtpY14aJoyy7SMdOKAPjb9jjxb+0P+2V8c/iF4+tdU+xeHdTtmgu7TV7a3vLaBtrm2tXVwJDGjnI2jsc9a+j/2f/Auv/sOfAzxP44/aE+JcF+xuLjU9SFjGDE8xZj5qblDtJIPLGzplRjvXI/sK/F79knw58XPEP7O/wAD/D5j1uRBcanq9rBIbfUp4dyzqgb/AFaRnJUH5SHwtYv/AAV31/wn4h8LeGPhP/wlxk1VdSOpy+F4GjV7y2WORQQ7jhiwKKgyWMh+U4oA94/Yz+IXhP4v/CKP4taCLNNT8R3Bu/EVtaXrSiC62hQjKzN5Z8tYztGBzUX7cq/FS4/Zv8RaL8IfC8Wq6hqlt9iu4mALQ2koZJZUViA7KDnBNcf/AMEu/h5p/gb9nCXVNK8PXmj23iDxDd30GjakjG5sQrCERSOQvmEeVnO0cNg5INep/Gb9ob4XfAi80ZPib4gj0631e5kiW6mkURwBULb5MkEKTtQEA/MwHegDkf2ONd8B6t4Es/8AhANfsL+O18N6XDO1pbJbtuWOQHzIU4jcHKkHPKkZr2aVw3lzIRjeOfUHg1598Dm+EviK88R/E/4VxaTNZ69ewOdV0yJVF2Fto8EsMEkFjwcEc5ANdxcs0MMksrbYgNzA8DjncfQHHNAF3cZPunAx97FBijK7SowOnPSmWt3b3trHd2c6SxSoGjkjcFWBGQQRxipqAPnH42f8E8vCPx+vvFV34z8VJYnxBrFpe21zomkxw3MAgjZAksrFvPzuycgY2j0rI+Cv/BL/AMBfBL43ab8aNM+LnijUZNMnknj0/UpUeOSR43jLuwAJOG9O1fUtGB6UAc/4z26s1h4URsjUbsNdL628XzyfgSEQ/wC/W/jPPB+tc/o0K6x4u1PX2HyWgXT7Mg8AjDysPqxVf+2Qryz4D/FL9pfVfidffC34g/BfUbfRdMaeaTxhrOoRB7lGkcwpGkKbGOMDGchRk89QR694mt/EMegX58EfYY9Ve3f7C+oIzQedtOzzAhDFd2M45x0rwfS/25fE3wuVtB/bA+B2v+Eb23cpJ4h0TT5tV0O5Uf8ALVLiBC8Kkc4mRCOmTX0YMHAIxxzTJ7eG5Ty7iFXXHRhkVhVp1W06crW+aZ6mAxuBo05U8VQVSL63cZxfk9Vbummc+/xY+H0fwz/4XFL4rtI/DQ0z+0TrEsmyFbXZv80sei7ecntXjGo/8FBfD/ji3bT/ANlf4U+J/iRqUp2W13Y6bJaaShPR5b+4VYgmepj8xsdFNfQrWdo9sbKS1jMJXDRlPlI9MUW9lZ2Ufk2lskSj+FFwKVWFedlGXL301+Q8FicqwzlKtQdR391OVopf3kleXycTG0TSbzxF4a0i8+JfhzTDq8EUVxPBAfPhtLrZhvJd0DfKWYB8KSD0GcVzMH7LHwTj+Okv7RsnhPzvFksPlC/uLh5FjAVVBRGJVCFUYIHc+teifLu5HHanYHpWyVjzp1JVHrt26K/YMDrisjWNLure8/4SDQY1+1quJ7fOFu4x/CfRhn5W7Hg8Vr0YHpVEFTS9VtdZtFvbJyVJIZWGGRgcFWHYg8Ee1W6xtVsLvTL1/EWhw75GH+nWSnH2lR0YekgA49RwexGhp2oWuq2cd/Y3G+KRcqR/I+hB4I7HINAGZ8Of+ROtf+us3/o563Kw/hz/AMida/8AXWb/ANHPW5QAVgeHv+R78RfSz/8ARRrfrA8Pf8j34i+ln/6KNAG/RRRQAYHpSbR6UtFABgHqKKKKAE2qeqj8qwPFGk63q+q21tJqtpHockbLqNq8I82RwysmHbI2kAqVwDzkHNdBXF/Fv4Zy/EKPTJ7HVkt7rTr5JYxcL5kEiB1Zw8fR+FIwfU8jqACx4t0DUX8GN8O/hd4jTw3qCWaHTLqOw86O2jR1HCn5TkfLgnPOcVZ1IT+C7KLUrDTLvUprm7gTVWtLRXnuCVEXnEblC7cKzYBwqnAqJ/iDoOj6rH4Fju5dR1uC3iMtraW21iuVUvk4QY3Biu7IXtyM7d1rNlBbpMk4cSy+VE0aFxv5GDt6cin73QTaWph2Pg7wN4P8J6rouk+H3+wefPd3ljbo5Z5ZG819gznkngLxVXwT438LfF3wND4putHu7G0im82W21SMxGMxjOXB4IXgkHoRyARVnxP4q1nwz4XtPGL2NxqDRmNLjTdMjXNwZXRNy+Zhhtzu28EitbUdJtNQsr7S9V0y2n026tmWe18ksZt4YSBh0YMCBjvk0TTnpJ3BSd7lTXPDuh/EDQGiGqyz2V9GkkM1ldfLtxwyMvBBH1BqXxFa+GdWe08Pa3dlGdvNtoluGjLlMd1IzgkEDPUA9qzLbwj4EkutDtdGtLuxTSoh/Z1np9xNBbxLENvlSRoQmBv+446j2qzq3hH4f+Itat/HeraVFJeaM7eVfMGRoihOc9NwHJ5yKy9jFN3jqylUk0knsZnxAGg/DzT18TeG/CFgNUmn8u0kjs1LtIwJIATDuzAEALk5IJwASOt0ie+udKtrjVLUQ3MkCNcRKciNyASufYmkA03WIIL0xRXCAia3kZAwU44YE9DgkZ68mrQUDpSjTcZt9CnJOCVte4pAPUVm6p4fj1TULXUTqNzC1q2QkMuFbkH5h36frWlUUxmEDG3UFwp2KxwCamvSp1Ycs1df5EpseTxgk06qunNqEljG+qRRJcMv71YmJXd7E1arSnLmimIr6x/yCbr/AK9n/wDQTVDwOFPgfRx/1Crfp/1yWr+sf8gm6/69n/8AQTVLwIP+KI0bj/mFW/8A6LWrDc891X9iv9mDWtTuNY1T4RabNc3U7zXEzNJl3ZtzMcN3Ncx8Uf8Agn38BvEvgPUND+Hvw+0rR9XuY1Sz1JvMP2Y71LOBuOTtBxXvhXJ7flQ2Dk4+ldcMwx1OScaj082eRWyLJ8RCUZ0I+9vov6ucV8CfgZ4G+AHga38D+B7AKqANd3jqPNupccu7d/p0A4FbHhb/AJG/xP8A9f8Ab/8ApLFW43A6Zx3rC8K/8jd4m/6/rf8A9JYq56lSdao5zd29z0MNh6OFoRo0Y2jFWSR0FVNV1a20e0N1dFjlgkcaDLSMTgKo7kmk1bVrTRrRry8dsbgsaIMtIx4CqO5J4xVTS9Lup7wa9r6qbsgi3t1OVtEPGB6sf4m/AcdYNxdJ0u7lu/7f14KbxlxDCvKWqH+EerH+Ju/bitbA9KMD0ooAKKKKACjA9KKKACiiigDN8V6hcaT4av8AU7R7ZZoLOSSFr2by4d4Uld7fwruwCfQmsP4JfE/Tvi78ONO8YWOs6XdzzQhNQ/se786CG5XiRFbqQGzjPbFafj/wB4S+KXhC/wDAXjjR0v8AStSh8q9tXcgSLkEDKkEcgHPtXJ/s2/sx/C/9lnwhd+DPhfbXa219qMl5dTXs/mSO7cBc4HCqAo74HOTQB6PRgZziiigAproJFKHuKdRQBwOua/441/4k6TafDa68N3elaZcSweNGuLp2u7Y7Q0ccapwHJOfmxgdq7bcJAFdueiP7/wCPtXn1l8Pvipovx+n8XeH9Y8O2Pgm+tmk1fSrfTNt9fX2wKJpJehxhQMYOBg5rtvFOpR6BoV3rbRl/IgLCIdZG/hUe5PH40AUNBmGt+L9S1p1IjsVGn2rdmIIeZh7byifWM10O0HtXLeAdY8Om3l8G2XiO1u9V0YqNYjhmVpIJ5FLnzBn5SxZm9xXTRSMxMbjDD9aAHhQBgCvNP2qfjzoH7OHwf1P4ka/p0t2VaOCwtYgcTXL5EaFsHYCRyx4FemVh+N9H8GeJrKPwv430zTr601GURrY6lEkiTsMPgI4IYgKSOO1AE/g3xCni3wlpnibbAv8AaFhFc7Le4EqKWUMQrjhgCeorVwPSqeh6Ho/hrR7bQfD+mQWVlaQiK2tbaMJHEg6KoHAA9BVhpGZvLh6j7zHoP/r0AK8oU7FGWPaiOHafMc7m9aWONYxxye5PU06gDk/jb4V8b+N/hZrPhT4ceJo9G1nULXybTU5N2IMsNzAryDt3YwD1rM8LWXxE1DWL/wALarrdjceHLSG2gtr20R1u5XSPbNE7E7SS4yWX7oyvXJXpNRvbrW76Tw/pFw8UcZxqF6nVO/lIf75HUj7oOepFatlZWunWkdhZQLHFEoVI1HCigB1vbW9rAltbQqkcahY0VcBQOgA7CqXiHw/onirQrvw34hsIbuyvYHgu7adQySI4KsrA9QQSDWjTcAnkfXNKSTVmOM5QmpRdmtbnknhH4YfCL9lP4EQaF8RPGKXnhXwpetd6bqXi143XSIfNJgjEjDhYQ4jRmywUDJ4r07RPEOh+JtLh13w7rFvfWVzGHgurWYPHIp5DKykgjHcVLq2laXrmnTaPrGnQ3VrPGY57eeIOkingqyngg+hrwXUv+CfXgzw5qE+rfs7fFnxf8L3nlMr6d4V1FG0wuTkn7FcJJAuTydipXLL2tDlVKKcVZWvZ/ie3Rll2aSqVMdXlCtJt83LzRlfXW1mnfW6TXkfQeSRx6Vl+J/F3hfwTo03iLxl4jstLsLdC895qFysMUSjqWZyAB9TWT4+8IeNfE3wyn8G+FPiVeaFrMttFFH4lgsYJZo2UrvkEcimMlgCMYwN2R0ryzw9/wT8+G95qlr4l+Ovj3xV8T9Qs5hNAvjXUxNZRSDoyWUSpbAjsTGWHrV1Z1+a0I3827L/NmOBwuVSpupi67jZ6RjFylJeTdor5v5HVftEfApf2m9K0DwpqPjVrfwgmpJe+I9LtIgw12FBuitjJu+WEyBWcAHzFG3IBOey8bfDrS/G3gebwG+qahpdtKsaifRro288aowICuB8oO3BAHQkVvQwR28SwwIqIqhVVRgKB0AqQgHqK0jThGTlbV7nJVxterhoYdy/dwu4rze79XZa9klsjjfgv4Wi+HvhiX4cJrOoX/wDY146Q3OqXTTzvBITJFlj1AVtg/wBwiuyrA1tf7G8Waf4gjBEV6P7PvSOnJLQsfo+5B/12rfrQ5AooooAw7P8A5KVqH/YDs/8A0dc1uVh2f/JStQ/7Adn/AOjrmtygCj4n/wCRa1H/AK8Zv/QDR4Y/5FrTv+vGH/0AUeJ/+Ra1H/rxm/8AQDR4Y/5FrTv+vGH/ANAFAF6iiigAooqvqF/a6XYy6lfziKGFC8jt0AH+enegCl4l1i5sYotN0ohr+9cx2ikZCYGWkb/ZQcn1OF6mrGi6VbaJpyWFszMEyXkdss7E5Z2Pdick1T8NWF3PPL4n1iJo7u7AWKBxzbQA/LH9Tncx9Tj+EVs4HpQAUUUUAFFFFABRRRQAUUUUAV9U0vTdb0+XSdY0+G6tbiMpPb3EQdJFPUMrDBHsa8Y0j9i3wt4T/ajh/aN8AeI20GB7NodT8M6XYJBb3rGMqGcoRn5jvwwPIFe30YHpQAYHpSFVPBUc9eKWigDk/A3wP+EPw017UvE/w/8Ahxo+j6hq8m/Urywsljec9eSOgzzgcZq/q3w28A614ng8bat4L0u71e0j8u31G5sUeaJAchVdgSvPPB61u0YGMYoAij2RAALhei4H3favEf2vP2KvCX7X+r+Fj448Q3Fpp2gG7aeCyjUTXJlWPZ+8IIVQUOQRg7u1e2ykliIgC+OR2x70RgRHJyc8c9v/AK1AHI/BjwT4Z+H2i33hHwho8Njpmn6gLewtIEwsUccESD68qcnrkmui8V2ep3/hvULTQorWS8ktJVtUvgTA0hUgCQLyUJ6gc1S+HzibTb+6U/6zXL7/AMdndP8A2WtyR44Y2llcKqrlmY4AA9TQB8K/s7ftMftR/BPxTd2/7UnhGfw54C060uIvD2j2Hh5d87JKiJBb872Cq+4AgsVB9Ca+1/Bfi3TvHXhPT/GOjwXUVrqNqtxBHfWzQyqrDgOjgMp9iK8W+Ov7Uc3w7/aA8M/CDT/gpfeIBq9i13Hr9vCkwslJ8vzIo+spXcGcKVOxhjNddoWsWul/GDQdJ8a/tCR3mvX3hl1t/C1okcFreuj5lu1j+Zs8YALcBWxnBwAeo1S8Q6uug6Jd6u8Zf7PAzqg6u38Kj3JwPxq4Ccc1g+KAdY1/SvDCv+7877deL6xxEFF/GUxn3CMKALvhLSG0Hw9aaZPLvmWPdcyn/lpK5LSN+Llj+NaWBnOKTao6AUtABgelFFFABgHrRgdMUUUAGAOgooooAKKKKAAgHqKw9StLrQbyTX9It2kgkbOo2Ua5L+syAfxjuP4h7gZ3KMD0oA574YXMF74Gsru1mEkUjTNG69Cpmcj/AD2roa4fwNHc+GPDkOrWaNJYTTTNfWy5LQt5rgyxj06bl/Ec5B7O3njuYFngmDo67kdTkEeo9qAJawPD3/I9+IvpZ/8Aoo1v1geHv+R78RfSz/8ARRoA36KKKACiiigAoprOqAszYABJJ7AVm2XizQ9W8PN4p8PahHqll5TvFNpricTBSchNmdzZBGPXigDUqC6sLG8mgnu7SKV7aXzLd3QExtgjcpPQ4JGR2JpbO4N1aRXJikj8yMMY5RhlyM4I7EdKWbzjCTAVD7TsZgSM+9D0A5mbXdUtdafXLbSgbGawkENu8rRXdzcIWYJHC4Ayyg8k8jB6DNYlp8UpobWK2bw9Kojg83VlsIPLexlb94vmL8yhCu7c4JyRgZJxXZ30M4Yajc3FsyW1tIWiljCr5mPv7+SgxuB68NXO6T4MsRpkWj+Hb1bfRbuGC4gNiiSIyBtzRtJIWMqSBsDAACA4I4rdSp2d1r0MXGSlboOt7jxfrnh3V3l0hvDt9MzPZ3FvcJctcMqnawQgZG1UGOCeenBMvhePxtHofh++l1hpIl0/Gq2+sWfl3chO0hjtJCuoDAr0JYnIxUWh6J4Zi15vH41BDJCs9rdPPfTiOBzKD8sUrFI2OcEgDIwB8pxW+RBJ4gzBp8LukG64ncnemeE2jGCDhs8joOtY6310Nl57FfwP4o8K+M/DUHizwfOJNPvy0kUogaMudxDEqwDA7gc5H862JporeJri4cKiLuZj0AHeuc8Kyf8ACX6H/wATnwRdaILPUn+zWVyyqWEbnZKPKYjaww23PfmtTxBc6zbW8MOjaY1y9xcpDLIkyJ9mjbO6b5uu0dFAJJx2yQNOLtLcupGEZvl2v+HQzLXx3aeJdF1S+8HwXMzaduEUn2IlLllGSsW4qHOQU6jB9uTB8GPiPrPxV8CQeMta8C3/AIcmnnlT+y9TDLNGqtgFgVXBPfAI9CRzXR6Xp0Gl2SWcAUbcs7rGq73PLOQoAySST6k1apEBRgelFV7K/jvjKI0kXypTG29CuSOpHqPepckmkwLGB6UUUVQFfWP+QTdf9ez/APoJql4F/wCRI0b/ALBVv/6KWrusf8gm6/69n/8AQTVLwL/yJGjf9gq3/wDRS0AatGB6UUUAJtGMY4rl9K1S00fxH4ovb2QhRf2yoqjLOxtogFUdyTwBW/qWp2mkWjXt7KQikABRlnYnAUDuScAD3rlPAem3N9438R69r0G24W9gFrbbtwtla1i9OrkYy3boOMkgG9pWm3lzdDxBry4uSCLa0Bytqp7cdXI+834DgZOuAB0FGB0x160UAFFFFABRRRQAUUUUAFFFFABgelGB6UUUAFFFFABRRRQAYHpWB4kkGq+JdK8Mocqshv7sdgkRGwH6yMhH/XM1v1geD2/ta91PxWRlby58i0J7wQkoPwZzIw9mFAGF8Pvg6PCnxN8W/FLWb60vNR8R3EUcMttaGAw2cagRwyDcRI4OTvwCQQO1drIvlkBmOB9yTup9/ap8D0oIBGCKAI4pGb5HGGB/OvB/2+Pg/wDG/wCKHgrw9rX7P13CniHw1ry3sUbNHHIyFSrFJX5RgOMDqGOele5zgQrukYhQflYclT/hSxs87f6Qu3HIXP3h6/8A1qAMP4beHPEHhvwlDpniHxXqGsXLSvNNe6i6GQb2L+WpQAbFztB9BXRqqooVRgDpS4HpRQAVjarqV7qN63h3QrjZKoH267XkWqnsPWQjoOw5PYNneP8A4l+HvB91Y6Df+JLTT7vVbyK0tp7yQKqSSZ2LzwXbawVO5Gegrf0rSrTRrJbG0BIU5Z3bLOx6sx7k+poAdpmm2WkWSWFhEEiTkYOSTnJYnqSTyT3qzgelFFABRgelFFABgCjA9BRRQAEA9RRgelFFABgdMUUUUAZ/iPRovEGhXOjyPs8+M7HHWNwQVce6sA31FN8K6y+u6Fb6jMu2Zk23Mf8AclU7JF/Bgw/CtKsDTNuh+NL3SCNsOqR/bbUY48xdqTAf+Q399zGgDfooooAw7P8A5KVqH/YDs/8A0dc1uVh2f/JStQ/7Adn/AOjrmtygCj4n/wCRa1H/AK8Zv/QDR4Y/5FrTv+vGH/0AUeJ/+Ra1H/rxm/8AQDR4Y/5FrTv+vGH/ANAFAF6iiigArAlY+LNd+zod2m6ZcfvfS4uV6L7rGeT/ALeP7hFT+JtUvUaHw/okoW/vchHPPkRjG+Uj2BAAPVmX3q/pWl2mjafDplhHtigTagzk+5J7knknuTQBZwBwBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRQSAMk0AFMLM/CHAxy2KTLTDPIXt6mpAABgDFACKoUYApskYOWXAOPwP1p9ct8YZIJvhzq2mSfEtfCMt3ZtDBr4miR7R24Dr5ny5/X05oAo/C7xZ4dS1j8KNr1r/al1LfaiuneevniB7yVvM25ztBdRnHcU74+/CS1+OPwv1H4aXni3VtDi1BQH1DRbnypkA6gnupHBU8EV8MSft4fDD9lKaHwP4T8NQ+OviLJoQttY8fSbId8zIrwQ5y3mLGpQPhgDs9c4+3/ANn0a/f/AA7tfFXir4hxeJLvVlS6kubXy/s1u2xVaKDZn92GVupJyTzQB8S/tl/tgfDD4Y+FNP8A2bvhDZ6hPpmk6VYsninT7thdC0aRkuokmkQtGzKijeOPmK9BivpX9meH4DfHj4F6N4p/Zy1G60pdGZNNt/EM+kQnUUELK80ZeVTnzNzbmHUuSK8B/aW/4JCePviN8ZvE3xE+GPxFtYtP1qzaa3tNYvJWlS7dwzgsq48v7zKpyBgZr6Z/Yb/ZT/4Y/wDgsPhnc+Jhq95calLe3t5HGyKXcKoVQScAKqj3oAn/AGT/AIFfFX4K2fiV/iv8X7/xXdazrb3FgLu6eVbK1BYRopf+JlILAADPFeheFQdU1fVPFEjZWa4+yWntDCWXP4yGQ/TbVrxdq1xo3h25u7Ha10yiKzRuQ07sEjB9txGfbNT6DpMGg6La6PbszLbQrGHbksQOSfUk80AXaKKKACiiigAooooAKKKKACiiigAooooAwvhyB/wh1tx1lmz/AN/nprhvBlw1xApOjyPmWNV/48mPVwB/yzPGR/AcnpnD/hz/AMida/8AXWb/ANHPW2yq6lHUEEYII60AIrrIgeNwVYZDA5B9KwvD3/I9+IvpZ/8Aoo0I7+DJxA2W0iWQLG55+xOTgKf+mRPQ/wAJ46Hhvh1g3jnxDtOf+PQ/+QjigDoaKKKACs/XtLudZsRZW2t3dg3nRuZ7J1EmFcMU+ZSMMAVPGcE4wea0KbInmRsittyCNy9qadmGwgjVkKSruUjBDDgis/wpL4bl0G3PhAWy6chZLdbNAsY2sVIUAAD5gc8das6XaXFjp8NldajLdSRRBHuJ9oeUgYLNtAGT3wMVT0DxboHiO91HTdEuzK+lXhtb3/R3VUm2hioZgA5AIyVJAzSE73NbAHQVT1e5ms9LuLm2nhieOB2SS5YiNSATlz2X1qy8iKwRpAC3Cgnk/T1rJSGWza38OXtrd6lBcRzefez+UyKOySDgnIbAwpHHJHdq19Rp2ktDG8B6qdTuNTthp01pNKsbzXQtcWl1M0YDTQM3Mi8Ac44UeuTt3llocj29xq00MlxpIE6SMwTymKMhcgHABBb2HNVfFXgjT/E9vpttHqN1px0u/hubeTTnWNhsJBj6cIykqwHVSRWlfQyXVwul3OkR3FlPA/2mSVgRkYwhQ/eBBP5VU6nNUbSsjWs4VGpR+a/4JjeD/EvifxLqWv2PiHwNLpVrp+p/Z9MuLiVX/tGLYp88KPuruOBk5+XtWn4UsPEGl6Klp4p11NSvVeQyXi2whDKXYoNgJAwuAeecZ71XuNd1KS21CS00i8tv7LuAFDWwb7aioGPlBSTg5Kg4zkHg1598SvG/xAk1W00SxmvvDq3d/DGb7+z1v7eROP3ICjKPISy5JO0IDxuGcJVfZwa3OqlhZYqpyxSird+y/Xc9Ds5tSvtbhN5rkUDQRStLplsyyCZGfEUpYqGHA+6OMnqcVt8GuR8EaH4mj8G2VhqOp/ZpWhPnukAEio0ZwqLgCLa7DAIYAKB346uJGjiWMyFiqgFn6n3q076nJVhGnNxTuY3jTx9oPgSzjutZ+0O85Zba3tYDJJKQNzBQO4HPJHArR0fVI9a0q31eCGSNLqBJY0mXDAMMgEZODiue+KHwysfiPp1vPHd/YtX02QzaLqfliT7JPkEPsPyt0xnGQCcEE101pHNFaRxXUoeRYwJHC4DEDBOO1MzJqMAdBRRRZAFFFFAFfWP+QTdf9ez/APoJql4F/wCRI0b/ALBVv/6KWrusf8gm6/69n/8AQTVLwL/yJGjf9gq3/wDRS0AatVdU1W00eye/vZ9sae2SSTgKB3JJAA7k0apqVrpNk9/ez7I4x8xI5JJwAPUk8ADkkiqOm6deanep4g1+MxugzZWRORbqRjc3rIQeT0UcDuSAGmadd6heJ4g12LbIoP2K0J4tgRyT6yEdT0HQdya/hcA+L/E+R/y/2/8A6SxV0GB6VgeFv+Rv8T/9f9v/AOksVAG/RRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAZHjTVZ9K8PzNZMRd3JW3sh/wBNpGCIfoCwJ9gTV3SdNttH0u20i0GIrWBIo/8AdUYH8qybxl1jx3a6coJi0i3N3Njp50gaOIfUJ5px7qa6DA64oAKZJKsfBGSegHekklYN5cXLH8h70scQQ7jyx6tQAiRMTvmIJ9OwpksXl5I+7146p7/T2qeigCOOUt8jn5sdR0PvWJ418VXmgabcJoOnyahqSWjzx2cIBbaoJzgkckjaoJG5iBnqRneKJ/Htp46sB4f1KwfTZrCVH0iS2bzzcbhtuPNBwkSrkFcZJIA5NJ4C1a/v9c1rQ7nw5qNu+m3kaT6zexqI9TdowS8OCflX7uDjbjHJoAzNSvtF0/4V2XjjxL8K9V1S4321+dDl09Li/jumZR5jITgSJkkkHChSBwK6zxb4mu/DHha98Raf4X1DVZbS1MsWm2EYM9wQOEQMQN341rRwxxg7RyepPJNOwOuKAOd8E+NNZ8WXepW+qeAtV0RLGWJLebUjGBdh4ldmTax4UsUOf4ga6KjAznFFABRRRQAUUUUAFFFFABRRRQAVheO4nt9Mj8SW8JabR5xdgKuWaMArKo9cxluPUCt2kZVYFWUEHqCOtADYZormFLmGQPHIoZHU8MD0P5U+sDwLIbG3uvCUud+kXHkxbu9uw3QkfRTt+qNW/QBh2f8AyUrUP+wHZ/8Ao65rcrDs/wDkpWof9gOz/wDR1zW5QBR8T/8AItaj/wBeM3/oBo8Mf8i1p3/XjD/6AKPE/wDyLWo/9eM3/oBo8Mf8i1p3/XjD/wCgCgC9VXVtTtdGsJNSvZGWOJSTt5LHsAO5JwAPXFWvx+tYFv8A8VZrwv3Tdp2mTEW3pcXA4L47qnIH+0SewoAseGdNvIvN13WYlF/fbTMqnIgQZ2Qg+ig8+rFj3Fa9FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAHB/tH/Hrw1+zV8H9W+L/iyyuLm201UCWtsBvmkdwiKM8AZIyew55ql+yx8V/HXxx+DmnfFPx/4TsdGm1YvNY2Fjf/AGgLak/u2duzkdR29ug7Xxf4R8O+PPDN94M8V6VFe6bqVs8F5azLlZEYYI9vY+tc78CvgD8Mv2c/Bh8A/CvSJrPTmujO8dxdyTM0hVQTlyccKOnFAHbUUUUARzTJBE08hO1FLNgZ4r5c1/wd+yh/wUjlvviDcJr1xF4Du59Ou4GnktIr7apkAdOpVWLEH5WzkEV9T4HpXOeI9D0Dwt4G1+XQdFtbMXFrc3NyLSBU82ZozukbaBuY92PJoA/Pr9tL/gl58MPh58Lbn9oD4d69qFjBb2Vobjwxb2JuDJNIYoz5Tl9y5Zi3OcHpjpX0p/wTV+KEGt/A+w+Fs3grUNAfw1aQ29kuuLHBc6jkM8sqwgKdqsdu/B3dTySK+irCzjj0uCzkjUhIEUqRxwAP6V478Of2LvDngv8AaIvf2mPEnxI8QeJfEVxbS21iNWlQQ2MMh/1caoBwFyoz0BPc0Ae2UUUhIUZJGPUmgDA1fOs+M9P0fd+50+Nr+6Xsz8xwqfx8xvrGvrXQYHpXP+CBJqCXviqVf+QpdlrfPa2jGyL/AL6Cl/8Atoa6CgAooooAKKKKACiiigAooooAKKKKACiiigDD+HP/ACJ1r/11m/8ARz1uVh/Dn/kTrX/rrN/6OetygBssEM8TQTQq6OpV0ZQQwIwQR34rh/C858J/EDXNJu5HawlazW1uZHz5DGM4iY9gf4Sf93uM91XN6Ra2194x8S2V3CskUi2ivG4yGHlGgDowRjPtmlrDsLy58PXseg6pK8lvKxXT72RsknP+qcn+IdAx+9jnkc7lABRgelFFABgelAAHQDrRRQBy2t/DaPW/iRpXxEk8V6vC2l28kSaTBd7bWVm/jdMcsASDzyMeldRtXGNo+lKAB0FUrjTGm1eDVf7RuUEETobZH/dybsfMwxyRjg9smhWuJ3Mrwr8P9L8I+I9c8QaXf3Tf2/dpdXdtPKXRJgoUsmeVBAXjoNowBmuiwPSqWpXl9ZfZ/sWmPciW5WOXZIF8pDnMhyeQOOByaXW9WXRNIutXezubhbWBpTBaQmSWTaM7UUfeY9AKFohltgoBJwOOTXK2fhfRr/XoPEHhfxI0cMOozzalbWc4eO6nMYjKycnG3A+Xj5gD656Kwu01PTob4QSxrPCriKdCrqGAO1lPRhnBFU/DHhLw14L0z+yPCuhWun2xmeUwWkIRS7tuZiB1JJJJ71Mldq5rTqezi2nq9PLU0jnngdaSeETwvAXZQ6ldytgjPcGoNTtb27sZLexvjbysMLMqBtv4GrSghQGbJA5NKMpOTi1t1Mivpdk2m6fBYNdy3DQRKjTzNueTAxlj3J61ZwOuKKKsAooooAKKKKAK+sf8gm6/69n/APQTWT4W1G10r4faVfXs4SOPSbfcx941AAHck4AHUnAHWr3iTUbXTvD97e306xxR20m5z24PHufb14rC+HOm3mq+GNF1vXU2CLTYPsNkTxF+7Ub39ZD/AOO9BzmgDU0+wvNWvI9f12AoY2JsbJukAPG9vWQj/vnOB3J2cD0FGB6UUAFYHhb/AJG/xP8A9f8Ab/8ApLFW/WB4W/5G/wAT/wDX/b/+ksVAG/RRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUySRIo2kkcBUGWZjgADqT+FPrB8ezPLpUfhy1YibWLlbRMdRGQWlb2xEr8+uPagBvgdlm0SfxXcAodVna8LPxiHAWLOemIlQ/Umrvh3xToHjPR4df8I63bahp9wCYb60mEkcmCQdrDg8gj8K0Ft4Vg+zCJfL27dmOMemPSoNI0bSPD+nx6Toel29naw58q3tYljRcnJwqgAckn8aALCRpEu1eB3PrTqKKACs/XdbGkxJFBH595cEraWisAXYdST2VerN2HuQC7WdZi0a2DtG808jbLW2jHzzPgnaPwHJ6ADJ6VDomkTWbvqmqzrNfXAAlkUfLEuciJP8AZH5k8nqAADzn4zeIfi14Mn0Tw38OPDct5qniq+a21DxV9jNxDpLKoZC8IIPkthkzkBPvHJPPbfDXxhD418M/2uND1HTmjupbeSDU7IwPuiYoXCkn5CVJU55Bqz8QfBkPxB8H3vhCfXtT0tL2MKb7R7owXMWGDZR8HaTjHToTXmfgf4XfE74OfF/SBpN9qXizQtY0l7XxHrutasWurWaFmeCTy8rHtIYx/Iu44BNAHs9FFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAGBrxGjeKdP8QYxFdf8S+8b+7uO6Fj7B8r9Za36oeI9IXXdEutJMvltNGRHLjmN/4X/BgD+FM8K61Jr2hQahcRCKfaUuoc/wCqmQ7ZF/Bgw9xj1oAq2f8AyUrUP+wHZ/8Ao65rcrDs/wDkpWof9gOz/wDR1zW5QBT123mvdDvLS3XdJNaSJGucZJUgVhaL4s1Gw0e0sJ/AWu+ZFaxo+IIvvKoB/wCWvtXU4HpVLXNYt9D019QuFZwCFjijGWlkY4VFHckkCgDlvEXxA1S9dfC+k+Dtfjubhd9xMtvFut7fOC4/efePKr75PO2tGw8UHTLOOxsfh5rkcMEYSNFt4cKo7f62tHw1pFxp8Et9qjiS/vGEl5IDwp/hjX/ZUcD15PUmtQgHqKAMH/hN7z/oQ9e/8Bov/jtH/Cb3n/Qh69/4DRf/AB2t6igDB/4Te8/6EPXv/AaL/wCO0f8ACb3n/Qh69/4DRf8Ax2t6igDB/wCE3vP+hD17/wABov8A47R/wm95/wBCHr3/AIDRf/Ha3qKAMH/hN7z/AKEPXv8AwGi/+O0f8Jvef9CHr3/gNF/8dreooAwf+E3vP+hD17/wGi/+O0f8Jvef9CHr3/gNF/8AHa3qKAMH/hN7z/oQ9e/8Bov/AI7R/wAJvef9CHr3/gNF/wDHa3qKAMH/AITe8/6EPXv/AAGi/wDjtH/Cb3n/AEIevf8AgNF/8dreooAwD42uz18Ba7/4DRf/AB2j/hNrzGP+EC13/wABov8A47W/RQBg/wDCb3n/AEIevf8AgNF/8do/4Te8/wChD17/AMBov/jtb1FAGD/wm95/0Ievf+A0X/x2sT4jeNbp/A2qwHwNriiSzaPLW8WPmG3/AJ6e9dzWB8TG/wCKUNuP+XjUbGA/SS7hQ/oxoAVfGt3jjwFrv/gPF/8AHaT/AITa76f8IFrv/gNF/wDHa36KAMH/AITe8/6EPXv/AAGi/wDjtY/jX4garHoElhpngrXI7y/YWlozW8XyO/Bf/Wfwruf/AIDXbVz8u7WfHsUC8waNamVz2NxLlVH1WMOT/wBdFoAi0/xQ+m2MOnWfw+11IoIVSNPs8PCqMAf632qf/hN7z/oQ9e/8Bov/AI7W9RQBg/8ACb3n/Qh69/4DRf8Ax2j/AITe8/6EPXv/AAGi/wDjtb1FAGD/AMJvef8AQh69/wCA0X/x2j/hN7z/AKEPXv8AwGi/+O1vUUAYP/Cb3n/Qh69/4DRf/HaP+E3vP+hD17/wGi/+O1vUUAYP/Cb3n/Qh69/4DRf/AB2j/hN7z/oQ9e/8Bov/AI7W9RQBg/8ACb3n/Qh69/4DRf8Ax2j/AITe8/6EPXv/AAGi/wDjtb1FAGD/AMJvef8AQh69/wCA0X/x2j/hN7z/AKEPXv8AwGi/+O1vUUAYvgK0vrHwnaW+oWclvL+8ZoJcbk3SMwBwSM8jvW1RgelFABXOXvhfxRH4gvNc8O+Kba0W+SITQXOmGfBRSMqwlXGQehBro6MA9RQBy2o+FfH+rWUmn3/jTS5IpVwwPh9gfYj/AEjgg8j0NUNOg+KemXyeH9Y8faexZR9hvJNAY/aAByrH7RgSDrj+IcjocdxgdMVV1XSrTWbNrG9QlCQQynayMDkMpHIIPII6UAZH9jfEz/ofNM/8J5v/AJIo/sb4mf8AQ+aZ/wCE83/yRVvSNUvLa8Ph7XZAbpVLW9wBhbqMdwOgcZG5fxHBrWoA57+xviZ/0Pmmf+E83/yRR/Y3xM/6HzTP/Ceb/wCSK6GigDnv7G+Jn/Q+aZ/4Tzf/ACRR/YvxL/6HzTP/AAnm/wDkiuhooA57+xfiWOnjzTP/AAnm/wDkij+xfiX/AND5pn/hPN/8kV0NFAHPf2L8S/8AofNM/wDCeb/5Io/sT4lf9D3pn/hPN/8AJFdDRQBz39i/Ev8A6HzTP/Ceb/5Io/sb4mf9D5pn/hPN/wDJFdDRQBz39jfEz/ofNM/8J5v/AJIo/sb4mf8AQ+aZ/wCE83/yRXQ0UAc9/Y3xM/6HzTP/AAnm/wDkij+xviZ/0Pmmf+E83/yRXQ0UAc9/Y3xM/wCh80z/AMJ5v/kiob61+IGm2j3t98QtKjijGWdvD7cfh9o5roLy+ttNtJL2+nEcUSku7dh/WsuxsrrX7tNc1q3McETbrGycfdPaV/8Ab9B/CPfoAc9D4S+J/iVl1LXfGFhDHtb7LZvoJzHkYEjD7RjzMdBztHvXY6JpqaJo1no0UpdbS1jhV2GCwVQucfhVvA9KMD0oAKKKKACuTgv9V8N+K9cuJfCup3cN9cQS289nHGykCBEI5cHO5T2rrKMDOcUAYP8Awm95/wBCHr3/AIDRf/HaP+E3vP8AoQ9e/wDAaL/47W9RQBg/8Jvef9CHr3/gNF/8do/4Te8/6EPXv/AaL/47W9RQBg/8Jvef9CHr3/gNF/8AHaP+E3vP+hD17/wGi/8Ajtb1FAGD/wAJvef9CHr3/gNF/wDHaP8AhN7z/oQ9e/8AAaL/AOO1vUUAYP8Awm95/wBCHr3/AIDRf/HaP+E3vP8AoQ9e/wDAaL/47W9RQBg/8Jvef9CHr3/gNF/8do/4Te8/6EPXv/AaL/47W9RQBg/8Jvef9CHr3/gNF/8AHaP+E3vP+hD17/wGi/8Ajtb1FAGD/wAJvef9CHr3/gNF/wDHawrXxrcaz43nv18D648WkW4tUH2aLieTbJJ1k6hBFz/tmux1bVLXRtNudXvpdkFrA0sreiqCTVLwVp9zY+HoW1CPbdXRa5u19JZCXYfhnH0AoAr/APCb3n/Qh67/AOA0X/x2l/4Te8/6EPXv/AaL/wCO1vUUAYP/AAm95/0Ievf+A0X/AMdqpqXxLbSLYXF34H18l3CRItrEWdz0UDzOTn/HsTW9quqW2j2T6hfSlUQgAKMs5JAVQO7EkAD3qlpGm3d3djxFr8YF0VK2ttnItEPbjq5H3m/AcDJAMTRvEGqfaW13XPAmttfSjYiLBEUtoyR+7X956gFm/iPsFxqHxteHr4C13/wGi/8Ajtb+AeCKKAMD/hNrv/oQtd/8Bov/AI7R/wAJteDp4C13/wABov8A47W/RQBg/wDCb3n/AEIevf8AgNF/8do/4Te8/wChD17/AMBov/jtb1FAGD/wm95/0Ievf+A0X/x2j/hN7z/oQ9e/8Bov/jtb1FAGD/wm95/0Ievf+A0X/wAdo/4Te8/6EPXv/AaL/wCO1vUUAYP/AAm95/0Ievf+A0X/AMdo/wCE3vP+hD17/wABov8A47W9RQBg/wDCb3n/AEIevf8AgNF/8do/4Te8/wChD17/AMBov/jtb1FAGD/wm95/0Ievf+A0X/x2j/hN7z/oQ9e/8Bov/jtb1FAGD/wm95/0Ievf+A0X/wAdo/4Te8/6EPXv/AaL/wCO1vUUAYH/AAm13/0IWu/+A0X/AMdrE0zxpd6J4vvNMbwNrgh1NReWy/Z4siVQEmX/AFnQ/u2+rP6V3VYXjmCeHTI/EdlGGn0icXSqBzJGAVmT8Yy2B/eAoAg8O3Go6n4x1DW5/D97YwNptrBGb1UUu6yTscbWb++v510lRwTw3cKXMDh45FDRupyGBGc1JQA0tt5LdqwtMz4p1geI3YtY2jMmlpjiV/uvce46qp9MnncKm+IU81r4C1u5glKSR6RcvGy9VIiYgj8agXwj4Z8U+H9M/t7R4rkQ2aeSHBAUFFzjH0H5UAboOAOn4fqaUMexzWBpPgrwdoOoi+8M+HYIrlFKGdNwCA9cknB+nWn6p8O/CXiC/Oq+IdHivLlkCmR9wwvYAA/rQBu7s0gJI6/lWXoXg/wv4TM0+gaPFaGVR5pjz8wH1NUW+GXgXU5DqOqeGrea4nPmTSOW3Mx59aAOiDZGRS5Pb8ao6J4b0Tw5YNp2i6dHbQMxZo0Jxk9etYtx8L/hjCf33hW1LHnaNxYn6ZoA6jcetLWSug2cuh/8I5DpcUNgYtnkSEn5PTAP9azYPg58N4iWbwxC7HruZv5A4oA6bPcmjJx1/OqWs+HNE8QWC6ZrGnpc24YFYnJxkdOlZ9j8MfAWm3seoaf4Zt454XDxyKTlWHQ9aAN7d7/hQDkcHt+dZmv+EfDXiryz4g0iO68nPl+YT8uevQ1n/wDCAeEPDZXVtC0OK1uEmi/ewls7fMXI69MUAdEGz0Palz3/AErH1vwB4O8R3v8AaOuaDDczlQvmSE5wOnQ1LoHg/wAM+FWkbw/o8Vr52PM8sn58dOpoA0gSeO9KD/EDxXKD4beB9S1m9l1Pw7BNPJLvaSRmJJPOevuK1/C3h/R/D2kf2ZpFgkEQkYPGhOC2cE8/nQBqZyePxoyetc6fhH8N2O4+ErYk9fvf41q/8I9on9i/8I59gT7F5Xl/ZsnGz09aAL2e1Nz3z+dc9/wqL4bf9Cjbf+Pf41qaz4c0TX7AaZrOnJcQKwKxOTjI6HigC7k44P51gfEEeba6Za5/1uvWXB7hJRJ+mylsfhj4B068jv7HwzbxzwvvjkUnKt69az/ibptnca34T1J7cNPB4ljWOTJyqmKbI+nAoA7CiiigCOaaK3he4mlCpGhZ2J4AA5NYvgOK4m0ZtfvYik+rzteMh6qjYESn3Eaxg++ab8VJpbb4Z+ILiCQq6aNclWHb901TX3g3wx4osrR9f0aK6MMI8rfn5MgehoA2C3Gc/wCfxo3HBwf1rI0TwD4P8N3v9oaFoMNtPs2eZGTnHpyaTWfh94M8Q3x1PWvD8NxcFQrSSE5wOnQ0AbG456/hQGJGRWdoHhLw34V83/hH9IjtRNjzPLJ+bHTqapXvwv8AAGoXct9feGLeSaZy8jsTlmPU9aAN4NnkHPsPWnZ7VQ0fw5omg6c2k6PpyW9uSS0SZxk9etZf/Covht/0KNt/49/jQB0O7uaUn1qi/hzQ5NE/4Rx9PQ2XlCP7Nk42DoPWstfhH8N1O5fCVsCOn3v8aAOiDE0AmqOveG9D8TWi2Ou6bHdRK+9Ukzjd+FZ+n/DTwHpV9FqOn+GreKeFt0cilsqfxNAG9uxSE8ZzWZr/AIM8MeKpI5PEOjxXbQgiIyZ+X8jUeieAvCHhu9/tHQtBgtp9m3fHnO305NAGvu9T29aTdgYB/WsjWPh/4M8QXp1LWdAhuLggBpHJzx06Gp9B8I+HPC4lHh/SIrXzseYI8/Njp1NGwGgrZXIP0GaA2ehrkPGnhj4UaFY3HirxTpVhEHky893cLEJZXOFQM7AbmYgAZGSQK4bwF4M+PfjDT9N8UXuqp8PNPn0e7iuvA9taQX0kVzIXWG4e6yQWVNjGJAV3AjcwrKdRRlypNvyOyhg3VpOrOSjFaXffeyS1fn0V1d6ntO4hj6UZPrXgmieF9Q+EGqaH4U+NVhoGraFLp6wXXxAubqOxlm1R7gRw2zWg+UGRXQIUY5cEFRkZ9ufw/ok+h/8ACPvp6NYmHZ9nycbPT1p06imtrPqicVhZYaSaalF7NbO35Pyeq6l7J70hyO1c8vwk+HCMGXwlbAjoRu4/WtTXfDeh+JLNbDXNNjuYVfcsb5xu9eK0OUdrOkW+tW32admRlYNDPHw8Ljo6nsRn6EZB4qvousXTXDaHrW1L+FSQyghLhM48xOfzXOVPsQTV0/4Z+BNJvYtR07w1bwzwtuikUnKn8TWf4802zbxv4M1b7OPtEetSwrKM58trK5JXjtlQfqBQB19FFFABRRRQAUUUUAFFFFABRRRQAUUUUAFQXl7bafaSX17crFFGu6SR2wFH+fzqeuV+Jz3G7w/bQXLRfaPEcCSFQDuXZIcEHg8gH6igDQs7O78QXcesazA0dtGwaxsXBBz2kkGPvcZC/wAOf73TYyOpx7iua1bwB4c1O9k1TX/C1tfyyD95cISHbtyucenQ9qwfF3xO+DX7P+mtLNa3a3FzDLOukaHpNxe3s8cIDSSC3iVpNqBhubAA3AZyRkA9D3c9evajJxntXmnw41b9nj48+CbD4sfC6Ow8Q6VrsRuLO+tN+JPmIbeGwY2DAqysAVIIIyMV2ek+ErDTtNOlrapDa/Nizt2IjG7rk9Sf0oA2qbuzyDwe9c9/wqL4bf8AQo2v/j3+Nal14c0S90UeHrrT0eyWNUFu2cbV6D17UAXicDmjOeQenWudi+Evw5hkEsfhO2VlOVYbuP1q54n0nwrrsMdn4jsY7oRtujhbLEN9BQBq5Pf8qXd2rl9M+HnhzT76LVNE8K21hLF/q53y0i/Rc4H4mruq/D7wpr9wt34i037dMibVkuHPyj2AwB+VAG0Cf8T6UZPX9KytD8C+EvDN019oGhQ20rJtZ485K+nJqLVfhz4I1y/fUtX8OwTzyf6yRycn8jQBt5IHNIDz1/DNZ+geFPD3heOSLQNLjtVlbLiPPzH8aoXPwr+H13cSXV14Wt5JJXLyOd3zMe/WgDfLEc/n7U6qGneHdF0nSToem6ekVqwYeQucfN1681l/8Ki+G3/Qo2v/AI9/jQB0O7070En3qld+HdEvtGGgXWnpJZhFQW7ZxtXoPWsyH4T/AA7t5Vmh8KWyujblYbuD+dAHQgjrnpSAk85qjr/hjQvE8CW2v6Yl0kT741kzwfwqlpvw28DaNfRanpnhy3guIjmORc5X8zQBuZxznPfik3Z6n657Vl674I8K+J50ufEGiRXUka7UeTPA/A0mh+BfCXhm5a90DQ4baZk2s8eclfTk0AVvGBXVbzTfCQ5+2XQmuU/6d4SHbI7gv5an2f610GB6VyFlp1lbfG2+vYLYLJceHIWmcZ+Yid1B9jgAfgK6+gAqvf6ha6XZyX1/OI4o1yzHt/ic9qsVzfj6aWPVPDUCN8k3iFVlUjhgLedh9fmAP1APagC1pdneateJ4h1q3KbObCyfrACPvt/00I/75B2juTsHpz3rnfE/gn4fyfavE/iLw9FMyRtLczCKSRyqjnCpkk4HQA/SsT9m/wCJXwU+M/wus/iv+z/dpdeG9Ymn+yXiW0sInMUrwudkoDDDow5A9aAO+yTSZ4yegrn5fhP8O55Wmm8KWzO7ZZju5P51p2fh3RdP0b+wLPT0jsyjJ9nXONrdR69z+dAF+mhieM/Q1z3/AAqL4bf9Cja/+Pf41qX3h3RdT0caDf6ektoFVRA+cYXp70AXS2DyfwzSFx2zx71gQfCn4eWs6XVt4VtlkjYNGwLcEdO9TeNNM8GXWkm/8dpaCztMyvNey7I4h3YsSMAeppN23Gouckkr3NkMck54o3HHfp2rxe7+MvwM8Dajrmp6V8N/E8r+F763tbu70rwhf3Cs044aEpGfPRRyzx7lXPJHFd/Db/C74pXM93G+navPp8htbsRT73tpBy0ThTlHGRlTgis41aU5WUtTqr5fjsNTU6lNpP8A4D+WjW/c6oMSOtKScZz+AFZGg+CfC3hi4e58P6JDayOm2Ro8/Mvp1qLVPhx4G1u+k1PVfDkE9xL/AKyRyct+tanGjcJHXPWkBPvVHQPDGheGIHttA0xLVJX3yLHnk/jWbL8J/h3PK003hS2Z3bLMd3J/OgZ0G7HWnVQs/Dujafo/9gWWnpHZlCn2dc7drdR61l/8Ki+G3/Qo2v8A49/jQB0IJJP6UbuDnt6VS1Dw7ouqaR/YWo6ektoFVfIbOML06c1mQ/Cj4eW0yXMHhW2WSNt0bDd8pHTvQB0O7I4pBnrn8Koa/wCFfD/imKOHxBpcd0sTbkWTPyn8KqaV8OfA+h36anpPh2CC4jH7uRCcj8zQBtZ9SaGCupRlBBHIYdaytc8DeEvE90t9r+hw3MqJtV5M5C+nBpdC8EeFfDE73OgaJFaySJtkdM/MvocmgCt4HZtPt7rwnK2W0q4McPvbN80J98Kdme5Q1v1yei6bZWPxh126s7cI91odg9wy5+d/Ouhn0zgD8hXWUAU9d0y11vQ7zRr12WG7tZIZWUgEKylTgnvgmq1lY39taRWdwwmghjVFSNsNgDHzf3uAPSoviRx8PNeYcEaNckH/ALZNV7w9zoFiT/z5xf8AoAoA8G/aB/bU8M/Dv4hah8FvDHxU8A+FfEGlaLBqE83xAu3jglMzSCK3jjjkRiSImLSbsIGT5XzgdP8AsP8A7UsP7Yn7O+lfGdvDJ0W+mubiy1fTBKZI4bqCQxv5blQXibAdGwMqwrzn4+/Dj9qz4R/tL3/7Rn7LHw/8NeObPxnotlpvjHwbr2sf2dNHPaGQW97bzlHXAjlKOhHIUEZr1XwXe/tJ6ZpXhuPxT4P0ae81fUJn8VCz1c+RoMJiZo1g3oHucMscZJ2klmfAAxQB6NqTBbQxlwPMITJ9zg/pmg3nmDFnA0ox1Awv5/8A66pSeWL2JdTjdmXc7SOdyccDpwvXvjpWnG6SKHRwQehHQ0AQ+RdTHNxc7R/ch4/Xqf0qSC3htxiGELnqR3+tS4A6Co5p4raI3FxKiKoyzu2AB7mk2lqxDw2Dg00tzjPT3rh/HP7RPwm8CeG5vEN/4xtLoRyGJLayuEklkkCM+0Lnj5VZskgbVJzXlGufE74maJcaf48tdY1u1me1a+1nT9UhSSzW0SLdJtjRv3ZDFFyCWAYtg4NfI57xrknD9ajSxEruq9OWzt5vyOilhqlVNroe5ar8SPBei6nJpeqeIYYJYeJWkVtiHAIVnxtDEdFJyfSrPhzxhoPipJV0a9d2h2+bHLA8TrkfKdsig4PY4wcV8o2PxUn+Ofi7xn4ZsfEUelada3Pn6eHJ86eSSR/mCIdzhXjCjjG5W4YYq3+yt+098V/Fk2uaf4m+Gkb+KrG+OmFXuPs0f2eEbzO6OA3zeap4AzvXAAya+Qw/iVVWf1sLjIQp0KTlzScnfl+y0urb39Tolg17JSTu2fXBOee4Paq+skrpk8ijlE3flzXm3ws/aTsPGJ1HSvGHh+fSdS0nUjaXwjRpYVOTtYsB8oIGeeO+SOa9L1JfM024jUfegYD8Qa/TctzXL82oe1wlRTjps9rq+vY4p0505WkTqwZQR0IpcD0qDT5RNYwTg53wq35gVPXoklC4C22twy44nQo3px/kCp4PkvJoMYziRfoeD+o/WoNeVo7ZLtBzDKG/DP8Ajj8qnkIW7hnXo6lM/qP5UAWKMDGMUUUAFFFFABWdrWr6TpUlimqpua7v1t7T93uxMVYjr04Vua0a5n4hWd3dXXh1rS2kk8nxHDJKUQtsQRTAsfbJ/WgDpqKKKAKHiTR7PxD4evtB1GVkt721kgmdGwVVlIOD2ODVyCJIYUiT7qKApz2FYPxaJX4XeImU4I0W5wR/1yatvT+bGDP/ADxX+QoA8fb9ojxd45+PPxA+Avwq0/ToL74daJp13qNzrcErJe3F7HJNDBHsddiBI13Snfy+Avymrf7FP7Smvftcfs/aP8e9U+H1t4bg10NJp9hb6016xiRihLs1vDsbzEcbQGGACGOePGviZp3x1+IH7TfjXx38APhV4J8ZadZ2tv4avtRt/iPeaDdwyxJ5lxZXYggkFwVeYYYn92GKjB3V6X+z58SfiR/wr618AaD+zPpHh268I+Jrbw9rWiaV4ljk03T7HyI5mubWfyl8/wAtJIwYtqNu3AkYyQD3WiiigAwPSiiigAwOmKKKKACjAHQUUUAFGBjGKKKADpXO/E34j+HvhN4B1b4j+KZnFjpNlJczRxkb5Aik7EBI3M2MAdziuiry79qX4O3Px08E6Z8PpvB2i65pU/iG0n1u01i9ng2W0bFjJE0B3GQELgE4PNaUYwlVSm9OvoY13UVJuC97ofLHxl+Jvx9/bA8I+HvFmtfCzwvp3wvTxnZX9xpnie7eC9fTkkwt7Md6iF4HDSFCw3AqMEHnn/iv8cv+CxPwi8P3tl4KtvA/izTLDQ21b/hKPKUS+Sp85lEbOASIiFxtOcjBJ4r1T/goFo3xI+G3wP1zVfgx4F/4TjUUtEim8GbHunuLV2EbbwibnUL2OSQOpwKrfsseDP2mYfgXa+NNQsbbStX1fRtOk0jwd4k8OmS08OiNdkkJMMwlmXYBsEnMbZznkD15Onh/9ojSUoPTl6q19fncwoqOaYOOBqV3SqwblzPSLUuVPXpa1/RHT6F+1V4Y/a+/Ye0z4oeEtN0CLW9fvLbT9H03x5beTZy65HMhCqpJLgSoXTaSSVHIIOPqK2Di3jWXGQg3Y6ZxXz3+zPP4P+K/xK8a/wBpNqN/F4M8SxQaNouq+EYrKy0O4WF98tidu9y5kkJkY52sAAAcn6IAAAAHHpXiVINYqc3Hlvsr3stbfmexOtSWX0cNCp7Rxu3JbOUlFNLyXL99+gUUUUHIGB0xWfqur6Tp19ptnqK5mvrwwWRMecSCKSTr2+SN+f8AGtCub8a2t1c+IvCsttbSOkGuyPOyIWEaGyuVBb0GWA57mgDpKKKKACiiigAooooAKKKKACiiigAooooAKztd0Ow1uSwkvZmQ2N+l1AFYDc4VlAP4MfyrRrjfjDKsUPh3dctCG8T2ymRASRlJB2+ooA6y6vYLNA1xIQW4RQMlj6AdzXw/8QdR/ab17/gsFp/hvSdN8Hi3tfglc3Gl21/qV2o+wS6wqvK7JCxS5JiQbVygCg7snFfaFjBLpuLwE36SD/j6BzLj8OCP93H0r5+vfhL8cL3/AIKTW37VGm+BdPn8IWvwxPhFmGvRi8Mx1E3X2jySuAm1tuC2/wBqAPe/Dfg3TPA2kJoXgrS7KxsImd00+3tlijDMxZiNoGCWJJJzkkmtAaqkLbNQge3J6Mwyp+jD+uKyPD/ibxTc65rdh4r8Kw6fbWt+sehTW+oi4k1G2MSMZmjVQYcSF02nPCA5wRWsZNTvAVjt0t0P8U3zMf8AgI4H4n8KALJuIki85pl2YzuLDH51XOpi440+2eb/AKafdT/vo9fwzVVPC1jHL9pSWUSg5LMQVP8AwD7o/AZq0bnUrMf6VaiVO0lvwfxU/wBCaAD7He3Izf3u1T1it/lH/fXU/pUtta21opW1gRPXA6/U0Wt/a3ZKwTBnUfMnRh9QeRUvPU4pMQMQDzmhuAMVh6x8SPAXh67lsNe8Z6bazQ4M8c14imIHoXBPyA+px0rkNY+Psd74ks/C/g+1VUvInlh1e92mGRVxhURXDMW5Kk4BAYjNeFm3EmS5JhpVsXWSS6J3d+1lrc1p0alR2ij0sn5ea5zxf46vPD+pwaLpWjLeXMsDTuJbjykSMEDqFYkkngYxweemfO7/APaWvfCHgzXPF3i++0qS303S724FxA3lRo8MnlxhiWbKyE4XvlSBnrXkvirWvFvhrTNG8R698WJvFWs66yz6Nbrn7NJuKFoNsZz5TKzHeCp+UdQMV8fnnH2DeV0Xl02qldtQk4t25ZJNuPa1zpo4WSqPn1S6H1n4d1qDxDodrrltG6JdwLKqydVz2P06VfAHUGvnHxh8X/Fem3OvXqeMbfw/deG5Uh0nwpuVN6CNWTeucv5mSBgYAwByDXvfhvxZ4e8W2C6j4d1y0vYWVSZbS4WRVJHGcE4PtX1WS8R4PNsRWwsL89FqMrq13bVxT6GFSjKnFS6M1DwOlFIcgGlr6NGIUUUUwDA9KOnSiigAwPSiiigDPGraS3iZtCCj7ctitwx8vnyi7KOf94HitCubjtLofFia/Nu/2c+HY4xNtOwt58hK56ZwQfxrpKACs/WNEstXutOubuVlewvvtNuFYfM/lumD6ja7foa0K5n4gEjWfCuD18RAH3H2W4oA6K6A+zSHH8B/lX5o/sXftN/HD9k//glX8O/jhoXgTwzqPgTRtbmt/Fn2/UZ11N4bnXZLbzLVI0MYCGZT87Etg8Dgn9JdeuNSttEurjR9MN9dLAxgtPOWPzmxwu48Ln1PFfCFv+wb+1ND/wAEik/YVbwloZ8YJq0Tfa/+EiX7D5KawmoeZ5nl7vuKY9uzO7npzQB98wSpPCk8fSRQy59CM0+uU8N678SpfE1jomsfDyC00f8A4R5J7rVf7XR5Ib/eFNp5QX5l2fP5oOO2M11dABTRjOMH6Gmzzx28LTTyqiKMs7HAA7kntTLW8gvYhc2lyksbD5HR8hh9adnuTeN7XJiQDyOteVfG7T7X4k/ETw38D/E0XhbUPC+sWF7eeJNC1iUtd3q27wGAwxZAeNZXUyE5A+RSPnr1XtlsV5z8aPCXiu98ReHPHnww0vw8/iLTL77PNc61aO8h0qVkN3FDJGcxuRHG4JypaJVIG7IwrRcqeiutPu6/gelldSnSxicmk7SSb6Saai/Kzs0+jszcudW8ZW/j/TvDXh3wpZSeHRZyf2rqDXOyS1kA/dRpHjDA9/T+fFeLrPTfhR+0H4V1bwxqnh3QLLxzqN3aeI7A6Ztutev1tfMt5ElRfvxx28ud/BU4zkAVc8H/ALUXwfvLTQbG+1C/0bUfEd7dWmk6T4h0uezvbu5gz5yiKVAxII64wc8E1X8A3ni743+PdL+MFxpcul+FNOsrmPTPD/iXwz9n1P8AtDzTH9uDSfPDGYQyouAzCUlsYAqK1WjVUFT30230d9f62OvA4TG4F1amJVo2knfZtpqKXf3ldPo1e560MYB6H3p3BFMHoR9afXStTw0wwPSiiigYYGMYooooACAeoooooAMD0ooooAKMD0oooAoQ6ppkniK40aNP9Nhs4ppm8vkxO8gQZ+qPx/jV+uesbW5X4oanfNbOIH0KyRZip2s4muSQD7Bhn610NAFPXv7NbRLxdZMZszayfaxKflEe078+2M5rE0rXJ7dYbDVt1vGUAt0iPyyJjgrJ/EMdvlPsat/EgZ+HmvLjn+xrrAGT1iYCnaXbbvDVpbalardW7Wce7cgJA2DqO/4UAadoLTy99oq47kDk/wD16nIB6iuffRL/AE0C98M3vmw97WWTPHor9vo2R7irOm+Kre4mNlqKNbXC9Y5htP1we3uMj3oAvwDzL2aU/wAIVB/M/wA/0oewgDF4d0THq0Rxn69jSaa3m2ouQf8AWsXz7E/4VZoArb7+Dh0WZfWPhvyPH614Z+07qWveKPHmjeAJtXubbw2LRrjV7G1iZZr/ACJBgMOSsZVSUXJIZj2GffD0r5F+Mza1+0d+0Ja+F9VcweG9CvbiK0tLovHHcyw71a4yjKzt5iMoAYDah55OfhvETH08DwxVcqrpuWia3b7fNXOnCQcqy0uQ/EDwT4U1HwloXi3xx4V0q20eLTppbzUrWcpeGP7OXLvI0fTYJHIJJ3Y55NcVqK/tEeNPhr4k+I/h74t2up6HpYntbC1uLGNJbvTFZXc7h955ogh3ErkYAx1OR+0Da6V4PtNK8DxWkVzY3njC3hOkx3ckqQ6bFNELvY2cRxlhn5+OqkHg12fjHQfCPiD4G3TfDyK+0O5sbxbqeWaSSO28mJzJ5Tpu2urR4VUAJDEHHy1/Mns6mBo4avGTnzS0cou0bS21+5taHsrlleLVrGL8GNK8SeIpNE8QfD+10tPGfh+2mh1G11RyhuI9zuktwnl+ZEzrcFgyk7jJyDs4qfGDxl4+sJpPH3h/xA+keJH1qOy1uGzG6KImN/NmQk5Kw2sQYjB3uoHoak0JL79ofWdQ+I37OHxJvNG1fQ/C9pEWdfs8EjSwPJHG8ZX51CgDecHKdcAV558GvgyfjTfHwRe61c6B4qjmbUrnxHdXzXkkrNFE7eXnZuDrKnyHBURkdAc+zgspWMr4nEYuqoSpR5pRknza62fdaqxnKq4wSSvc9w0zw14A8NeNJfD/AIM+I99q97eaU17d393qWItxbDG5aJMTCTcMI2doDYK8V9F/Bz45ab8VXv8Aw7faemna1pjbbqwFysqyxklRLGw+8hII6AjFfLHgyw+Lf7MvhfXviLeeNbXxNp12yWUdndR7p45IZXiaWBIlG5CzFjGSWwNxY4IEvhT9pvw/8PrPS9dHw3sdNi8EWzXGra7c3Wy3aKSJ4yN8UbMjPuDlZFXDbfTj1eBeJcVw7mri5qeGqNKUtE07b230ulbqFXCyxloU1eb2Xe59qeHZPM0O2OzaVhC7fTHH9Kdqet6PowSTV9Xt7XzW2x/aJ1TefQZPNfPvwb+MXxC+MPhTwr8VPEHxF0zwXaPc31xdeGLOJb1bu0eRltTcXDKPIIALNtwOcbsA15qvxK+I2p/HWf4a/GXxA+v6pceGRPp2reFLCaDT1tkuik7FDIxScRMrbSSHJ4BwAP3biDi3D5PlM8bSj7TltdJrS9t+2jJhkVaUpRVSMnD4knrpe9tLO1tbPqj7Su4kvLKSJDnfGdpP04qrBK0+hx3CnLwgHr3Q/wBQP1rxnwh8WvF/w/k0K2u4DqXhrVkFvpaS3Aa9hKwvKGZiq7gY4jwckHOWr2Pw5dWl/bzC1cNDLiWE4/5ZyKGHFdfDXFWUcU4T22Dldr4k9Gr9/uZ5NahUoStM1AwZd4PBGaWq+nuWtFVuq5RvwOKsV9KYhRRRQAVleJPEaeHptMha2Mn9o6mlmMNjZuR23e/3OnvWrWD410XUdYudCewiDCy12K5uSWxtjEUoJ/NhQBvUUUUAUfEK6O2hXi+IzH9gNq/23zT8nlbTuz7YzVuDyhCghI2hRtx6Vz/xZ5+F/iJRnJ0W5xj3iYCtzTuLCDj/AJZL29qAPKPHf7C37LPxE8cXHxI8Q/C5Idbvpll1G+0fU7qwa/cDAacW0sYmOOMuDXpHg3wV4U+Hvhy28J+CfD9rpmm2ikW9naRBUTJyT6kkkksckkkmtbA9KMD0oAKTp0NLVDxDr+j+FtGufEPiDUIrSys4TLc3E8oRUUepPH+NFnJ2RMmkrvYugnGc80oz15rwnQPif8Xv2mPD2j+P/g3rX/CF+H21LMp13SPMvb+3UPHIvltgRfPsZWBO5fTkV6Z8FvD3jvwp8NdM0L4l+PW8TazBGwvdbayW3NyS5IPlqSBgEL74rarh5Uo3k9exz0sSq0vdWnfoWPit8TvC3wa+Guu/FjxxdyQ6P4d0qbUNRlhiLusMSF2wo5Y4HSvL/wBmP/goN+zz+1j8M7b4nfC7U9VMFxcSwnTrzS5BdRPGeQypuHTBGCchhWn+1X+0L8Bvhb4dPw8+LnxI0PSJvEVnKpstVuFzJZYInfyzncuwMoGOTwMnivmy8+FHifRrPQfCv7Nni3w94b+Efjfw5d3Wl31npKSTWeoGItG1qcAIHIDYyOrfxc134LBUq1C9S6bej6W6rzPPxuOrUMRak00lqut+noe5fst/t4WH7T3x4+IvwW0r4S67o8PgC8Fudc1ADyb5t5QqBgbGyN23JO05OK+ga+Vv+CZv7PL/AAr8M+IPiJYeP9UvbLxRfsRplwqiBpY22td46h5CDkZwAK+qa5sfDD08U40dlb/g/ideW1MRVwkZ1t3r/kFFFFcZ3hXM/Fn4e2/xX+Huq/Du48R6ppEeq23kvqOi3Pk3MAyDlHA+U8Y6dzXTVGzLGu9iMAZOSOBTUnB8y6EzjGcXF7MwfBvgrSPA+gaf4T0hpZEtoEE13dvvnudigb5X/jcnBLH3r518SfHnxX8bP2sfG3/BPPxL8AvE+meErnwvK6/EWzuHhUebEhPlPs2rlnKqQxO5cEYr6f0y4ttQD6ja3CSxyHbE8bhgVXIyCPfP5VbCqpLBR0/GtoV/ZtuSu/ye9zmqUFVjFRdl+a7HM/CD4Y6L8GPhto3wu8O39/d2WiWCWttdalcebcSqgwGd8DcffFdRTMEjOD9DTx0rGUnOTk3ds6IRUI8qVkgooopFhWXrviFNF1PSNOa2Mh1TUGtVYNjy8QSy7j6/6vGPetSsLxZouoaprnhy+s4g0en6w890S2NqG0njyPX5pFH40AbtFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFZHiy28P3VpbxeIJYUP2tTYvM2NtxhthX3xmteuV+JcSTXPhpGjDAeJ4CQRkf6uUUAXre7a9hS88PQsJZFBkGMQZ7gn691yeKGtJdQuMarcvZXJ4UW3yq4/3urfQ4+laGn/6Pc3FgRgLJ5kQ/2W/+y3VYntoLqMxTxK6nqCO9AFG3caShiu7REUnJuIUO1vdh1X9frV9ZI5FDxsGBHBB61UKX+n/6oNcQf882P7xfof4h9eaZDDBLm50W5ETZy0ZHyZ/2l6g/lQBo0VTj1PY/kahEbeQ8KWbKN9G6fgefarecjOe1AEVzYWt3hp4QWH3WHDL9CORUJttQtv8Aj0uxMo/5Z3HX/vof1Bq5WV4w/tc+FNT/ALAVjfCxlNoqHDNLsO0D3zis6snCm5JXstu4LVnzA6+MvCPijxV4As7TS7q612+uZpNT8QaqiWyqzEGMSEnewVuIscEHcVzXNfFb4bHw18MdM+Hd/NdXznUbe7udMs1dvOs4XxMsTpyqpHIeGG0sBg5OKsX2q/DLR9Q8LRatoGoLr8F015rOm6jb3EkTZQiXPDJuEuwgqCw284ya6HwtrXjw6x4k+Keh6Wlro1zAF0i18v7TAgjykjyeWwMDM6g9hgEnJr+Xni8Li/rzp5dKVd3neUndPmSWm+2unY9pRlFQvLQ808YWfw61Xxrc+E/hXBJaeHxoFtcalY3Ucn2S6uIpN0Sb2zt/ds6seR8wzjIJ2vGGt/DODULfXvh14MsYLyKe1i042FykiwStOpkdUQ5jdUBG0AEAknGBmr8dfCnijw74s0a1fVU1N7jTpXvJ9JiMRESwugQr820GR1bcTyFKgYqTwbqXguXwlrXxIX4hX99450uNjcOsax+XuQZjMQQIqYz15AAOc4yU8NgamXZTjKntFFScJPV/aX3LVoOaXtKkVYsW3iHwB8VPjf4jvfiz4ktbeCfTGitrW9gRXt7SEL8zNICP3heRmJx9wAYBwe1+EPifT/CGpX/iXwx8XtN8iDRIDJZyLb+XcKGkCSMI8bSyqnT5sseucV5d4d03wNrvxCsdQ+K9/wCRBcFWtLuRAImWJHdkkLgq2W24BHRcfTvIPAnhW/8AiTBoWo+FrKya/upr+0m1TSU8m9hiijQMIxjEoZ1JGQDsztzUcTzxuU8YYivTxE4SiudN2V1ppHu7aDopVMOk1fofWNvq0a6TDq2qAWgeBXlSVx+6JHKk9ODx+Fcmv7SHwJF5q1lN8WdCgk0HU49O1b7TqKRrbXcgJSBixA3nBwo54r5b8S/EnUdc+KGm/s8/HC50jVfAdyt/f3+nQPMJJVtZY3txGsbbvKDffV2ZCGRQMV7d8T/EXhvxb4Vn+Hni/wCEFrc2muWjsIkhW8ARNvzshQBZF3KVYnAPOeBn9zyrjPLM2wlGVOSjOqmoqV7txV3t201LnluFwcISxLk+dX923ux5rdd3o9PR33R23hD4++BvHPiCDRNElnK3m/8As67ZV8q62gsdhDE9FY4IHAOcHiu5yDxmvg/4P+LbXw3oll8IPGHxcub6y8K+KvIutVudN+y3VuJLM3dvEsikqUiSaONpgASQBxya+l/g18U73xB4nGjf8Jl/a9ndidrIyogkSOMJtYlADyS4G4EsBu7Gvm+GPEj69mP9m5jTca0pNRaT5Wru35GOaZS8BWcIu6STv3TV0/mmes5470tFFfrCPHQUUUUwMtPEKN4wfwn9mO5NOW787cOhkZNuOv8AD1961Kwk0bUF+JEviExj7K2hpbB9wz5gmdsY+jCt2gAqhrC6G1zYHWDF5gvf+Jf5h58/y3+777d/4Zq/XMePgTrPhYgdPEQ5/wC3W4//AFUAdPgelGB6UUUAGB6UgJ5paaSccNSA8/8A2n/gte/tC/A3XvhFYeLrjQ5tYtRGmowAkphg2GAIJU4wwB6E1y/7Jv7KviH9mn4Kab8K7n4wanqc9k8jvciJBEu9s7ERwxVR2Ga9oGTjIGKXHT2reGIrQo+yT0vfY5ZYWjOv7Zp3tbc4L4m+EvjJffDvXNM+HvxKEGtz6VPHpM9zp8eI7goRG25enzY5xXzB/wAEm/gt+3X8M9e8Zav+1lrupS6bebY9Kt9X1gXkjzh2MksZ3tsTHHYNwccV9r3k6W9rJcHkIhY+2BUWjwGDSreOThvKBb645reni5U8LOnyr3ra21XoYVMFCpi4VeZ3j0vo/U8n/bU8A/tCePPg3JpX7MHiiDR/E6XsTrdPIInMAJ3okhB2Hoc+gxXZ/Ayz8e6d8JPD+n/FHXI9S8RW2mxxazfRD5ZbgDDnoM8jBPfGa68bTjI6dM1nu39mapu6Q3ZwSOiyY4/Md/Ue9Ye2cqHsrLR3v1+Z0+ztiPauTelrN6L0NDHzZxS03dkcGndaxN0FFFFAwppPAINOqC8vLawtpb27uFiihQvK7nAVQCST7YFHUT2Jd3HJPSnVh+A/H/g74m+HIfF3gXxBBqWnTsyxXVs2VYqSD1weorcHAxTcXB2fQUJRnHmTumFFFFIoKKKKAMuHXxP4ruvDAtyDbWEF15xYfN5jyrtx/wBsj+dalYdppF9D8Qr/AF6SMC2uNHtIIpA3JdJbhmGPpIv51uUAU9c1Kz0jRbvVtQRmgtbWSaZQuSUVSWwO/AqazuIruziurdSEliV0BGMAgEfpWZ8QLa4u/AetWlnC0skuk3KRxoMszGJgAB35NZ3hz4gaHFo9naamk9lKlrGrJcQnAIUA8jIoA6KWzw/nWr+VIfvEdG+o/r1qjrdvZajYtbatagOeIXB6MeMqw5B/Wrtlq2makgl0+/hmH/TKQH+VJfxx3Lw2kqBlaTcwI4wBn+eKAMlLLxD4ax9gkN9aLgGJuJUH8m/DB9jWjpfiDTtWUiCfZIpw8MnDKfQg96m8q4tOYP3kY/5ZsfmX6HvVW+0fSde/fkNHcIMCaP5JE9j/AIHigDTr4i+L3grXPj58ZtR8H/DrxHc6Hplj4ku7jULUSqjST25USSRysjSQh5XjJCfKct0JNfYIvtf8P/JqsJvbYf8AL1APnUerL1/LNeL/ALRnh3QfAUU/xf8Ahz4Rs7+91iUx36JdPDiYRu4mVk5DMFwyjG/5T1Xn8/8AEnB47E8NyqYW3NTfNqr6Wa/C9/kdWDlBV1zHjGkeC/h/8NPhpPYeDNBXUvFulx3I8TR6pG91aysm97gOZRt2bsODH8+OcdRWLpHgX4o6n8H9c8V/GjXNOsRqmlmW1tYdHRGubdYwxijud5ZWdQABtDHqOpNepeDPhf4dt20ee08CSy2d/a3MMlnd61I3nXBYvLNKhLKFJWTGCclgcdMea32l/EPX5ta0Xxx4Ku9X8M+BtWkj0/T72SNobaRF3hvOLB3VYJVQHHyknkda/mvC5xiMRCOHnUvGnLm9611d6qPztoew4JO63OR+CvhL4O+MfGWtR/EPX7vws0+jR2OgWmh6tNZPfwDzBtkWNsSFMLiI52h++ayvBegaHrPxUb4V+JvGzW8mnP5sep6Ambi4OFh8tN5McYHR8kr8wxivXfBHwa8PeDpX+Mes2c9/o+tWQhupIXWOeDG75wu0s42jaRkF9qkqRgDndB+Cmo+HdWOoeGfD8OsaBr2mx29zr2qSqpjnV3TyV2RsWcqyICF2Awqpzjn6fFcTUK+Y42vSru04qMbpLsmvVJa33Mo0WoRVje8IeJNO8C+BfHWn6npNtefYdQuGsNds/LI0+MoojdkhdzGQd0n7v7zbxgEYrF8X+KPEGrfAHXLP9njwOvifTfEc6veal4k0+R4LeT90JBOko3t8gwMKyg4bI6Vq+L9Q8Va78RfD2m6F4E121tZtPu7S5gWNHnheMbykscYDSwrsRlJCkeZkA5FehfD+w+OXxn16w0y18HX3hTwleyPL4lkvrRY5JEVdqLbrJiRPNYISChAQHBDHFePlXDmb5xWpywuHclOSbbfuq3e3XS+h1UccsDiI1esGmvkzQ/ZJ8O+Hfid8HG8WeB/HOnvoviSeV7uGKAyvE3KTqGJXa+dwKlcIe2al8U/AT4feMfjroXh34Wan4y8MNoelz6leazoA3aZeeYHtY7eWSUsskqkyOEAJAXLbcrn02P8AZ2+Ek/jKy15PCyQXGg2Mlrpq2lxLFGIZ0Kyq0aMEkzk8spIJyK6r4d/DjwP8KPCFp4A+HPhm00fR7BWW0sLGIJHFuYs2B6liSSepJJ61/TuG4YyynQqUp0I2q8rqdVJxSS0MJZjhcNVnWwspczUkk0tFK6eut9LdOr7K/jurfAXxeutaRptn4Ft3t7S3liN7b660cYLqELGMjKIRuLBPmOcA4ya9l0LS38OnT9Je4Mu3TY7dpSPvvGACx+orZZQwx+ZAqjrv7mOC/H/LC4Qt/uk7T/Onw9wlk/DMqrwKa57Xu72tfRfezxatepWtzdCxbjyrqaHHBKuv48H9RViq82Y72Gb+FwUb8sj+R/OrFfTmIUUUUAFYnjDX73Qp9Gjs0Qi/1mO0n3qThGjkYkY75UVt1j+KPDc3iGfSZobhYv7O1ZLxwyffCpIu0eh+fr7UAbFFFFAFHxHq1joOgXut6ohNtZ2sk06qm4lFUlgB34FWoJEmgSaPgOoK+wIrF+J1ld6h8OtdsLC2eWefSbiOKKNcs7GMgADvya2LFWSyhVhgiJQR9BQBNRRRQAV49+2/8KviV8bP2f8AUPhh8M9B0DU7nVry2j1Cz8RzSx272gkDSYaLDK/yjGK9hppJzwuc1dOq6NRTW6Mq1JVqbg9meZ/ESw8WfB/4A6hP8JPAq6pf+G/DTjQvDtrOx+0vDCRHArMN3JUAZJNct/wT2+Pfx2/aF/Z4tPHP7SHwZl8CeJjqM9sdHnhkhM0KEbJgkvzrnkEH+7noRXq3xM+JvgP4O+CL74i/EvxJb6RoumIGvb+6zsiBYKCcAnkkD8asaRrGheJtJsvFOg38V7pmq28c9rdQnKOjgNHIp9CCMfUVv7VzoNSjq38X5o51SjDEJxlol8P5M474w/sq/s/fHLxDp/jn4q/CjSNf1bR7SW30641K38zZFJ99NpO0g5OCQdpORXgv7SOl3lt+yVe/C39mGdL7xili8Xhnw3bbHgtZopSivn/lhgAgEnB6YxX1tKkscDQOGlgZcEg/OB0P1/n9a+av2Bvh/wDss+AIviB4R/Zr8cNr0On+K55tcuri8M8sV3IvMJYqPlQhxxkE85JzXXg60o03JttRaaXT59jkxtCE6qikk5ppvr0+863/AIJw+HPj74S/ZA8KeHv2mNEtNP8AF1tFOt/a2jKdqGZjGX2EqH2kbgDjNe4yzR28bTzyBI0Us7s2AAO+T0rzT9pv4+/8Mw/DGf4jQ/DrWPFJF3bwxaPoMW+4cyOELAegGCetbul/Fv4YeMPAsuu6rr1naWUtl/xM7bVp1ge1V1w0cyuRsPJU5rkrQrVpOu1pJ9P8jroTo4eCoRlrFLc1vAnxF8CfFHQh4q+HPjHTtb00zPCL3S7xZ4vMQ4ZdyEjIPXn09a3a+VNZ+GHjD4U/BhPgj/wS707QdCu111dQ1bVNUZrixjWQhpkEj798jDYMAEKoxwcV9RaZ/aKabbrq0kbXYgQXLQghGkwNxUHnbnOPaor0Y0neL0eye9vMvDV51VaS1VtVtfyLNUdes7fU9HudLuU3pdQtC6B8Fgw2kZHI69avVWk/0i9CfwwruP8AvHgfpmsVdO50SSas+pifCr4X+EPgz4B074beA7CS20rTEZLSGW4eVgGYsfmcljySa6SkBG3J5petDbk7sIxUYpLoGB6CiiikUFFFFABWJ4n1690jWdAsLZUKanqz285dSSqi2nlyuOhzGOvYmtusjxD4dm1rVtE1GO5WMaVqTXLqVJMgNvNFtHpzJn8PegDXooooAKKKKACiiigAooooAKKKKACiiigArO1vW9P0WSxj1CNmN7fLb2+1M4kKsQT6DCnmtGuY+ImlajqkugrpyykweIIZZXijDGJBHICxBGAMkcn1oA27sG31C3vBwHJhk+h5U/mMf8Cq5WbqFprUlnJFDcwSsBujLIVbI5HIyOvtTrbWLqW3juX0mUrIoYNC6uBkZxjIPt0oA0KrXOnxTyefGximHSVOv0P94expF1nTydslx5Z/uzKUP/j2KnWRJE3pIrL/AHgeKAKj3jxD7PrNumxuPOAzGw98/d/Hj3pfst3ZDdpsokj/AOeErcD/AHT2/HirjKrAqygg9QRVM2dxYnfpjjYBzbOfl/4Cf4f5UASW2oxXEn2dgY5gMmKXhvqOxHuM1OeQdw7VUEtjqqtbXUW2ReWjfhk9wf6ikJ1KxPBNzCB908SKPr0b9D9aTA+cvHNvbWnjS5+LPjTRNQltrfVrixv54b53zGZPIjVIE/5Z7ljBwdx6kYzWJq1qsvgjVNW8C+OYtKi8qU2VtZakr3X2d8yB5QCSCrNkL1VXwT0r039pTw54JtPCqeME8RQ6XJHrNvcXUV1KxgnCyo0ivCSBkjqQMjJOCTXmXxQ1DQfFGi6leT+NLbSNWkuLcaHZ24EkV20YBWRcqrSgmRlZlwFCgHpX8yZlQxnDHGc1XTrVK/NySjJ3iptpad1f5bnswlGvhlbS36HMaz428GeJ9MsbbwPodzp89lY+RqF7AfLlmY7R90fPJtG58sB1A5yayYJvhTpfgrUvhz4V8LSX/ii72vaeJIow4uHwMyGfIIKruLJwcN0HOPUrGx0TxR4507TLzQNP0l9NsRHexI4L3c0hTyoSQMDkZO47hvIxyap63e6fo1np/wAM7nR9Nkt7bWnitmlVi4VmYLMylQNmx95dWJ+XBwScdmY5dicDw5gKk6VRqlUftKSldp35ru1+23ZkxkpVZJNK63OQtvh38PLfwTqfxC8fatBPoVjeiJ7QeYs8C/Im4MjZDhiWVQPmGM54qHXvFvjzxr4buUvbS31gWtrHCNZuHa3XSo5olZlcxo6yuRs3dABg4JGK3da8D+L9Lutd8LWmnW2t6LawRXl3eabDEl3ucFpIT5hbdwgfaCGIkwGGRXefBr4UXXjD4dX0Wma48GleIbt5ZbCS2KyQQeVFE8aNkGIlo3UBlJAAPFeFTwuP4z4grywlqk+bmjzvSEG1pbe6T1RrKUMPTXNddNDyXwn8Kvid4uv9At/B95pNr4r02RrW7ivtPEtvBpokQ3Vv50QEipMEUCRm3FowpDV7xp3in4heHYrqH4f/ALLWow30XiOPSjLqmu20UTafnLX8TiSU+SF5EO1XJwCo6j0vwL4W8KeDdM/sPw3pZtduDMkrFpWIGAWZuW4AGenFbuB6j/Gv33hjhh5LgI068+eom3eytFy3UdNERUzf2tONOpTUlDa97731s9V2XTU898A/APRfD/gG48J+ONcuvE91fX9xd32r6kFWdmlmaUKpQDYsYYIoHRVHvW54R+Ffh/wfdwXFjeXc4tYPJso7qUN5KYA4OAWOABliT+ZrpiE7ClB2jcQPWvfnlWWyrU68qUeeHwu2qPNr4vE4mrKpOV3L+tlovkKeOeTS1k6T4x8Na5fS6bpOuW888eS6Rvk4BwSPUZIGRmtTOe/5V2Ua1KvDmpyTXk7oxacXZodRRRWojFTXr1viBJ4XKp9nTR0ug207t5ldCM9MYUVtVkJ4dlXxxJ4r+0rsfSUtBDs5BErPuz6YbGK16ACs/WdasNJudPtr6Ms9/eiC2KpnbJ5bvk+g2owz71oVzvjewvLzVvDctrbPItvr4lnZVz5afZp13H0G5gPxoA6KiiigA600YUZINOPIxTcFen60b6CegvVcfzoztHNZfirxh4X8D6JL4j8ZeI7HStOgAM99qN0kMSfV3IAryf4iftX6frLw+EP2fJoPEuq364iv9OcT20QPGQynaxHrnA7mtaVCpV+Fad+hjVxFKjpJ69upyX/BQj/gon4J/Yj0/R9G1Lwdc+INS8QFwLO1vFhFvAuAzsxDHJzgLjnHUV7X8K/itpHxZ+HGh/Enw5o2oLZ63pkN5awzQbXRJFDAHJxkZ9a8q0j9ib4feLGtdb/aO0Sz8X6zdXgmZNSTzYrcgFiAD1PGCelepfFrWdf+GXwY1zXPhb4Qjv8AUtG0OaTRdEgjwsrxxnZEFXtwBgV11Y4P2cKVNXnfV9DioPGe1nWqu0LaLrodGb7V24h0Xb3BnuFXH/fO6vLv2sdA+O/xH+BniDwd8AtZttO8TXEAWzvI5yhjKuCyLMQAjkAgNjjPbrXk3/BMX9pr9qP9qnwz4luf2k/Bp0yLS9QRNNvItKey+1btxeHax58vA5HJ3cmvrWC3gt4lht4wiKMBVGBioqQll2J5ZJOUfmiqVSGZYTmjdRl8meN/sVeEf2j/AIZfs/6V4Y/aS1c614ihllaa4W98+aOItlI3c48xgO4J698V63FrdjLIsLzmGRvuxXClGP0DYz+GauNgD/61MntoLlPKuYVdT1DqCP1rnqVVWqucla/Y6qVL2FNQi7276jlbI+Vs0DnnPNcX8Rfih8IvhBPp9v45+KGneGpdVn8nTYdQv0RbmTj5VVyR1I6Y69a8p+Jfx0/at8L/ALV3h/wV4U+Hmman8PLqzVtS1pHVSXIJb94zhY2UgYU/ez7itaODrYj4ezd3psZV8bRw3x90rLW1/I+i25FUddIewawCKzXX7pUcZB3cEn2xmuS139of4aeD9Iutb8caq+jW1lA011NeqCiIASTuQsO3rXJ/s1fts/s5ftdanqVx8GfiAl+2hlY7i1ubZ7eUFyR5gSQAsp24DDI5PrSjhcQlzuDsuth/XMLKShzq76XPWPDXhbw94O0aLw/4X0a2sLODPlW1nCsaKSck4UAZJJJ+taFYHiv4nfDzwJeWOn+NPHWk6VcanN5Wnwahfxwtcv8A3UDMNx9hW6rhgCpyD3z+NYSU/ikt+vc6ISh8MWtOnYdRRRUmgUUUUAY1rrl5N46vfDbon2e30q2uY2CncWkknRgT0x+7Wtmsm20CaDxnd+KPPUpc6bb2wi28gxSTMW/HzR/3zWtQBQ8T6sdA8OX+ui3802VnLOIt2N+xC2M/hUdvpmk61p0F5Pp0a+dCsm1eMblB/Gk8ZaXda34Q1XRbFVaa802eCIMcDc8bKPp1q3pFtJaaTa2kwG+K3RHAPcKAaAMW9+GegXLma2EkEvaSNsEfiKpL4Z8aaffO2ieLGlWKMARXahxk84557DvXYVXsBuWSfvJMx/AHaP0FAHO/8JJ4/wBJGNY8JJdqOstjLg4/3Tn+dCfEjwncTKmq/atMnHCm6typ+m4ZBH411WB6Vwnxh+Mfg74ZWa2msWS6hfXEDS2+mxld0yg44zySScAAMSQcA1y43G4XL8PKviJqMI7t7IqMZSlZI6my1+yvIN8GoQXEW3/j4t5Ay/jj7v16V59+0V4Q07xD4Dn1ez0JbyOykN1dwpLsW4RY5M4AI3ckE9yu4DJOK5f4ffGX4GfFfVpNG1bRpdA1rLiCzk3W/nBeSyP8oY45wQCADxxmsj4yQeL9a8aaB8KPhZ+0TZ6Np86vf+Kr2XWLWW6t7ZHQQ28UUiltk770aX+EIwzkgV5uIrZfnuT1I0p89OonG8X3Vvkd2X4KeIxihKSgknJt3aSWvT7kursjzPWtS0lPh1YXnwY8ZyW19psgIgj1EzR3N0Blo7ZN5O+TdzgY2kjAPFHhr4h31n4zm8N+OodSsfCeqW0s+tteQMJ2uCoTbKww0a7dqnpvJHYNnnte/Z48O/C63vL7wd8E/D+qeGtU8ZW+t6RdqQps9RVfLWZU3bpImOdvzAgP3BrQ+C/i/wCO2neI9U+CvxU8MXer/wDCTtJq8viW/wBP8i3ggkPl/YEk2hZpY0jRV37SQQcnbz/J+OyHFYd14UYKtCm2udPVa67L7Pn1PqPq+CxNFyws3eKTakkrruv8jr77QLXw58PH8S6dr897pg1tn0exub+TdZ/vNqs/mSbXC4LsrgYViSc5rM8E64vw9u9H8Ga18aLW40+5kuLrS9Gt7UT3lrdid5gsoUlpYseYuVwCygg4IrzLR4vhl8Q/iH4xh1vxHJbeH9e1290jTvA0lvDFYvfQELLLO8iEsjvDlVT5G+cbTXQfCD9gz4X/ABU+Lmpa/qfgXUYrGzhNtP4n068ltW81WmIitWV1eJY1eDaQFH7vIHzYOnD/AA/WzrHrAO757S+Hp3v5Nu7LrUMswVlipy5+vKlaL00euvnbyPZP2evhr8SfiB8epfj/AOPtHutOsrK1u7GxtrtBC0hEnljbCHYopRAzsxySFAGBX0pNbxzAHBVl+669RXi3wj+JGtfD3xX4q+GnxNu9Ojt9GMcugyw6sJru6sEt0C3FyjtuSVikikn5XaIkc5z1lr+0Z4Miv303xDBPpj/8sZLsqY5COSm9TtEgHJTPTPocf07lNPIOFsHRy6M1C9+VSertv9x8pjsLXpYhqWqsndbNNXT+462G4mstckS8ZdskIPmqODjGMjt/FXKat+0j8OrfxBYeHPDZ1HxJLea1JpV1P4Y097+HTLlFVmW7khyttgMud5HXFc3+0X8Z08OfBjxL418O+JotGMPhu4mtPEcluLuGyIjci48tMmVV4baAc4Oar+G9Iu/DHh7TrTw/4eu9J0i6tDcyXXh+1VTqF7Id0k8iQJlC5JfpgliTzXo5zm39l4OWIjBz5UnaK5m7uysv60NsJhKEcN7eum7txir2Wiu235XVrb9T0P4XfGLwJ8X/AA/P4m8FavJLbWmoT2N2lzay28kNxC22SN45VVlI46jkEEEgiuG+KvjHxB4k8fnwT4Uk82FNM3mQao9ssUnJLEIrFzzFgEY5PvXFfEL4b/E9/ib4D8Z+ILLX9Uu9Smn0m8tNE1JrS1sbSWJpzcXkaKQxVoI03A5DSADriuh+KfwcgsdIsIdF0S30ae7vhBNrsV9KZbZCkh3Day5YkBRu4+f8K8Hi9Y7HcLV3h6jpTilK9neySlstb9Cq2Hw1CrSqU9Y1Luz6atWv123sjh/C3xd+M/g3V9M13xj8So9TSbxZBoWoaEIQVhZn2mWN87mx1YkKBnI9D9YAggEHPpXzl4D+Hvh3XPF+k6gYJLrVdM1kx3Vva25S1ESM2GcLw2Fw4YsSWOO5FfQ+nsfsiI3VcqfqDivL8LsbmmPyOpVxspN87tzJrSy2vuvM48bGnGolFE9FFFfphxhXO+OtUv8ATLnQEsLt4luvEEUNxt/jjMcpKn2yoroqzdd0C016Wwku5pFOn6gl3DsIG51VlAOR0wx6UAaVFFFAGZ4u10eF/C2o+JPs/mmwspbgQl9u/YhbGfwq/bS/aLdJiuN6BsZ6ZFZfj/R73xB4G1fQdNVTcXumTwQhzgFmjKj9TWnaRtBaxRP1WNVb8BQBLRRRQAUmOMsKWkYkdKOomfPP/BSvwl8SvFv7PJg8BfEbS/D1nb63aS+JH1fQjqMV3YiQKYfJEb5O8xt93nbyQOa9B1zwb4ltPh3Np3wjv7bSNTbSTFo+612Wom8vEbGDJCqGwThRjGK767ltki23Ch+g2YzuPpRBbyY86fG9h0B4QeldMcTKFGMLbO/3nHLCxnWnO/xK33HC/s76L8fdE+D+k6V+0Z4s0nVvF8aSDVL3SLTbDJl2KYHyjITaCcAE1k6d8Fvh18GfF9xq3w78G6bpCeKrqV9aOn2KR/ars/OJG9WI3/y716sqkDnFfJn/AAV2+BfxV+P/AMAdK8O/B34z6j4P1HSvEcOoXEunO6m6iVHBUmNgwK53jnBK4PUGtcG3XxXJeyk9exGLSw+F50uZxWhpftpfsByftkfEf4a+P9O+PPiHwrF4E1trw2+nKWS9yyPgfMvluDHt3HPDEY4qn/wU0/YN8CfttfAyH4W+Mfir/wAIdfza3atYa4I0P2uUFlW1fld4fPC8kEAgMRisX4tfGf8AaP8AgHffDDxbrvxa8NaZ8PNISJfiFrut2hZ9ShKxxxyRbFY+Y4LHAAIcrnIr600278M+ONAsfEGnm21HT7uOK80+52h0dSA8ci5HoQQetdFWpisI6cubRXtb16nLSp4TGe0jy6u17+nQ4r9lX9nqy/Zf/Z58JfAXRfEl1qMXhnRorL+0LtVL3LKOXbgdyce2K9BC6ipyZIXGPu+WV/XJqdRz93mndK8udWVSblLVvU9WnSjTgoRVkjkPjN8QfEvwv+E/iL4haD4EuvEV9omjXF7aaJp0v76+kjjLrCuR95iMcAn2PSvOv2F/2pvGX7VvwBsvi544+EN54J1W9vbiK40a+aRyoifYrruRW2kAdQDkGvZ9c1jTfD+i3eva3dLDaWVu893M3RI0UszH6AHpXhOsftS/BjwBo/h7xVYeL9NltfiFcJH4Tt7m6+y/2hdbkVghcZUlWU5PGVx/EK68NCNai4qF5dH+ZyYmo6NZSc7Rs9PuOm/Zr+PWgfFjxd8QfBtj8UovEd/4U8UvbXMEOivaDTo2XCW+Wz520o+ZB1P4V67XB/AT4Mf8KZ8O32m33iy417UdT1ae+vtZvrSKO4m8xyyJIYwN+wHaCcnFd5WGIdN1X7PY6MKqqoL2m4UUUVidAUUUUAFc94v1W+0/X/DNrZXbRx3mtvDdKuP3iCzuX2n/AIEin/gNdDWdq+gWus3+mahPI6vpl6bmAIeGYwyREHPbEjdO4FAGjRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABWT4m8SHw9LpkYtPN/tHVI7Pl9vl7ldt3Tn7v61rVg+MtC1DWp9FksVQix1uK6uNzAYjVJFJHqfmFAG8QD1FU9MxE89iePKmJQf7LfN/PI/CrlVLgC31SG47TKYmPuPmX/2YfjQBaZVcbWUEehFVn0bTmbelqI2/vQkofzWrVFAFT7DdRA/ZtUlHtKA4/XmmhtaiHzJbzD1QlD+RyP1q7VTU9Us9HspNQvp9kcSlmOMnAGeB3P0qZSUVdgQXk0U6hdR024TYcrKibip9QUyRVI+KPIdre3uEuwv3pgcGL/fHUn/dH4DrXAfET9oW/wBC0ZJ7bwpcibUHVdGhaQYnB5ZpSp/dBVy5X0U88ECL4afHO28baTc2fjjw29rdafKP9FtbJ/KnjKgpMN4BKk7h6fLnJyK8HBcT5FmGKjhsNXU5tNpLqk7P8UzV4eqt0cV+0Z8X/C8PxFh0zwToreL/ABbomjPcXGhtJ5NqkE7okcsk7oYYTujIUOdzBmIB615X4p+KepeDNJ1Pxt47+EU+kaToTq6eMtP1OLULWBpZ1SS0EXURxl1G7aFwhb5cV3fw18Y+ErDwbqb6p8Pv+Eb8S+MfFF2fEy2VyLy35mMO+TLtz5CR/Lt2xk4wMEVe+HnwtTWvE+uaP4V1e+1vR7RoXa5bUQIVlKkNGRjZMQqqd2Mrgc1+U8XcP4nMuMaFXA1HGvKKmtJKKUXp7y0Ta3R9h7fK8un9VqUOaMWlJ395vTmtbS1728nqQafrFvpOkW+hzyy2nh7xLb/bU124hJlWbajSIuzcQSAWSRwNuOhIFeWSfGXxp8QPCFp40+BW/wATWp1bUrae9vphDPGkbmIFImiMlw0nL7lARRuySBim+Jryfwl+yhqpk8Q+KjdN4qutI8OeM76wEtzYBdT+zhQjuD5cbgoHPDrtY9Qtdv4T0z48afqd/wCIPCmvaFBaeHrY2N3p+qaUcxcCVzEYmB4G1huJBztGB81fE1q/FGXZtia3tFRm5pyjzWjPm0uk76SutTergsFllGUpx9o+aUI3Wi5Urtrv7yt2aMb4a+I/FMcWizeIPhJrfgqw8R2lwde1DRJ2uNOh8gq0bTyXCI8ZaDzD5nlhWYBN5619k+D/AA9onhrw9BpegkPbgFxKCCZGJyXOOuT/AExxXnx8DeEte+Ctz8L9ZgGt6XqWlyQ6it5p7Ri+WRSZN3zjaG3EcdMjHSs39lHxd4yu/g3pWg+JrPTdLutNhMFrbWuo/aYvsSSMluyykvv/AHaoCSSc5zzX77wzw5gOHqcVTiueUbyl17tN9Ur6Hg5hUo5hgniqcORxkoySvZ3u00nttZr07nsVzYwXiDzl+ZfuOvDL9D2rz345/FrxF8OtOsfBvgu50W48Z+JHlg8I2mtzSRW9zJGvmSNKYlZgscYZyRgNgLlSwNTw/ErU59WFq0s62Ul99kiv4YkfdLvKAbMZALjaG/MAc1yn7QN94g+HOueHvjZ4q8exaZ4R0H7TD4ie40Zbi5QXPlxQyxNHGzQKr/fJO3a5LY217VLM8HmFCpLC1FPklyyt0a3T9EcuVUIzx8I1Y30bSfVpNxXneVlbrsWNY0H4qXI8S3Xgj9qK2i8QagLSSx07UNNtrnT9HMW3zkSNPLldJOQxeUsu4YIxzpeCP2itJ+IOnaxpc3h/VtLvtI1efS7qK7sGD3LRgYngCkhonDKytuHXB5BFRJ4E8L6bZWs/jLxhpB0LSpfOjuZJRG8hIIQSMSFUnfycneewyag/Z68KWmoeKvGnxQt9F8W6Kmr6utjbaTr0wSERWQMK3NtEOY45iWb5uWwGxgiuPKcRmWJUni6Xs5OUlbm5rwW0vK/Y7avLXwNWdaKXLblko8vvXiuXRK/uq/W1u8jhfEt+PBem6ff+JrjxClxZaiYhZxwPFG9jv2ZbZ8uPKKsxD/eBByAQPVfgJ4qv/EFvqkAYyabBco2mO1wJWjVl+aNmDNyGUsBkkBwDjFdD428HXfiXRhZ2d8fNiuEmjiu3LRSlTkI+BnB9R0IBwcYpvw98Lap4aivbnWDbJPfXAkaC0YmOMKiqOSAWJxktgdq+NyXhDH8P8Ye0w05ywsozbu1yqTd1FLy3ueXUxEK2Gs99P+HOlGcYP86dTfmxgfnmnV+pLVHEc8mqXzfFCXRTdN9lXQY5xDxt8wzuu7PrgD8q6Gs5dBs18UN4pEz/AGhrBbQpn5dgdnz065Y960aYBWT4h8QHQ7zSrT7KJf7T1IWuS+PL/dSPu6c/cH51rVieLdEvtX1LQrizVSthrAuLnJxiPyJkyPX5nXj60AbdFFFABSEUtITgUmI+X/8Agqt+xj8S/wBtn9n60+H3wq8WW2n6npmspfC0v5WS3vVCsuxmUHBG7cCQRkVZ/wCCYH7FPiL9ir9n2PwT8RNSsNQ8R3l/Lc3lzZZdLdGwFgR2AJAxk4ABJNfSxwcjHvQRuHH4muz69iPqf1VP3b3OL6hhnjvrTXv2sc4/jjwbc/EaLwJD4s099YtrJ7h9LW8T7QqHaA3l53Yxnt3rpMBhyOteW6f+yR8I9M/aPuf2pLS3vh4mvLXyZQbs/Z/uhN4T12rjrivU6yrexTj7Nt6K9+/U3oe2al7VJau1u3QRY0RdqIAPQCloorHc3skHvTeHHHanU1Tt4IA5pNCufOf7d37Afgn9sKLSvFesa3qVnq3huCQWkNm42XUZYMYmBGQSV+8OeauzeD/2ePDH7PV38Vb/AMFXU9pomjPLeWlvcyvOrQjDIAW+9kd/rX0AVU8EDmvmP9pH9rH4K/sJ+OJrX4p6tjS/GVpLc2elxWzTMJ1+VyUAOEYsMk8c+1ephK+JxEY0Fd2d0l+KPKxdHDYWcsQ7Lm0bffoeb6V8Q/2fP2wP2e18O/D34VTwax4omm0m4sbqZmlt04V5shiMFWyD2O7P3a639kX/AIJt/DX9ii01XxH4Qe78U3epYg1qPUwhZIkJYCDaBggkkg8tx0rX/Z90HRfBos/2k5F0xbHxMu8WenxIkdnay4Mc0ar0BBBOO31Ne/ReKrGJLuSwimuGkuB5AjgbDkouBnGMf0rrxWKq0k6NFvke9+/b5HHhMLSquNWsk5rZrt3+Z8tftef8E2PBv7bnjvwz8QPCPxRuNAs9GhEF9bxxNMJEMm8iMM48mQDIOcgcccGvr3RtNj0XSLXSIZJJEtbdIVklOWYKAMk9zxXh37S/i34v/BjwRL42/Zv+HFzr2vyXUY1LSfs5ljlRid05SNs7s46c4PtXrvwz1vxT4i8AaPr/AI28P/2Vq15p0M2o6bv3fZpmUFo898EkVxYuWInh4c0vdV0l1W17ndg44eniZ8sXzOzb6PtY36KAcjNFeceoFFFFAGBZ6jfS/ErUdJe5JtotFs5o4eMB2luVZvxCKP8AgNb9Z8OhWsXiS58SrI/n3NnDbOhI27I3kZT0znMjZ+grQoAy/GepXOjeD9V1ez2ia102eaIsMjcsbMM/iKk8NXdxfaFa3N2QZTAnmkD+LAz/AEo8TaQ3iDw3f6DHMIjfWU1uJCM7N6Fd2O/Wl0u1bS1j05n3BbZAGx1KKFP6AUAWruYwW8ko6qpI9z2ohRba1SJ2GEUBjVfVLmNDHaKrO8kg/dKeSByc+g4p4tzN+9v3Vh1CKfkH+P48UAKZ7i7+W0+VO87Dr/ujv9en1r57+OsHhbwH8Vbv4meJfEwgvrWKOXQbTUH/AHM5EDpIiHGS53HudvBxgmvoPzZb4EQlkh6NJ0LfT2965/4k+CfD3xJ8DX/gXVIFFtdQbVuCqkQPnKyLu4LK2D74x3r5ji7h5cTZLPBc7jez0626PyZth6vsaqkfOPiLQPEeoeANW17Wr63sZk1MvrNmHDvI5dWPks2ApG5fLbGWUAnhsV45rHhqz0z4lp8StSstI03w/Fps1j4p8Vag8kM1jCs6/ZmdW6RO0jk8DbkEnAzXr6eG/AOm6/o/w18a6gND1bRrhr0axcGON9Tnt5cIPnLAqVIfy2BIUqB616D8EPHWm6/eeIdZ8f2mnyJdLHY2620DSC7SKSZQBGwy7OrK5UA7QQpzjJ/FfDPEZvlvEFTKa0ZcrbbunaLjs13vZ/I9+GKpYWXtZRummmr7p7/NbrzR0ekfCz4L+EfCmmazdeLt+naHHHdwzXmsYs1c/MJmUttwc5APyjPArhpviD4K+InxI8VePLl/EVpZaPo0+g6Lpt/aqNN12Zgs7XdqoBMpVgIw/TCsVyDmtnxD8Efhf4+8Q6+q/B3TJZfFMVsniG1vIFn+0pb48jz1fdFCEwMDaz8Djiuhl8Cv8IvC9pruq6za3NtoHljTLT7N5McMjnyULvk5VFkI4A4Ga/X81o4zLYp4OjTVFybrPZqNtZJdX1MKOJy/D0pKi5SqSVk3ZJJ2b736r013Pm34aeJYvCC3Xgeaa5vdb8BahPLa6peWGI78XbmWCKJwNrQJFI8YIberQEEDv7r8K9RTXtR1W18TXFnHrf2zzX06WYxRTRBFVGiOc52KM5zzzwK8c+P3gzx38WtX8PXN94Y1O/1TTrqXU9Nu7XbZxZCgtIoV0IYg7TFLu3BhweRXHfBv4WeFfG3h5PE3iz47eOE1/TJBd376jNHbzXtwQSbWQRxKJYI2T5I1+cbjkngV+U5PxTwpw5Qp4jCU5Vq2sebryyk9LXfXZI9bF0cHm1V4ipV9k3rKNnK8ratPTd/dfyPW9H8TeFfHHxF8U/FXR/AGj3PhySztNE0XxPpOoNNd3lxBPOtxC6K5VoUmYx/Kc8yHkEY7MWGm6Hp9rrngrUoLtIDPDZeH9RilW7WaXEjRlm3EldrHcV+6eT0J574I/DWz8Q6qT4I1aTTdLsoEudJ0+yhSO1tZEjVCrQoAp3GSVQflPyE89a9Ms/hlANdls9a1YzXd8y39hqEUIiaKRYxEyKDnGExwc5BNe9TwGdca4SpPGUKc6LU5UpNOEoT2UWt7b3Z5OY4zDfW+ajdJWik9fdSsm+l3u7aXIfgr4N0e08EjStVs7SSW7vLn+1bBrYCOF5XD+SFP8IDkjswbPem+FvCX7Q3wvutP8MaX4j0/xho1zrN3LqGpa/P9jvNMsnIaCGFYISlz5ZJTLGMldvJINdVZeGtD8MWyW8kUjyyXBkluLsKzyuSpJyAF6IBgflXSNp1m3zfZx06gkfyr9UyrB1sNllClWspwjFOz00tf1R59PGzoKcElKDezV9bNJ+TV+nzPPPhz8K/GmoeKNO+LfxyvLGTxbp1peWFnb+Hby4GnQ2s0yuP3cp/eTbY0DSlRwCAADXo11Z2moQPaXtqksLjDxSoGVh6EHrTfsEAOVaUZx0lb/GhbLb926n/GXP8AOvRjShGHJunvfW/qY4nFVMVU55WXZLRJXvZLotTNQ6R4d1eOxja3tILm32wRDaillbkAdP4+g9Kw/GHjjW/D3iCbQ9Ghsz5dmL2SS8lIBViV2qAeOUJJPTcKp/ErwTquoayusjTbfVYJLVbVYryUL9ncucsMg5DbhnHI2d6vj4V6JPo+n6P4nig1KSOzFtNcXcG9nbYNxySDyVJr5bGzz7MPrOCwcfq/Jy8lVpNS6uy8rWFD2UbSm733J/hx8TT45jWO90OTT7l7KO7jhacSBon6Hdgcg4yMdxgmusrnvDXgWy8JyySaS+95VVZJblnkcqOQoLNwOvHTmtrOpBuY4SP98/4V7eUU80p5fCOYSUq32nFWT10svSxnUcHO8VoT1y/xHZkvPDQRiN3ieENg9R5MxxXQia/H37ND/uy//WqhrB0qaaw/4SC0UMl+jWLPMBi42tjHIycFuOe9emQa1FFFAGN4+1m88PeB9Y17TiguLHTZpoS65AdELLkd+RWpZyNNaRTP95o1Y49cVQ8YaC3ifwrqXhuK4ELX9jLbrKVzs3oV3Y79a0LaHyLeOAnOxAufoKAJKKKKACm4Oc56etOPSmYPf0pNXEz5B1T4SeLfgL+3t41/bG1T4r+Itb8LzeH7eHVPCpd3j01HUASxICQwTyc7Qob94cZya+rfCPifS/Gfhqw8WaG0ps9StI7m1M8TRv5bqGXKNgqcHkGvJND+Jfwt+Lfxw+JPwd0Txda32oWFja2eu2NpITLaqYnUg/7QLds4PXFcB/wT41X9ovwF8QfHX7MHxA+DOtaf4F8E3kg8F+NdevHmuNYjkmYgFz8sg2EMCgAUfKea9XEU/bUOeWkopeV1Y8fD1PY4hxi7wm3traV9vQ+qJllmhdIZjGzKQrgZKnHXHevmf4laJ+214HjTw94f8F6V8StOtbCFRrN/qaWN5dXMt4GmLxgbVWOEADHXrycivpwDjoKUqGHQe2e1cWHxLw8r8qfqd+Jw8cRG12vQ+E/2aNM8Z/treDvHHwk+KvxE8G6haeEL++8Pjw1pdkl9BEQc2d5O0mTvjdGC7eGCc45r65/Z/wDAPjH4X/B7QPh/4+8Zx6/qmlWQt7jVYbFLZJgpOwCNOECptUAdlpnwn/Z6+C3wN1LXtX+FHw703Q7rxPqBvddmsYirXc+SdzcnoWY4HHzH1rteAOgzj0rfG4z6zJqCtHoYYLBfVoqU3eXV9xeR09KWkySMgc0tcCPQQ2SKKaNopo1ZGBDKwyCD1Bry/wCIfwk/Zr+J/wARfDnhf4g+F/Dupa14Zcat4c065KedZ4wvmxxgg7cqvYjKj0r1KvI9f/Zn+Ey/tO2n7Xsuizt4qstNGjvefa38oW7Aru8vONwLY3ehPcV0UJKLd5NaaW7nPiIuSVop6637HrbYUYFLSDafQ56UtYHQrdAooooGFFFFABXM+OpHTxN4RVHIDeIJAwB6j7DdHBrpqz9Xh0OW+019WMX2iO8LabvfB87ypAdozyfLMnHpmgDQooooAKKKKACiiigAooooAKKKKACiiigArC8Za7f6HcaLHYlAL7W4rWfeuf3bJITj0OVHNbtY3i3w1P4kOmPb6h9mbT9Uju8+Xu37Vcbf/Hv0oA2aq6rE0tk7RLl48SIP9pTkfyx+NNE2rwcS2qTr/ehbaf8Avlv8aVNYsydkzGFz0SddhP59fwzQBYhlS4hWaNsq6hgfYinZAHP61nWd5b6bA9nMxPlSlYVUEl1PzKF9eDj8Kf8AZ73UOb1jFF2gRuSP9o/0HHvQA99QkuHNvpiiRhw8rH5EP1HU+w/SoJobW0G2dDdXMykbWGSQfb+Famkujk6fpcK7lGGbHyRD39/9n88VFFLBau6WiNc3B/18zcKD/tN0H0HPtSdrWYXseQfGHwP4O8N/YLbUNOvJot8lzdzLeSt9gs1G1kiHLBSzIGxyVB9q57Qx4iu7q2m8L6pezahFZM2rQ6rI0fkwuxKxxh1LBtyHBJxtU5PIr2TxV4F0b4lWD6V4jtzcQlWT7SkjR+WGGGEW0hhkcEngj1rzzxF8Ibfwrq1xbWdjqLi5aOLT9SfV3cpAAuYWDPvIBDHaFbOePb8O4x4R4gwmf0c2ye1ouMYxjH4bt3bWl07tv1PTw1ejKl7OojO+HPwY8RfDXXY/ix8GvDujTaNrttd6vrujXSSLfXl/LErRSwzM/lxlyNrhlAO8vkdKj+I3jj9ovxv4e0rw/a/D1fAS+JdIuLbUtUl8QwvqWi3Tl0jWGKNHjmPAcPuAyQOpxXrV5ruoIkOjaPYtaAIqw2kMYNxsAwPl+7CuO7flTrX4d2GpRs/i62ivDIwY2jEvGCOhYtzIw9TwOwFfruKwWKq4CdOjU5KkotJ9FJpa97GlPN2qkalSnGUo6JtO+l99bN67tdEeV6p4C8efEHwWnw/0+S7SHw5ZNpq6xBqwe+luHgTbchpl2u6ggsH/AIm3c8V5pa+I2+EPgu/0P4/6JrcV14ZitYpPHKaeJ4fEV1I24sIrUu7sJAVdXTaFGQducfRfj+U+CLCw0vQGOj6UxlNzcWEABV+Nik7Tt3Esc9yoGecHzWC08XeKToerIiXV3d2oGjNCy7oAqSPunViEbcrkOy4O48dRX5XmuPweQZg41KUq+PlCEF7v7ub6WvtZpN+h3YTHe1w8qeIipUm3LezTvq0/NaW2+4i1j4seJviT4e1rTv2bfB80Gt6L9kHiBfEulXlppxilXfMsBVAZphFyFjYDLruI6Ve+E8dt8H7DSPCngWa2uPD+h6akAt7KLcljbFwoRnL7iAeQzktgPknNd/4V0e6+G+vTRalqRuf7R2T307KFUttCFlA6BdoH0OTXVanpenYwLOIW9wDFdqqgB1fgE4684/Ov0Khl2c4nEYXF16/JKMX7SmrOMm1tfyZ5uJx9GeGeGo01GF7923a12/vsul2eW6zqCab45udegtYLaSyuo5bfRppzILyR1VjKih9oZixClQfmBJycgesTXVtdwfZ73Spyki4eOS33A/XGaw/CGkweVJpku1NQ0iVoPOMYJZDyj4PquMkYyc1vNf3FscalbYXH+vi5Q/UdV/H866cnyepleIxM3U5o1Z8yjZJRvutNzhqVebl0s0cHN+zt+zzdXurXmpfCfS7k67qkOo6qt3pTSx3N3FzHOyuCu9eoIFd8mraWq7PPUAdAyEfzqxFJFPGJYpVZT0ZTnP41IQD1Fe4oRi20h1MRiK6SqTcrbXb0/qy+4qf2zo+wyHUYAEBJJkAwK5vT/itpOt3H9m6dYXsMt0j/ANmTXMKiK7IBIKkMccDdhtpxk49OslhhmQxyxBlYEEFc8VzWjfC/w5o+oRXpkuLoW6FLO3u3Dx2ykYwoAGeDtBbJA4ryswWcPF0FhOX2d37Tmve1tOXzJh7Oz5t+hgfDew8YW/iOCbULfU4gLaQaw97OWillONuzJIJzuOVAGOPQV6NyR/Kqh0XScjGnQgDptQClGjWKNlBKvoFncD+dVk+VQyfCewjUlPVu8nd6u9r9l0FOftHexiRu5+MM8Yc7R4aiIXPGftEnP6CumrKtNO8P2viWS4hl3am9kqusk5ZxAHbHBPTdmtWvVICsTxZrl/pGo6Fa2RQJf6wLa43DJKeRM+B6HKLzW3WV4h8Ovrl9pF2lz5f9mal9qKlc7/3Uke32/wBZ+lAGrRRRQAUEA9aKKADA9KAAOBRRQAYHXFFFFABRRRQAUYGc4oooAK+d/wBtj/gnB8F/25dU0LXfiTrOr6bfaErxQ3OkyoDLAzBjE4dT3HBHIya+iKadueT+ZrSjXrYaoqlKXK11MMTh6GKpezqxvF9DgPD/AMFdH+Fnw+t/BPw81OS10nS9LW1t9P1AiaExom0Bi2GHHXnvXw5/wTv/AGlf25/iT+2Xq3wr+KulXg8HWkV4ZUfTRHFpqxkrB5U23Lg4CAksSDntmvuPx1r8vioXmj6bI6aRpwP9q3SH/j5k7WyH3JG4j1A71Vbw9B8O7nQdahiWMWsKx37KuA0cjYc4HYMyn6CvVw+I5MPONRc0p7X6HkYnDe0xNOVKXLGD1t1PRLWytrKPybaIKvcDqT6n1NT4HTFMXkb15BHUHrT68a99z3VboFFFFAwooooA5yxZj8WtUjLEqPD1iQueATPd5NdHVCKLRl8Q3E8Jj/tFrOJZ8P8AP5IeQx5GeBuMmD9fSr9AGP8AEC7ubDwJrV9ZTvFNDpNzJDKhwyMI2III5BB5qrp1zq95oOn6rbXe5DbRPJNOvzOCgyQe3XOSO1aviDTbTWdCvdHv5SkF3ayQzOrBSFZSpxnpwTzWJpPinw9pegR6Vc30aGGMwxo8q/MAMDkcUAaRuoNPvQbq1eMRxklx8+4seOnJ6Ht3qT7bFesC7BweUtozkn3b/CqOhzSajbyavdXUaIW2CXcOi4HH935snPXkdKj1vxN4L0O0e8vdZsbaJT+9u5bhRznGAc7nb6UAa0xZyEuvnYj5bWI8fifT9Kqa5r3h7wpaDVvFOrQQKvEaH19EUcs30ya4+Lxp4y8VSmH4dWhstPkyDruurgP7xJwz8evFVdOg8N6HrG2AN4p8TNkNfXE4lER56DgRjvhRQBN4vlPxFtFvdV8J6fpukwuGj1TX9PSa5LfwmGFgdrehbn2qfwZ4BR0Y6JZzaZZyLiTUZ8G9u19Af+WSegA+mK3NJ0HT2vk1fxjrMN5qA5jhlcLHB7Ihx+Zro4r20nby7a6jkIGSqOCcfh+FQqdOMuZRV+9h3drEWkaLpmg2S2GlWiRRKOdvVj6sepPuaz/H/hXTfG3hK88NaupNvcRjcNgb5gwYcHg8gcVqy6hYwuY572JGHVWkAI9KrSalp93cJFFfwNGhDyESqRkfdHX15/4DSrUqdelKnNXjJNNd09wT5XdHjl7+z38cIfsV1pPxfgM2l2ht4WmskJuVbAZiCv7uTCjB+YZHbJrf+H37Odp4W8NyDVtSe61NpnuoXL5it59oCuAFG5uMliOSzcc16I/iTQVcxnWLYsDgqswJB6c4PFSLqtrLCZ4N0iDOXRTge+Tx/wDqr5XLuB+GcpxaxOGw6Ult997+vmbSxNaceVs5TwNqltpF/HZtAsFrq7GSFQAPKuhnzIj9drEe6tWt4p02d7BrnT0/0zTJ/tdmB/GvJZP+BDcuPpXN6wNPk1fUvDXnrCl4o1Cxk85B5Em4BmXnqsgR8d97e9bnhrxXfatpy3mpx20F1ZyG11JWn4V/Ucfdb5WBz0avrIxUVZGOvU1J7q11rRre/tmDw3EZZcjPDRt/nHrVqO1dYxLYzFQyg+W/K/4iuV0fUI9G1i48HtqtokZmFzp/zAgxucMg+YfdY8D3HpXQG8i03SFv9X11LaGOHMs0rJGqgDkktwBgdc1Qi4L4RELexmInoxOVP4/44rlvjZ8d/hl+z14In8ffFTxPDp1jHuWBXyZLmUKSIo1HLuccAf8A16xPGP7THwJ8M+DtV8VwfFHS9Y/szTJ702Om6zFLNcLGpbaiIeSdpHT61+SX7aP7YvjL9rXWbXUfEnlaJpWi5bSdEsZ2dDk5LsXzvcjCZGAMe9AH6Ufsg/8ABQPwN+2he+JPBul+EbrQNQ0e3E8cV1dLJ5sLNtV84XawbHykHGeCa9+fWLG50qK/E6ElUkAU5x0J6fWvwA0nxJrHhcJrPgzxJd6ffbg7Q2kxjLYyQPl56479cV+337IfjfWPGP7NnhHWfHoe21efRIf7QivZAJXcoPnYHn5gQ3rzQB6aNQhYAxwzMD3EJ/woN3Ow/d6fL+JUfzNM0q8hu7RfJuEkMZ2SFGDfMOD0/OnnU9OQlW1CEEHBBmAwe/figA83UW+5aRj/AH5f8Aa5j4irfG+8L+Y0YH/CTw5CqT/yym/+tXVieF4vPSZTHgneG4/Os3VfEnhuxnsYL26ike8vlgtFTDnzSrEHjOOFbntQBrUUUUAYXxNvrzTfh1rupadcvDPBpFxJDNGcMjCNiCD1BB5zWvYsz2cLuSSYlJJPU4FVfEukWPiDw/faHqUrJb3lpJBO6sAVRlIbBPQgE1LBqGkwRJCmpQEIoAzMvT86ALdFRvcQxx+dJMqpgEOWwPzqJNU052CpqELEnAxKDz+frQBZoxUU11b2yg3NwkYJwC7Yz3702LULKdxHDexOx6KsoJ/z1oA5bw78EvhZ4D8da58VPBXgHTdO8QeI9ja/qlrbhZr/AGD5d59uvbJ61q+CfHvhH4jaH/wkXgvW4dQsvtEsP2iA8eYjFXXnHIYEfWtSa9srdwlxcxRsedruAcevNRaXFo9pEbXRUtUTcXaO2CgZJyThfU5yauU+Ze9qzKNPkl7miLmB6UVXk1Gxhcxy30KMOqtKAR+f4U+G5guVzb3COM4JRs4qNtDREuB6UEA9RVc6pp24odRgBBIx5wz796eLiFojOkymMAkuG+XHrn/OMUDJQAOBRUH9q6X/ANBK3/7/AC/40+S4hiTzJZlVMffZsD65/KgCDWJNUj0m6l0SGOW8W3c2kczlUaTadoYjoM4ya4r4fD43a38HFHxT8OaFp/i65s7j7VZWN3JLaLMS4j+bGdpG3OM4rt01LTmIVL+FiTgASgkn86dNcQ2xH2m5jjB6GRgM/TNXGpyxsl1RlOnzSu2cP+zYvx+T4SWEf7S50b/hLUllF5/YRYwGMOfLIz/Fsxn3rv6rQ39lMwjgvYnY/wAKSAn+f1p09/Z27CO4vI42PIV3AJ59/wDPFKcueblaxVOPJBK9yeioYLy1uMi3uo5COuxwaSTUbCFjHLfRKynBVpQCD171JZPRUcNxFcqWt5lcZwWRsgfl+FRHVNNBKnUoAQcEecvXv3oAs1y3jsf8VN4Px28Qyde3+g3f+c+tdKtxC8RuEnUx4zvDZXHrms7UfEfh621HTbK4uYpZ768aGyCYciQQySE8Z2/Ij8++O9AGrRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABXNfEXVb3SZdAks55oxP4ghiuFhY5kjMcpKn1GQOPaulrF8aado97aWl7rN9LbrYX8dzbyROAfNAZQOQRzuoA0YNTsbhzFHcASf882+VvyPNRS3j6jm30+JJFzh53GYx9P7x+nHvWZJFcaoEj1LUbG5iz8lo7gM57BmU4Jz6DFLqGqaX4ZtftGo3suloowvmOHiJ9ADn+nWgBy+HrLSdYW9huJInuYissysANy8j5T8oyC3bsKS61XVyBFBKs0J+68Y2SzD/AGOox6twPfvWVPrOreKbT7XZy20lvA6yosUq+bIByfkJODjIwSOvQ1pTeK/DGiDyTdRw3DoGdryTy+D0ZnbgA84Gee1AEjX9vawBdYEmnwA4S3Uffx6uuck+gNTzS2CWYvdUuIbeyX7kKuNremSPvewH61R0/V59emaXw80dycc6jP8A6tPaNOrDr6Z9apX8XhTRr7M119t1csduJgrI3sowqgd/19aANafV9UvoTLp8C6faKMteXifMR/sR/wBWx9DVDTrG51KVp9EWRFfiXWLwbppB38sHhR6dvan2uianfsmqa7q1vehDlLR2xGhxxllyCcdSR3q6fHPhyzb7PqOo20DrwQLhHC/98kkfiBQBe0jRNP0aExWcR3Mcyys253PqxPJq5tXOcVnweJ9Du4DdWeoLPGoJMkCl1HXPI+hqOfxbpUMLz7nZEUknKgH8yKALEqLeaqkWAUtV3t/vkEKPwG4/iKi07wn4Z0jUZtW0zQrWC5nz508UIDNk5Ocep5qGxvr+GzF3PpqwtM5eVri4VcMeg4z0GAPpU0ep3MzBI7uwG44CicuSf079qznSpTkpSim1tdbegbFXxvZRtYR6rgL9kkBlYLnETcOSO4HDY77aboM5vLKXw9eSEOkZ8h85JTJA/FSMfgD3q5epcNAbfUNWtkWVSpBiA3L3HLds/rXKWEMquba11x5b6wmZIkjlQeaQoIHAyQ8W3nsy+1aBZGpqV0dI1iw8WsgVLjFlqYXop3Ha5+jZX6MK6fdGOSy89K5iWz8Oa5Zz6bd6i5g1C382LzrshlY8McE8EHaR7/SpPAc+lavpP2a5jt5byxkMF2AQ/wAykgN1PBxnP1oA07kaPA5nj1KK1kPDMsqgMfdTwf51GviVLZ/Ku0aYZwJrSF3H4rgn8s1b+0aPbMUWe1jZTgruUEevFTQXFvPHut5kdRwSjAj8xQBWg1yC7jEthazzpjhkjAB/Minm7vn5i0hh/wBdJVH8iahuH0V3NxHqcMMuf9ZFMoJ+vOD+NKNRurSLz7sJPBtz9pgI6epXP8ifpQBJv1tif9HtYwemZGb+gpfI1d/v38SevlwH+ppLfX9Eu4/Nt9Wt2B9Jlzn86nluIYYxJNOsakgbnbA/WgDl7KGeH4x3BnumlJ8MRYLIB0uJOwHuK62sy28QaFd+I30O1mSS9SyWd3jAIERdlHzD/aB4/GtOgArnvG99eWOq+HIbS5eNbnXhFOFbAdPs052n1GQDj1A9K6Gs3XdK0vUprC91K6Mf9n3oubc+YFDPsdADkcjDtwKANKiq6alYOwjS/hZmOAFlBJ9OM06a7t7XH2m6jj3A7fMcDNAE1FQRX9lcMEgvYpGI4VZAT79KJr+zt38ue8ijbGdryAH9aAJ6Kiiure5yLW6STb97Y4OKY+paerNG9/CrA4IMoyD9M0AWKKihuYbhPOhuEdQTlkbI/wA9KZ/a2ljrqVv/AN/l/wAaALFFR/aIfK+0ecuzGd5bj8+lR/2tpZOBqVvk9P3y/wCNAFiiopbiK3XzLidY16AuwAz+P+eKZHqVhI4RL+FmY4CrKMn8KALFfEH/AAUV/a7/AG1Pgv8AtDeFfhZ8Avh1Jd6DrNpGZLuLSHuGvZnkKvEsg4hKLg54POTxX2zPd21rgXN0kZP3fMcDPTnt7VHDdafdOBFcRSuOQFcMR/h16104SvTw9bnnBSXZnJjcPUxNHkhNx80fNfjf9pPXvAXx/wDBH7NFt8B9YXSNTSG5v9ZLYVX+YkZxtZVcKXYsOtev/Ffxpo2j6FK+q6c8rXGnXUdrYieIS3jiPeI4wW+Zjt4Azzjiu1uLnTYpNl3cQqyjkO6gjPPevLPjZ+yX8J/2gvG/hbx74h1C+gu/CV99ptY9KuwiTncrbZAAT1QcrgkAiuiFfC1asfaR5Uk7ta3ZzSw+LpUpKElK9rJ6WX9amJ+wT+1F4u/ah+Gd/rvjH4a3Xh2fRtQ+xKZmYrdAKDvBZVOR/EOgPSveKqLd6TbA26XcCbW5XzFGDnuPWporiCZfMhuEdckFkbIz6Vx16kKtZyhHlT6HbhqdSlRUJy5mupLRVf8AtXS+n9pW/v8Avl/xqQ3EKxeeZlEeM7y3GOxzWRuSUVXGq6Z0Go2/085ev50+a5ht1ElxMka5xl3wCfqfxoA57T+fi1quf+hesByP+m92f8j/ABrpqzbLXtEvtfuNGs5kkvILSKadkAP7t2kCDcPdH498960qAGT29vdQPbXMCSRyKVkjkUFWU9QQeormx8E/gyDkfCPwxn/sAW//AMRRRQBsXPhXwve6KPDV54bsJtOCKo0+WzRoNq/dGwjbgYGOOKyE+CvwbjkSZPhL4ZV42DRsNBtwVI6EHZwRRRQBq6/4P8JeKrWOx8UeF9O1KCJt0UN/ZRzIhxjIDggHFUdH+FPwu8PX8eq6B8NtAsbqI/urmz0eCKROMcMqgjjiiigCx4h+H/gPxdcR3fivwTpGpyxJsil1HTYpmRc5wC6kgZ5xRoHw+8BeE7p77wt4I0jTJpE2PNp+mxQsy5zglFBIz2oooAh1f4YfDTxBqEmra98PNCvrqXHm3N5pEMsj4GBlmUk8cVa8P+C/B3hOKSHwr4T0zTEmYGVNPsI4Q5AwCQgGePWiigDPuPg78I7ud7q7+FnhyWWVy0skmh27M7E5JJKcknvWrp/hfw1pOjnw7pXh2xttPZWVrG3tESEhs7hsAC4OTnjnNFFAGMfgn8GWIZvhH4YJAIBOgW//AMRWvd+EfCl/o58PX3hjT5tPZUVrGWyjaEqmNg2EbcLgY44wMUUUAZUXwa+D9vOl1B8KfDSSxuGjkTQrcMrA5BBCZBB5zWn4j8G+EPGNqlj4u8KabqsEbFo4dSsY50UkYJAcEDjiiigDI034HfBTRr1NR0f4P+FrS4TOye28P20brkEHDKgI4JH40al8DfgprMqz6x8H/C13Ii7Ve58P20hC+gLIeKKKAF0v4IfBfQ7kXmi/CHwvZzAYEtroFtGwGc9VQHrVrU/hV8L9bvX1LWfhvoF3cy4824utHgkd8DAyzKScDiiigC74e8IeEvCMElt4U8L6dpkczbpY9Pso4Vc9MkIBk1mz/Bz4RXU73Vz8K/DcksjlpJJNDtyzMTkkkpyc0UUAatj4Z8N6Xox8OaZ4esbfTyjIbCC0RISrZ3DYBtwcnIxzms/SvhZ8MdC1GLV9E+HGg2d3AxMN1a6PBHJGSMEqyqCOOOO1FFAG9RRRQBHdWlrfW0lne20c0MyFJYpUDK6kYIIPBB9K53/hSvwb/wCiS+Gf/BDb/wDxFFFAGxqXhjw1rGkDw/q/h6xurAKqixubRHhAXG0bGBXjAxxxisq3+D3wktLiO7tPhb4cilicPFLHolurIwOQQQmQQe9FFAGl4h8H+EvF0UcHivwvp2qJCxaJNRsY5whPUgODiqmj/DD4aeHtQj1bQPh5oVjdRZ8q5s9JhikTIwcMqgjjiiigCXX/AIfeAvFl2t/4p8EaPqU6R7Em1DTYpnVck7QXUkDJPHvS+H/APgXwlcyXnhXwXpOmTSrtll0/TooWdc5wSigkZoooAr6r8Lfhjr2oSatrnw50G9upjmW5u9Ihkkc4xyzKSeAOvpV7w/4S8KeE7aSz8K+GdP0yGV90sWn2UcKu2MZIQAE+9FFAGXL8G/hBPK00/wAKvDbu5Jd30O3JYnqSdnNa1p4X8M2GhnwxY+HbGHTWjaM6fFaIsBRs7l8sDbg5ORjnNFFAGP8A8KW+Dn/RJvDP/ght/wD4itjUvC/hnWdHHh7WPDtjd2ChQtjc2iSQgL90bGBXjHHHFFFAGVbfB/4SWdzHeWfwt8ORTROHilj0S3VkYHIIITIIPetHxD4O8IeLkii8V+FdN1NYGJhXUbGOcRk9Su8HHTtRRQBV0f4YfDXw9qCat4f+Hmh2N1Fny7mz0mGKRMjBwyqCMjipNf8Ah54A8VXY1DxR4G0fUp1QIs9/pkUzhQSQuXUnGSePeiigB3h7wF4G8JTyXXhTwXpOmSzLtlk0/TooWdc5wSigkZqvqnwr+GGuahJq2t/DjQby6mOZbm60eCSRz6lmUk/jRRQBe0Dwn4W8J2r2Phbw1p+mwSPvkh0+zSFGbGMkIACcd6y5fg18IJ5Gmn+FXht3cksz6FbkknqSdlFFAGta+GPDdloh8M2Xh6xh00xtGdPitEWDY2dy+WBtwcnIxzmqGj/C/wCGfh7UY9Y0D4d6FY3cWfKurPSIYpEyCDhlUEZBI+hNFFAG7RRRQAUUUUAFFFFABRRRQAUUUUAFFFFABVPXfDvh/wAUae2k+JdCs9RtWYM1tfWqTRkjoSrgjIoooAyrL4R/CnTbyPUNO+GPh63uIXDxTwaLAjowOQwYJkHPcVe8R+CfBnjBYk8W+EdM1QQEmAajYRz+WTjO3epx0HT0oooAraJ8Mvhv4Z1Aav4c+H2h6fdqpVbqx0mGKQA9RuVQeaXXfhn8N/FF5/aPib4faHqNxtC+ff6TDM+B0G51JwKKKAJvDvgTwP4PeWTwl4N0rS2mUCZtO06KAyAdA2xRnHvVPUPhJ8KdWv5dU1X4ZeHrm6ncvNc3GiwPJIx6lmKZJ9zRRQBoaL4Q8J+G7JtN8O+F9OsLZ3Lvb2VlHEjMQASVUAE4A59qyT8FPg0TuPwk8MEnv/YNv/8AEUUUAa8XhTwtBoh8NQeGtPTTWiMbaelmggKHqvl4245PGMc1k/8AClfg3/0SXwzz1/4kNv8A/EUUUAa+seFvDPiHTV0XX/DlhfWaFSlpeWaSxKVGAQrAgYHTjis2y+Efwo028i1DTvhj4et7iBw8M8GiwI8bA5DKwTIIPcUUUAXvEXgrwb4v8r/hLfCWmap5GfI/tGwjn8vOM7d6nGcDp6VW0X4ZfDbw3qA1bw78PtDsLpQQtzZaTDFIAeo3KoNFFAC638Nfhz4lvv7T8R+ANE1C52hftF7pUMr7RnA3MpOOT+dTeHfAvgnwhJLN4T8HaVpbzgCdtO0+KAyAdNxRRnGT19aKKAKmofCb4V6vfS6nqvw08P3VzO5ea4uNGgd5GPUsxQkn3NaOheFvDHhexbTPDPhyw062dy729hZpCjMQASVQAE4AGfaiigDJPwX+DrMWb4T+GiSeSdCt+f8AxytdPDHhuPQj4Xj8PWK6YYvLOnC0QQbP7vl4249sYoooAx1+CvwbQ5T4S+GQSckjQbf/AOIrY1rwx4a8SacNI8ReHrG/tFYEWt7aJLGCOh2sCOKKKAIPD3gXwT4Rlln8KeDtK0t51AnfTtPigMgGcBiijOMnr6mtWiigAqlrvhvw74osf7L8TaDZajbbw/2e/tUmj3DodrgjPvRRQBmaf8JvhXpN7FqWl/DPw/bXEDh4bi30aBHjYdCrBMg+4q54i8D+C/F7RN4s8IaXqhgBEJ1HT45/LzjO3epxnA6elFFAEOh/Df4d+GL/APtTw14C0XTroIVFzY6XDDJtPUbkUHHtRrnw3+Hfie/OqeJfAWi6jdFApub7S4ZpCo6Dc6k4HpRRQBN4d8E+DPCJlbwn4R0vSzPjzjp1hHB5mM43bFGcZPX1qlf/AAl+FWq3supap8MvD1zcTyF5ri40WB3kYnJZmKZJJ7miigDT0Xwv4a8Nae2k+HPDtjp9ozFmtbK0SKMsRgkqoAyQBWOfgt8HD1+E3hn/AMENv/8AEUUUAa58L+GW0H/hFW8O2B0vyvL/ALNNon2fZ/d8vG3HtjFZA+C/wdByPhP4ZyOh/sG3/wDiKKKANfXPC3hjxPYJpfiXw5YajaxuHjtr6zSaNWAIBCuCAQCRn3rO0/4TfCvSb6LU9K+Gnh+1uYHDw3Fvo0CPGw6MrBAQfcUUUAXPEPgfwV4ueKTxX4P0vVGgBELajp8c5jB67d6nGcDpUOhfDj4eeF77+1PDPgPRdOudpX7RY6XDDJtPUbkUHFFFACa38Nfhz4l1A6t4j8AaJqF0wAa5vdKhlkIHQbmUnirHh3wV4N8IGY+E/CWmaX9o2+f/AGdYRweZtzjdsUZxk4z0yaKKAKN98JPhTqd3LqGpfDHw9cTzuXmnn0WB3kY9WZimST6mtPRvC/hnw7praN4f8O2NhZsWLWlnaJFGSeCSqgDnvxRRQBjn4L/B0nJ+E3hn/wAENv8A/EVsP4Y8NSaF/wAIvJ4esW0zyhF/ZzWiGDZ/d8vG3HtjFFFAGQvwY+DyMGX4T+GgQcgjQrfj/wAcrX13wv4Z8U2S6b4m8O2Go26OGS3v7RJkVgMAhXBAOD1oooAh8O+CPBfhAzHwn4R0vSzcBROdO0+ODzAucbtijOMnGemTWpRRQB//2Q==",
+    //             path: "https://web-api.textin.com/ocr_image/external/3be73b381c700b7c.jpg",
+    //             region: [168, 289, 1074, 287, 1078, 710, 171, 712],
+    //           },
+    //           type: "image",
+    //         },
+    //         {
+    //           pos: [153, 729, 1089, 729, 1089, 752, 153, 752],
+    //           id: 15,
+    //           score: 0.98000001907349,
+    //           type: "line",
+    //           text: "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original",
+    //         },
+    //         {
+    //           pos: [153, 749, 1089, 749, 1089, 767, 153, 767],
+    //           id: 16,
+    //           score: 0.98199999332428,
+    //           type: "line",
+    //           text: "graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)",
+    //         },
+    //         {
+    //           pos: [153, 769, 1087, 769, 1087, 787, 153, 787],
+    //           id: 17,
+    //           score: 0.98500001430511,
+    //           type: "line",
+    //           text: "highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in",
+    //         },
+    //         {
+    //           pos: [153, 787, 1087, 787, 1087, 806, 153, 806],
+    //           id: 18,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are",
+    //         },
+    //         {
+    //           pos: [153, 806, 1087, 806, 1087, 824, 153, 824],
+    //           id: 19,
+    //           score: 0.98100000619888,
+    //           type: "line",
+    //           text: "presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with",
+    //         },
+    //         {
+    //           pos: [153, 826, 950, 826, 950, 843, 153, 843],
+    //           id: 20,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).",
+    //         },
+    //         {
+    //           pos: [153, 857, 1089, 857, 1089, 874, 153, 874],
+    //           id: 21,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "Abstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is",
+    //         },
+    //         {
+    //           pos: [153, 876, 1087, 876, 1087, 894, 153, 894],
+    //           id: 22,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because",
+    //         },
+    //         {
+    //           pos: [153, 894, 1089, 894, 1089, 913, 153, 913],
+    //           id: 23,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a",
+    //         },
+    //         {
+    //           pos: [153, 914, 1087, 914, 1087, 931, 153, 931],
+    //           id: 24,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation",
+    //         },
+    //         {
+    //           pos: [153, 933, 1087, 933, 1087, 951, 153, 951],
+    //           id: 25,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and",
+    //         },
+    //         {
+    //           pos: [153, 951, 1087, 951, 1087, 970, 153, 970],
+    //           id: 26,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to",
+    //         },
+    //         {
+    //           pos: [153, 971, 1089, 971, 1089, 988, 153, 988],
+    //           id: 27,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,",
+    //         },
+    //         {
+    //           pos: [153, 990, 1089, 990, 1089, 1009, 153, 1009],
+    //           id: 28,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct",
+    //         },
+    //         {
+    //           pos: [153, 1009, 1089, 1009, 1089, 1027, 153, 1027],
+    //           id: 29,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies",
+    //         },
+    //         {
+    //           pos: [153, 1027, 1087, 1027, 1087, 1046, 153, 1046],
+    //           id: 30,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and",
+    //         },
+    //         {
+    //           pos: [153, 1047, 364, 1047, 364, 1066, 153, 1066],
+    //           id: 31,
+    //           score: 0.99699997901917,
+    //           type: "line",
+    //           text: "exploration of large networks.",
+    //         },
+    //         {
+    //           pos: [152, 1072, 880, 1072, 880, 1095, 152, 1095],
+    //           id: 32,
+    //           score: 0.98199999332428,
+    //           type: "line",
+    //           text: "Index Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation",
+    //         },
+    //         {
+    //           pos: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+    //           id: 33,
+    //           score: 1,
+    //           type: "line",
+    //           text: "",
+    //         },
+    //         {
+    //           size: [194, 10],
+    //           id: 34,
+    //           pos: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+    //           data: {
+    //             base64:
+    //               "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",
+    //             path: "https://web-api.textin.com/ocr_image/external/62552323a502286a.jpg",
+    //             region: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+    //           },
+    //           type: "image",
+    //         },
+    //         {
+    //           pos: [105, 1159, 261, 1159, 261, 1182, 105, 1182],
+    //           id: 35,
+    //           score: 0.99599999189377,
+    //           type: "line",
+    //           text: "1 INTRODUCTION",
+    //         },
+    //         {
+    //           pos: [111, 1230, 596, 1230, 596, 1248, 111, 1248],
+    //           id: 36,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and",
+    //         },
+    //         {
+    //           pos: [130, 1250, 603, 1250, 603, 1267, 130, 1267],
+    //           id: 37,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "Yuhua Liu are with School of Information,Zhejiang University of Finance",
+    //         },
+    //         {
+    //           pos: [130, 1270, 551, 1268, 551, 1287, 130, 1288],
+    //           id: 38,
+    //           score: 0.97699999809265,
+    //           type: "line",
+    //           text: "and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,",
+    //         },
+    //         {
+    //           pos: [130, 1289, 452, 1289, 452, 1306, 130, 1306],
+    //           id: 39,
+    //           score: 0.9990000128746,
+    //           type: "line",
+    //           text: "cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn.",
+    //         },
+    //         {
+    //           pos: [111, 1309, 609, 1309, 609, 1327, 111, 1327],
+    //           id: 40,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn.",
+    //         },
+    //         {
+    //           pos: [111, 1328, 563, 1330, 563, 1349, 111, 1347],
+    //           id: 41,
+    //           score: 0.97600001096725,
+    //           type: "line",
+    //           text: "·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University.",
+    //         },
+    //         {
+    //           pos: [128, 1349, 348, 1349, 348, 1367, 128, 1367],
+    //           id: 42,
+    //           score: 0.9990000128746,
+    //           type: "line",
+    //           text: "E-mail:chenwei@cad.zju.edu.cn.",
+    //         },
+    //         {
+    //           pos: [113, 1369, 466, 1369, 466, 1388, 113, 1388],
+    //           id: 43,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "·Ying Zhao and Wei Chen are corresponding authors.",
+    //         },
+    //         {
+    //           pos: [110, 1395, 609, 1395, 609, 1414, 110, 1414],
+    //           id: 44,
+    //           score: 0.97399997711182,
+    //           type: "line",
+    //           text: "Manuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication",
+    //         },
+    //         {
+    //           pos: [105, 1415, 557, 1415, 557, 1432, 105, 1432],
+    //           id: 45,
+    //           score: 0.96299999952316,
+    //           type: "line",
+    //           text: "xx xxx.201x;date of current version xx xxx. 201x. For information on",
+    //         },
+    //         {
+    //           pos: [105, 1434, 585, 1434, 585, 1453, 105, 1453],
+    //           id: 46,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.",
+    //         },
+    //         {
+    //           pos: [105, 1453, 455, 1453, 455, 1471, 105, 1471],
+    //           id: 47,
+    //           score: 0.9539999961853,
+    //           type: "line",
+    //           text: "Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx",
+    //         },
+    //         {
+    //           pos: [631, 1191, 1135, 1191, 1135, 1210, 631, 1210],
+    //           id: 48,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "As a ubiquitous data structure, network is always employed to encode",
+    //         },
+    //         {
+    //           pos: [631, 1211, 1135, 1211, 1135, 1230, 631, 1230],
+    //           id: 49,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "relationships among entities in a variety of application areas,such as",
+    //         },
+    //         {
+    //           pos: [631, 1231, 1135, 1231, 1135, 1250, 631, 1250],
+    //           id: 50,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "social relationships between people and financial transactions between",
+    //         },
+    //         {
+    //           pos: [631, 1251, 1139, 1251, 1139, 1270, 631, 1270],
+    //           id: 51,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "companies [5,57]. Graph visualization offers an interactive and ex-",
+    //         },
+    //         {
+    //           pos: [631, 1272, 1135, 1272, 1135, 1290, 631, 1290],
+    //           id: 52,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "ploratory means allowing users to gain structural insights [2] and sense",
+    //         },
+    //         {
+    //           pos: [631, 1292, 1135, 1292, 1135, 1310, 631, 1310],
+    //           id: 53,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "implicit contextual features of networks. However, with the increase",
+    //         },
+    //         {
+    //           pos: [631, 1310, 1137, 1312, 1137, 1332, 631, 1330],
+    //           id: 54,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "of data sizes, the visual exploration and analysis of networks are se-",
+    //         },
+    //         {
+    //           pos: [631, 1332, 1135, 1332, 1135, 1350, 631, 1350],
+    //           id: 55,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "riously influenced,because nodes and edges overlap with each other",
+    //         },
+    //         {
+    //           pos: [631, 1352, 1135, 1352, 1135, 1371, 631, 1371],
+    //           id: 56,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "and generate much visual clutter in large graph visualizations, making",
+    //         },
+    //         {
+    //           pos: [631, 1371, 1135, 1371, 1135, 1389, 631, 1389],
+    //           id: 57,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "it a complicated and time-consuming task to visually explore structural",
+    //         },
+    //         {
+    //           pos: [631, 1391, 838, 1391, 838, 1409, 631, 1409],
+    //           id: 58,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "features of significance [50].",
+    //         },
+    //         {
+    //           pos: [650, 1409, 1137, 1409, 1137, 1432, 650, 1432],
+    //           id: 59,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "Graph sampling is commonly used to reduce thevisual clutter and",
+    //         },
+    //         {
+    //           pos: [631, 1431, 1137, 1431, 1137, 1449, 631, 1449],
+    //           id: 60,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "address scalability issues in the visual exploration of large networks,",
+    //         },
+    //         {
+    //           pos: [631, 1451, 1135, 1451, 1135, 1470, 631, 1470],
+    //           id: 61,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "by means of which a subset of nodes and edges are selected on behalf",
+    //         },
+    //         {
+    //           pos: [631, 1471, 1137, 1471, 1137, 1490, 631, 1490],
+    //           id: 62,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "of the original large graph. Over the past few decades, numerous ef-",
+    //         },
+    //         {
+    //           pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+    //           id: 63,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "Authorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+    //         },
+    //         {
+    //           pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+    //           id: 64,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "1077-2626(c)2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+    //         },
+    //       ],
+    //       status: "Success",
+    //       height: 1584,
+    //       structured: [
+    //         {
+    //           pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+    //           blocks: [
+    //             {
+    //               content: [0],
+    //               pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+    //               type: "textblock",
+    //             },
+    //           ],
+    //           type: "header",
+    //         },
+    //         {
+    //           content: [1],
+    //           pos: [466, 26, 758, 26, 758, 43, 466, 43],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [2],
+    //           pos: [207, 112, 1035, 114, 1035, 156, 207, 154],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [3],
+    //           pos: [430, 158, 814, 158, 814, 200, 430, 200],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [4],
+    //           pos: [314, 221, 927, 221, 927, 249, 314, 249],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [5],
+    //           pos: [458, 247, 786, 247, 786, 274, 458, 274],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [14],
+    //           pos: [168, 289, 1074, 287, 1078, 710, 171, 712],
+    //           lines: [6, 7, 8, 9, 10, 11, 12, 13],
+    //           type: "image",
+    //         },
+    //         {
+    //           content: [15, 16, 17, 18, 19, 20],
+    //           pos: [153, 729, 1089, 729, 1089, 843, 153, 843],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+    //           pos: [153, 857, 1089, 857, 1089, 1066, 153, 1066],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [32],
+    //           pos: [152, 1072, 880, 1072, 880, 1095, 152, 1095],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [34],
+    //           pos: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+    //           lines: [33],
+    //           type: "image",
+    //         },
+    //         {
+    //           content: [35],
+    //           pos: [105, 1159, 261, 1159, 261, 1182, 105, 1182],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [36, 37, 38, 39],
+    //           pos: [111, 1230, 603, 1230, 603, 1306, 111, 1306],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [40],
+    //           pos: [111, 1309, 609, 1309, 609, 1327, 111, 1327],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [41, 42],
+    //           pos: [111, 1328, 563, 1328, 563, 1367, 111, 1367],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [43],
+    //           pos: [113, 1369, 466, 1369, 466, 1388, 113, 1388],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [44, 45, 46, 47],
+    //           pos: [105, 1395, 609, 1395, 609, 1471, 105, 1471],
+    //           continue: true,
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
+    //           pos: [631, 1191, 1139, 1191, 1139, 1409, 631, 1409],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [59, 60, 61, 62],
+    //           pos: [631, 1409, 1137, 1409, 1137, 1490, 631, 1490],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [63],
+    //           pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+    //           blocks: [
+    //             {
+    //               content: [64],
+    //               pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+    //               type: "textblock",
+    //             },
+    //           ],
+    //           type: "footer",
+    //         },
+    //       ],
+    //       durations: 950.29827880859,
+    //       image_id: "",
+    //       width: 1224,
+    //     },
+    //     {
+    //       angle: 0,
+    //       page_id: 2,
+    //       content: [
+    //         {
+    //           pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+    //           id: 0,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "This article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE",
+    //         },
+    //         {
+    //           pos: [466, 26, 758, 26, 758, 43, 466, 43],
+    //           id: 1,
+    //           score: 0.99800002574921,
+    //           type: "line",
+    //           text: "Transactions on Visualization and Computer Graphics",
+    //         },
+    //         {
+    //           pos: [88, 105, 592, 105, 592, 124, 88, 124],
+    //           id: 2,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "forts have been paid on the design of sampling strategies, ranging from",
+    //         },
+    //         {
+    //           pos: [88, 125, 592, 125, 592, 144, 88, 144],
+    //           id: 3,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "node-based and edge-based schemes [4,26] to transversal-based and",
+    //         },
+    //         {
+    //           pos: [88, 145, 592, 145, 592, 164, 88, 164],
+    //           id: 4,
+    //           score: 0.98000001907349,
+    //           type: "line",
+    //           text: "semantic-based schemes [4,23,56]. However, such strategies largely",
+    //         },
+    //         {
+    //           pos: [88, 166, 594, 166, 594, 184, 88, 184],
+    //           id: 5,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "focus on sampling efficiency and randomness of sampling results, pay-",
+    //         },
+    //         {
+    //           pos: [88, 186, 594, 186, 594, 204, 88, 204],
+    //           id: 6,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "ing little attention to the preservation of significant contextual struc-",
+    //         },
+    //         {
+    //           pos: [88, 206, 131, 206, 131, 223, 88, 223],
+    //           id: 7,
+    //           score: 0.9990000128746,
+    //           type: "line",
+    //           text: "tures.",
+    //         },
+    //         {
+    //           pos: [107, 224, 596, 224, 596, 248, 107, 248],
+    //           id: 8,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "Contextual structures, formed by nodes and edges with tight rela-",
+    //         },
+    //         {
+    //           pos: [88, 248, 594, 248, 594, 266, 88, 266],
+    //           id: 9,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "tionships, are always of great significance for the exploration and in-",
+    //         },
+    //         {
+    //           pos: [88, 268, 592, 268, 592, 286, 88, 286],
+    //           id: 10,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "terpretation of networks, such as bridging nodes, connected paths and",
+    //         },
+    //         {
+    //           pos: [87, 285, 594, 285, 594, 308, 87, 308],
+    //           id: 11,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "aggregated communities [19,46].For example, it is quite necessary to",
+    //         },
+    //         {
+    //           pos: [88, 308, 592, 306, 592, 325, 88, 327],
+    //           id: 12,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "identify the contextual structures of crowd movement network for the",
+    //         },
+    //         {
+    //           pos: [88, 327, 594, 325, 594, 345, 88, 347],
+    //           id: 13,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "diagnosis and spread prevention of infectious diseases [44]. Howev-",
+    //         },
+    //         {
+    //           pos: [88, 348, 592, 346, 593, 365, 88, 367],
+    //           id: 14,
+    //           score: 0.98500001430511,
+    //           type: "line",
+    //           text: "er, it is a tough task to preserve contextual structures in the sampled",
+    //         },
+    //         {
+    //           pos: [88, 367, 592, 367, 592, 385, 88, 385],
+    //           id: 15,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "network based on traditional sampling strategies, because contextual",
+    //         },
+    //         {
+    //           pos: [88, 387, 594, 387, 594, 405, 88, 405],
+    //           id: 16,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "structures often have three characteristics: concealment in location, ir-",
+    //         },
+    //         {
+    //           pos: [87, 407, 592, 407, 592, 425, 87, 425],
+    //           id: 17,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "regularity in scale, and complexity in structure. For example, nodes",
+    //         },
+    //         {
+    //           pos: [87, 427, 592, 427, 592, 445, 87, 445],
+    //           id: 18,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "with tight relationships (in a community) may be difficult to find in",
+    //         },
+    //         {
+    //           pos: [88, 444, 596, 446, 596, 466, 88, 464],
+    //           id: 19,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "large networks due to their concealed locations, because they are eas-",
+    //         },
+    //         {
+    //           pos: [88, 466, 592, 466, 592, 484, 88, 484],
+    //           id: 20,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "ily laid out far away from each other. Also, contextual structures are",
+    //         },
+    //         {
+    //           pos: [88, 486, 592, 486, 592, 504, 88, 504],
+    //           id: 21,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "immune to scale, that is few nodes and edges would rather present a",
+    //         },
+    //         {
+    //           pos: [88, 506, 594, 506, 594, 524, 88, 524],
+    //           id: 22,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "tough contextual structure (a small complete graph). Thus,it is re-",
+    //         },
+    //         {
+    //           pos: [88, 526, 592, 526, 592, 545, 88, 545],
+    //           id: 23,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "ally hard to give a comprehensive definition of contextual structures",
+    //         },
+    //         {
+    //           pos: [87, 545, 592, 545, 592, 568, 87, 568],
+    //           id: 24,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "because their formations are too complicated to find a regular pattern.",
+    //         },
+    //         {
+    //           pos: [108, 569, 592, 569, 592, 588, 108, 588],
+    //           id: 25,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "As an effective way to represent and identify contextual structures",
+    //         },
+    //         {
+    //           pos: [88, 589, 592, 589, 592, 608, 88, 608],
+    //           id: 26,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "of large networks [5], GRL has been widely applied in a variety of",
+    //         },
+    //         {
+    //           pos: [88, 609, 594, 609, 594, 628, 88, 628],
+    //           id: 27,
+    //           score: 0.98199999332428,
+    //           type: "line",
+    //           text: "research areas, such as graph classification, graph query, graph min-",
+    //         },
+    //         {
+    //           pos: [87, 626, 594, 626, 594, 650, 87, 650],
+    //           id: 28,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "ing,et al [12,33]. It transforms nodes into vectors to quantitate the",
+    //         },
+    //         {
+    //           pos: [88, 648, 594, 648, 594, 667, 88, 667],
+    //           id: 29,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "structural features of networks. Numerous GRL models have been pro-",
+    //         },
+    //         {
+    //           pos: [88, 668, 592, 668, 592, 687, 88, 687],
+    //           id: 30,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "posed to train and represent nodes according to their local contexts in",
+    //         },
+    //         {
+    //           pos: [87, 685, 596, 685, 596, 708, 87, 708],
+    //           id: 31,
+    //           score: 0.98199999332428,
+    //           type: "line",
+    //           text: "the network, such as deepwalk [39],node2vec [11],and struc2vec [42].",
+    //         },
+    //         {
+    //           pos: [88, 708, 592, 708, 592, 727, 88, 727],
+    //           id: 32,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "A family of biased random walks are developed in the course of corpus",
+    //         },
+    //         {
+    //           pos: [88, 729, 592, 729, 592, 747, 88, 747],
+    //           id: 33,
+    //           score: 0.99599999189377,
+    //           type: "line",
+    //           text: "generation allowing an efficient exploration of diverse neighborhoods",
+    //         },
+    //         {
+    //           pos: [87, 746, 594, 746, 594, 769, 87, 769],
+    //           id: 34,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "for given nodes [32]. Thus,network structures are well represented",
+    //         },
+    //         {
+    //           pos: [87, 766, 594, 766, 594, 789, 87, 789],
+    //           id: 35,
+    //           score: 0.97399997711182,
+    //           type: "line",
+    //           text: "in a vectroized space obtained by GRL (e.g. a contextual structure of",
+    //         },
+    //         {
+    //           pos: [87, 786, 596, 786, 596, 809, 87, 809],
+    //           id: 36,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "interest is highlighted as shown in Figure la and Figure 1c). We be-",
+    //         },
+    //         {
+    //           pos: [87, 806, 594, 806, 594, 829, 87, 829],
+    //           id: 37,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "lieve that it would be a feasible way to conduct graph sampling in the",
+    //         },
+    //         {
+    //           pos: [87, 826, 594, 826, 594, 849, 87, 849],
+    //           id: 38,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "vectorized space, and the contextual structures would be preserved as",
+    //         },
+    //         {
+    //           pos: [88, 848, 592, 848, 592, 866, 88, 866],
+    //           id: 39,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "far as possible (e.g. the contextual structure is well preserved in the",
+    //         },
+    //         {
+    //           pos: [87, 866, 475, 866, 475, 889, 87, 889],
+    //           id: 40,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "sampled graph as shown in Figure 1d and Figure 1b).",
+    //         },
+    //         {
+    //           pos: [107, 888, 596, 888, 596, 911, 107, 911],
+    //           id: 41,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "However,there are still severa problems to overcome for the p-",
+    //         },
+    //         {
+    //           pos: [88, 910, 592, 910, 592, 928, 88, 928],
+    //           id: 42,
+    //           score: 0.99699997901917,
+    //           type: "line",
+    //           text: "reservation of contextual structures in the vectorized space obtained",
+    //         },
+    //         {
+    //           pos: [88, 930, 592, 930, 592, 948, 88, 948],
+    //           id: 43,
+    //           score: 0.97600001096725,
+    //           type: "line",
+    //           text: "through GRL.P1: GRL is able to encode the contextual structures",
+    //         },
+    //         {
+    //           pos: [87, 950, 594, 950, 594, 968, 87, 968],
+    //           id: 44,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "with vectorizied representation, but the vectorized space is too compli-",
+    //         },
+    //         {
+    //           pos: [87, 967, 594, 967, 594, 990, 87, 990],
+    //           id: 45,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "cated to gaininsights due to its high dimensions. P2: It is a difficult",
+    //         },
+    //         {
+    //           pos: [88, 990, 592, 990, 592, 1009, 88, 1009],
+    //           id: 46,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "task to define a graph sampling model to preserve contextual structures",
+    //         },
+    //         {
+    //           pos: [88, 1010, 592, 1010, 592, 1029, 88, 1029],
+    //           id: 47,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "captured by GRL,since they are represented with data distributions in",
+    //         },
+    //         {
+    //           pos: [88, 1030, 594, 1030, 594, 1049, 88, 1049],
+    //           id: 48,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "the vectorized space rather than topological relationships in the origi-",
+    //         },
+    //         {
+    //           pos: [88, 1050, 592, 1050, 592, 1069, 88, 1069],
+    //           id: 49,
+    //           score: 0.97899997234344,
+    //           type: "line",
+    //           text: "nal network space. P3: It is also difficult to conduct a unified graph",
+    //         },
+    //         {
+    //           pos: [88, 1070, 592, 1070, 592, 1089, 88, 1089],
+    //           id: 50,
+    //           score: 0.99599999189377,
+    //           type: "line",
+    //           text: "sampling scheme to preserve various kinds of contextual structures in",
+    //         },
+    //         {
+    //           pos: [87, 1087, 594, 1087, 594, 1111, 87, 1111],
+    //           id: 51,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "the vectorized space due to their respective characteristics. P4: It is",
+    //         },
+    //         {
+    //           pos: [87, 1111, 592, 1111, 592, 1129, 87, 1129],
+    //           id: 52,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "another tough task to evaluate the sampled graphs from a variety of",
+    //         },
+    //         {
+    //           pos: [88, 1129, 592, 1129, 592, 1148, 88, 1148],
+    //           id: 53,
+    //           score: 0.99599999189377,
+    //           type: "line",
+    //           text: "perspectives,and further demonstrate that the contextual structures of",
+    //         },
+    //         {
+    //           pos: [88, 1149, 467, 1149, 467, 1168, 88, 1168],
+    //           id: 54,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "significance are well retained in the sampled graphs.",
+    //         },
+    //         {
+    //           pos: [107, 1169, 596, 1169, 596, 1193, 107, 1193],
+    //           id: 55,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "In this paper, we propose a novel graph sampling method to simpli-",
+    //         },
+    //         {
+    //           pos: [87, 1190, 594, 1190, 594, 1213, 87, 1213],
+    //           id: 56,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "fy large graphs, especially with the contextual structures identified and",
+    //         },
+    //         {
+    //           pos: [87, 1210, 594, 1210, 594, 1233, 87, 1233],
+    //           id: 57,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "preserved in the sampled graphs. Firstly, a GRL model is employed to",
+    //         },
+    //         {
+    //           pos: [87, 1232, 592, 1231, 592, 1250, 87, 1251],
+    //           id: 58,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "encode contextual structures and a dimensionality reduction method is",
+    //         },
+    //         {
+    //           pos: [88, 1253, 592, 1251, 592, 1270, 88, 1272],
+    //           id: 59,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "applied to transform the contextual structures into a low-dimensional",
+    //         },
+    //         {
+    //           pos: [88, 1272, 592, 1270, 592, 1290, 88, 1292],
+    //           id: 60,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "vectorized space,where nodes sharing similar contextual features are",
+    //         },
+    //         {
+    //           pos: [88, 1292, 592, 1292, 592, 1310, 88, 1310],
+    //           id: 61,
+    //           score: 0.97600001096725,
+    //           type: "line",
+    //           text: "visually distributed close to each other (P1). Then, we propose a novel",
+    //         },
+    //         {
+    //           pos: [88, 1312, 594, 1312, 594, 1330, 88, 1330],
+    //           id: 62,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "blue noise sampling model to generate a subset of nodes in the vec-",
+    //         },
+    //         {
+    //           pos: [88, 1332, 594, 1332, 594, 1350, 88, 1350],
+    //           id: 63,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "torized space, guaranteeing that nodes with tight relationships are re-",
+    //         },
+    //         {
+    //           pos: [87, 1349, 594, 1349, 594, 1372, 87, 1372],
+    //           id: 64,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "tained and the contextual features are well preserved in the sampled",
+    //         },
+    //         {
+    //           pos: [87, 1369, 594, 1369, 594, 1392, 87, 1392],
+    //           id: 65,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "graph (P2). A set of desired objectives are further integrated into the",
+    //         },
+    //         {
+    //           pos: [87, 1389, 594, 1389, 594, 1412, 87, 1412],
+    //           id: 66,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "sampling model to optimize the sampled graphs, in which topological",
+    //         },
+    //         {
+    //           pos: [87, 1409, 594, 1409, 594, 1432, 87, 1432],
+    //           id: 67,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "features of significance are enhanced such as bridging nodes and graph",
+    //         },
+    //         {
+    //           pos: [88, 1431, 594, 1431, 594, 1449, 88, 1449],
+    //           id: 68,
+    //           score: 0.97799998521805,
+    //           type: "line",
+    //           text: "connection (P3). Also, we utilize a group of metrics to evaluate the va-",
+    //         },
+    //         {
+    //           pos: [88, 1451, 592, 1451, 592, 1470, 88, 1470],
+    //           id: 69,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "lidity of our sampling method in contextual feature preservation from",
+    //         },
+    //         {
+    //           pos: [88, 1471, 592, 1471, 592, 1490, 88, 1490],
+    //           id: 70,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "different perspectives, such as node importance, graph connection and",
+    //         },
+    //         {
+    //           pos: [613, 105, 1120, 105, 1120, 124, 613, 124],
+    //           id: 71,
+    //           score: 0.98199999332428,
+    //           type: "line",
+    //           text: "community changes (P4). At last, a graph sampling framework is im-",
+    //         },
+    //         {
+    //           pos: [614, 125, 1118, 125, 1118, 144, 614, 144],
+    //           id: 72,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "plemented to integrate sampling models, GRL and visual designs of",
+    //         },
+    //         {
+    //           pos: [614, 145, 1117, 145, 1117, 164, 614, 164],
+    //           id: 73,
+    //           score: 0.97799998521805,
+    //           type: "line",
+    //           text: "metrics, and a rich set of interactions are also provided allowing users",
+    //         },
+    //         {
+    //           pos: [614, 166, 1117, 166, 1117, 184, 614, 184],
+    //           id: 74,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "to intuitively evaluate different sampling strategies and easily explore",
+    //         },
+    //         {
+    //           pos: [613, 186, 1120, 186, 1120, 204, 613, 204],
+    //           id: 75,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "structures of interest in large networks. The effectiveness and use-",
+    //         },
+    //         {
+    //           pos: [614, 206, 1117, 206, 1117, 223, 614, 223],
+    //           id: 76,
+    //           score: 0.99500000476837,
+    //           type: "line",
+    //           text: "fulness of our system are further demonstrated with case studies and",
+    //         },
+    //         {
+    //           pos: [614, 224, 1117, 224, 1117, 243, 614, 243],
+    //           id: 77,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "quantitate comparisons based on real-world datasets. In summary, the",
+    //         },
+    //         {
+    //           pos: [613, 244, 871, 244, 871, 261, 613, 261],
+    //           id: 78,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "main contributions of our work are:",
+    //         },
+    //         {
+    //           pos: [639, 286, 1120, 286, 1120, 305, 639, 305],
+    //           id: 79,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "·We utilize a GRL model (node2vec) to quantitate the contextu-",
+    //         },
+    //         {
+    //           pos: [653, 306, 1120, 306, 1120, 325, 653, 325],
+    //           id: 80,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "al features of networks, offering important clues for graph sam-",
+    //         },
+    //         {
+    //           pos: [651, 323, 1118, 323, 1118, 347, 651, 347],
+    //           id: 81,
+    //           score: 0.98500001430511,
+    //           type: "line",
+    //           text: "pling. To the best of our knowledge, it is the first to sample",
+    //         },
+    //         {
+    //           pos: [651, 344, 787, 342, 788, 365, 651, 367],
+    //           id: 82,
+    //           score: 0.99599999189377,
+    //           type: "line",
+    //           text: "graphs with GRL.",
+    //         },
+    //         {
+    //           pos: [640, 381, 1121, 381, 1121, 404, 640, 404],
+    //           id: 83,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "·We design a multi-objective blue noise sampling model to simpli-",
+    //         },
+    //         {
+    //           pos: [651, 401, 1121, 401, 1121, 424, 651, 424],
+    //           id: 84,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "fy large networks, with the contextual structures and their topo-",
+    //         },
+    //         {
+    //           pos: [653, 422, 1029, 422, 1029, 441, 653, 441],
+    //           id: 85,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "logical features well retained in the sampled graphs.",
+    //         },
+    //         {
+    //           pos: [643, 458, 1121, 458, 1121, 481, 643, 481],
+    //           id: 86,
+    //           score: 0.98400002717972,
+    //           type: "line",
+    //           text: "We propose a group of specific metrics enabling users to com-",
+    //         },
+    //         {
+    //           pos: [653, 481, 1117, 481, 1117, 500, 653, 500],
+    //           id: 87,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "pare sampling strategies from different perspectives, and conduct",
+    //         },
+    //         {
+    //           pos: [651, 500, 1118, 500, 1118, 518, 651, 518],
+    //           id: 88,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "case studies with real-world datasets to demonstrate the validity",
+    //         },
+    //         {
+    //           pos: [653, 520, 982, 520, 982, 538, 653, 538],
+    //           id: 89,
+    //           score: 0.99400001764297,
+    //           type: "line",
+    //           text: "of our context-aware graph sampling method.",
+    //         },
+    //         {
+    //           pos: [611, 557, 784, 557, 784, 582, 611, 582],
+    //           id: 90,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "2 RELATED WORK",
+    //         },
+    //         {
+    //           pos: [611, 585, 1118, 586, 1118, 609, 611, 608],
+    //           id: 91,
+    //           score: 0.99699997901917,
+    //           type: "line",
+    //           text: "We classify existing methods into four categories,including large",
+    //         },
+    //         {
+    //           pos: [613, 608, 1117, 608, 1117, 626, 613, 626],
+    //           id: 92,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "graph visualization, graph sampling, metrics for graph evaluation and",
+    //         },
+    //         {
+    //           pos: [613, 628, 831, 628, 831, 647, 613, 647],
+    //           id: 93,
+    //           score: 0.99699997901917,
+    //           type: "line",
+    //           text: "graph representation learning.",
+    //         },
+    //         {
+    //           pos: [611, 661, 886, 661, 886, 685, 611, 685],
+    //           id: 94,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "2.1 Large Graph Visualization",
+    //         },
+    //         {
+    //           pos: [613, 688, 1120, 688, 1120, 712, 613, 712],
+    //           id: 95,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "Graph visualization is widely used for network analysis [5].Node-link",
+    //         },
+    //         {
+    //           pos: [613, 710, 1120, 710, 1120, 729, 613, 729],
+    //           id: 96,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "diagram is a most intuitive layout scheme in which the nodes are rep-",
+    //         },
+    //         {
+    //           pos: [613, 730, 1118, 730, 1118, 749, 613, 749],
+    //           id: 97,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "resented as points and edges are represented as lines. Force-directed",
+    //         },
+    //         {
+    //           pos: [614, 750, 1117, 750, 1117, 769, 614, 769],
+    //           id: 98,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "methods are employed to layout the node-link diagrams by optimizing",
+    //         },
+    //         {
+    //           pos: [613, 770, 1120, 770, 1120, 789, 613, 789],
+    //           id: 99,
+    //           score: 0.98500001430511,
+    //           type: "line",
+    //           text: "graph drawing aesthetics [10,19,41]. With the increasing size of net-",
+    //         },
+    //         {
+    //           pos: [613, 790, 1118, 790, 1118, 809, 613, 809],
+    //           id: 100,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "works, the readability of node-link diagrams largely decreases due to",
+    //         },
+    //         {
+    //           pos: [611, 807, 1120, 807, 1120, 831, 611, 831],
+    //           id: 101,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "visual clutter and scalability issues [9]. Two categories of methods are",
+    //         },
+    //         {
+    //           pos: [613, 831, 1118, 831, 1118, 849, 613, 849],
+    //           id: 102,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "proposed: (1) Graph clustering methods aggregate groups of nodes",
+    //         },
+    //         {
+    //           pos: [613, 851, 1118, 851, 1118, 869, 613, 869],
+    //           id: 103,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "and edges with similar properties to reduce the visual complexity of",
+    //         },
+    //         {
+    //           pos: [611, 868, 1118, 868, 1118, 891, 611, 891],
+    //           id: 104,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "large graphs [7,58]. ASK-GraphView [1] was proposed to organize",
+    //         },
+    //         {
+    //           pos: [611, 888, 1120, 888, 1120, 911, 611, 911],
+    //           id: 105,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "a large graph into hierarchical structures allowing users to aggregate",
+    //         },
+    //         {
+    //           pos: [613, 910, 1120, 910, 1120, 928, 613, 928],
+    //           id: 106,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "nodes to reduce visual clutter. To reduce edge crossings and empha-",
+    //         },
+    //         {
+    //           pos: [613, 930, 1118, 930, 1118, 948, 613, 948],
+    //           id: 107,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "size directional patterns, a set of edge-based clustering methods are",
+    //         },
+    //         {
+    //           pos: [613, 950, 1117, 950, 1117, 968, 613, 968],
+    //           id: 108,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "proposed in which edges with similar spatial distribution features are",
+    //         },
+    //         {
+    //           pos: [614, 970, 1118, 970, 1118, 988, 614, 988],
+    //           id: 109,
+    //           score: 0.97899997234344,
+    //           type: "line",
+    //           text: "bundled together [6,8,15,16]. (2) Graph filtering methods extract",
+    //         },
+    //         {
+    //           pos: [611, 987, 1120, 987, 1120, 1010, 611, 1010],
+    //           id: 110,
+    //           score: 0.98100000619888,
+    //           type: "line",
+    //           text: "subgraphs of interest from original large graphs [20]. Hennessey et",
+    //         },
+    //         {
+    //           pos: [613, 1009, 1120, 1009, 1120, 1027, 613, 1027],
+    //           id: 111,
+    //           score: 0.97899997234344,
+    //           type: "line",
+    //           text: "al. [14] took a set of graph metrics into account to obtain representa-",
+    //         },
+    //         {
+    //           pos: [613, 1029, 1118, 1029, 1118, 1047, 613, 1047],
+    //           id: 112,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "tive skeletons and simplify the visualization of large graphs, such as",
+    //         },
+    //         {
+    //           pos: [613, 1049, 1118, 1049, 1118, 1067, 613, 1067],
+    //           id: 113,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "shortest path and distance to the central node. Yoghourdjian et al. [51]",
+    //         },
+    //         {
+    //           pos: [613, 1069, 1120, 1067, 1120, 1087, 613, 1089],
+    //           id: 114,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "proposed Graph Thumbnails to enhance the readability of large graph-",
+    //         },
+    //         {
+    //           pos: [613, 1089, 1118, 1089, 1118, 1108, 613, 1108],
+    //           id: 115,
+    //           score: 0.99099999666214,
+    //           type: "line",
+    //           text: "s with high-level structures described with small icon-like glyphs.It",
+    //         },
+    //         {
+    //           pos: [613, 1109, 1117, 1109, 1117, 1128, 613, 1128],
+    //           id: 116,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "can be seen that the underlying topological structures of networks are",
+    //         },
+    //         {
+    //           pos: [613, 1129, 1117, 1129, 1117, 1148, 613, 1148],
+    //           id: 117,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "changed with clustering methods,which are still not preserved in the",
+    //         },
+    //         {
+    //           pos: [613, 1149, 1117, 1149, 1117, 1168, 613, 1168],
+    //           id: 118,
+    //           score: 0.98699998855591,
+    //           type: "line",
+    //           text: "simplified graphs with filteringmethods. It might generate a great deal",
+    //         },
+    //         {
+    //           pos: [611, 1166, 1049, 1166, 1049, 1190, 611, 1190],
+    //           id: 119,
+    //           score: 0.98900002241135,
+    //           type: "line",
+    //           text: "of ambiguity that misleads the exploration of networks [49].",
+    //         },
+    //         {
+    //           pos: [613, 1202, 804, 1202, 804, 1225, 613, 1225],
+    //           id: 120,
+    //           score: 0.98500001430511,
+    //           type: "line",
+    //           text: "2.2 Graph Sampling",
+    //         },
+    //         {
+    //           pos: [613, 1230, 1121, 1230, 1121, 1253, 613, 1253],
+    //           id: 121,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "Graph sampling is another kind of filtering method, which also gen-",
+    //         },
+    //         {
+    //           pos: [613, 1253, 1120, 1253, 1120, 1272, 613, 1272],
+    //           id: 122,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "erates a subset of nodes or edges to simplify the original networks.",
+    //         },
+    //         {
+    //           pos: [614, 1272, 1117, 1272, 1117, 1290, 614, 1290],
+    //           id: 123,
+    //           score: 0.98600000143051,
+    //           type: "line",
+    //           text: "Three categories are covered: (1) Node-based Sampling. Random",
+    //         },
+    //         {
+    //           pos: [614, 1292, 1118, 1292, 1118, 1310, 614, 1310],
+    //           id: 124,
+    //           score: 0.97500002384186,
+    //           type: "line",
+    //           text: "Node Sampling (RNS) [26] is commonly used to randomly generate",
+    //         },
+    //         {
+    //           pos: [613, 1312, 1120, 1312, 1120, 1330, 613, 1330],
+    //           id: 125,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "nodes from the original network. A set of graph properties are con-",
+    //         },
+    //         {
+    //           pos: [613, 1332, 1118, 1332, 1118, 1350, 613, 1350],
+    //           id: 126,
+    //           score: 0.99000000953674,
+    //           type: "line",
+    //           text: "sidered to improve the results of node-based sampling. For example,",
+    //         },
+    //         {
+    //           pos: [614, 1350, 1118, 1350, 1118, 1369, 614, 1369],
+    //           id: 127,
+    //           score: 0.98000001907349,
+    //           type: "line",
+    //           text: "Random PageRank Node (RPN) defines the probability of nodes to be",
+    //         },
+    //         {
+    //           pos: [613, 1372, 1117, 1370, 1117, 1389, 613, 1391],
+    //           id: 128,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "sampled as proportional to their PageRank weights [26,36]. Random",
+    //         },
+    //         {
+    //           pos: [614, 1391, 1120, 1391, 1120, 1409, 614, 1409],
+    //           id: 129,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "Degree Node (RDN) increases the probability of nodes with higher de-",
+    //         },
+    //         {
+    //           pos: [614, 1410, 1117, 1411, 1117, 1431, 614, 1429],
+    //           id: 130,
+    //           score: 0.97399997711182,
+    //           type: "line",
+    //           text: "gree values to be sampled [4]. Hu et al. [18] designed a graph sampling",
+    //         },
+    //         {
+    //           pos: [614, 1431, 1117, 1431, 1117, 1449, 614, 1449],
+    //           id: 131,
+    //           score: 0.99299997091293,
+    //           type: "line",
+    //           text: "method based on spectral sparsification, to reduce the number of edges",
+    //         },
+    //         {
+    //           pos: [613, 1451, 1117, 1451, 1117, 1470, 613, 1470],
+    //           id: 132,
+    //           score: 0.98100000619888,
+    //           type: "line",
+    //           text: "and retain structural properties of original graphs. (2) Edge-based",
+    //         },
+    //         {
+    //           pos: [613, 1471, 1118, 1471, 1118, 1490, 613, 1490],
+    //           id: 133,
+    //           score: 0.98299998044968,
+    //           type: "line",
+    //           text: "Sampling. Random Edge Sampling (RES) extracts a random subset of",
+    //         },
+    //         {
+    //           pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+    //           id: 134,
+    //           score: 0.99199998378754,
+    //           type: "line",
+    //           text: "1077-2626 (c) 2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+    //         },
+    //         {
+    //           pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+    //           id: 135,
+    //           score: 0.9879999756813,
+    //           type: "line",
+    //           text: "Authorized licensed use limited to: Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+    //         },
+    //       ],
+    //       status: "Success",
+    //       height: 1584,
+    //       structured: [
+    //         {
+    //           pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+    //           blocks: [
+    //             {
+    //               content: [0, 1],
+    //               pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+    //               type: "textblock",
+    //             },
+    //           ],
+    //           type: "header",
+    //         },
+    //         {
+    //           content: [2, 3, 4, 5, 6, 7],
+    //           pos: [88, 105, 594, 105, 594, 223, 88, 223],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [
+    //             8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    //             24,
+    //           ],
+    //           pos: [87, 224, 596, 224, 596, 568, 87, 568],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [
+    //             25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    //           ],
+    //           pos: [87, 569, 596, 569, 596, 889, 87, 889],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54],
+    //           pos: [87, 888, 596, 888, 596, 1168, 87, 1168],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [
+    //             55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+    //           ],
+    //           pos: [87, 1169, 596, 1169, 596, 1490, 87, 1490],
+    //           continue: true,
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [71, 72, 73, 74, 75, 76, 77, 78],
+    //           pos: [613, 105, 1120, 105, 1120, 261, 613, 261],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [79, 80, 81, 82],
+    //           pos: [639, 286, 1120, 286, 1120, 367, 639, 367],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [83, 84, 85],
+    //           pos: [640, 381, 1121, 381, 1121, 441, 640, 441],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [86, 87, 88, 89],
+    //           pos: [643, 458, 1121, 458, 1121, 538, 643, 538],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [90],
+    //           pos: [611, 557, 784, 557, 784, 582, 611, 582],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [91, 92, 93],
+    //           pos: [611, 585, 1118, 585, 1118, 647, 611, 647],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [94],
+    //           pos: [611, 661, 886, 661, 886, 685, 611, 685],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [
+    //             95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108,
+    //             109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+    //           ],
+    //           pos: [611, 688, 1120, 688, 1120, 1190, 611, 1190],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           content: [120],
+    //           pos: [613, 1202, 804, 1202, 804, 1225, 613, 1225],
+    //           type: "textblock",
+    //           sub_type: "list",
+    //         },
+    //         {
+    //           content: [
+    //             121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133,
+    //           ],
+    //           pos: [613, 1230, 1121, 1230, 1121, 1490, 613, 1490],
+    //           type: "textblock",
+    //         },
+    //         {
+    //           pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+    //           blocks: [
+    //             {
+    //               content: [134],
+    //               pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+    //               type: "textblock",
+    //             },
+    //           ],
+    //           type: "footer",
+    //         },
+    //         {
+    //           pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+    //           blocks: [
+    //             {
+    //               content: [135],
+    //               pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+    //               type: "textblock",
+    //             },
+    //           ],
+    //           type: "footer",
+    //         },
+    //       ],
+    //       durations: 1213.7530517578,
+    //       image_id: "",
+    //       width: 1224,
+    //     },
+    //   ],
+    //   valid_page_number: 2,
+    //   total_page_number: 2,
+    //   total_count: 2,
+    //   detail: [
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 0,
+    //       page_id: 1,
+    //       content: 1,
+    //       position: [39, 6, 1183, 6, 1183, 24, 39, 24],
+    //       outline_level: -1,
+    //       text: "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 2,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [466, 26, 757, 26, 757, 42, 466, 42],
+    //       outline_level: -1,
+    //       text: "Transactions on Visualization and Computer Graphics",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 3,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [208, 113, 1034, 113, 1034, 155, 208, 155],
+    //       outline_level: 0,
+    //       text: "Context-aware Sampling of Large Networks via Graph",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 4,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [430, 159, 812, 159, 812, 199, 430, 199],
+    //       outline_level: -1,
+    //       text: "Representation Learning",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 5,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [315, 222, 926, 222, 926, 248, 315, 248],
+    //       outline_level: -1,
+    //       text: "Zhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 6,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [459, 248, 783, 248, 783, 273, 459, 273],
+    //       outline_level: -1,
+    //       text: "Yuhua Liu,Ying Zhao and Wei Chen",
+    //     },
+    //     {
+    //       paragraph_id: 7,
+    //       page_id: 1,
+    //       content: 0,
+    //       outline_level: -1,
+    //       text: "a. C. b. d. e. g. f. h. ",
+    //       type: "image",
+    //       position: [168, 288, 1077, 288, 1077, 710, 168, 710],
+    //       image_url:
+    //         "https://web-api.textin.com/ocr_image/external/3be73b381c700b7c.jpg",
+    //       sub_type: "normal",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 8,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [153, 730, 1088, 730, 1088, 841, 153, 841],
+    //       outline_level: -1,
+    //       text: "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 9,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [153, 857, 1088, 857, 1088, 1065, 153, 1065],
+    //       outline_level: -1,
+    //       text: "Abstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and exploration of large networks.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 10,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [153, 1072, 879, 1072, 879, 1094, 153, 1094],
+    //       outline_level: -1,
+    //       text: "Index Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation",
+    //     },
+    //     {
+    //       paragraph_id: 11,
+    //       page_id: 1,
+    //       content: 0,
+    //       outline_level: -1,
+    //       text: " ",
+    //       type: "image",
+    //       position: [404, 1110, 834, 1110, 834, 1132, 404, 1132],
+    //       image_url:
+    //         "https://web-api.textin.com/ocr_image/external/62552323a502286a.jpg",
+    //       sub_type: "normal",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 12,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [106, 1159, 259, 1159, 259, 1181, 106, 1181],
+    //       outline_level: 1,
+    //       text: "1 INTRODUCTION",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 13,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [111, 1230, 601, 1230, 601, 1305, 111, 1305],
+    //       outline_level: -1,
+    //       text: "·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and Yuhua Liu are with School of Information,Zhejiang University of Finance and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 14,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [111, 1310, 608, 1310, 608, 1325, 111, 1325],
+    //       outline_level: -1,
+    //       text: "·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 15,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [111, 1330, 561, 1330, 561, 1365, 111, 1365],
+    //       outline_level: -1,
+    //       text: "·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University.E-mail:chenwei@cad.zju.edu.cn.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 19,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [113, 1370, 464, 1370, 464, 1387, 113, 1387],
+    //       outline_level: -1,
+    //       text: "·Ying Zhao and Wei Chen are corresponding authors.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 20,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [106, 1396, 608, 1396, 608, 1470, 106, 1470],
+    //       outline_level: -1,
+    //       text: "Manuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication xx xxx.201x;date of current version xx xxx. 201x. For information on obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 21,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [632, 1192, 1136, 1192, 1136, 1407, 632, 1407],
+    //       outline_level: -1,
+    //       text: "As a ubiquitous data structure, network is always employed to encode relationships among entities in a variety of application areas,such as social relationships between people and financial transactions between companies [5,57]. Graph visualization offers an interactive and ex-ploratory means allowing users to gain structural insights [2] and sense implicit contextual features of networks. However, with the increase of data sizes, the visual exploration and analysis of networks are se-riously influenced,because nodes and edges overlap with each other and generate much visual clutter in large graph visualizations, making it a complicated and time-consuming task to visually explore structural features of significance [50].",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 22,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [632, 1410, 1136, 1410, 1136, 1487, 632, 1487],
+    //       outline_level: -1,
+    //       text: "Graph sampling is commonly used to reduce thevisual clutter and address scalability issues in the visual exploration of large networks,by means of which a subset of nodes and edges are selected on behalf of the original large graph. Over the past few decades, numerous ef-",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 25,
+    //       page_id: 1,
+    //       content: 0,
+    //       position: [155, 1558, 1063, 1558, 1063, 1574, 155, 1574],
+    //       outline_level: -1,
+    //       text: "Authorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 24,
+    //       page_id: 1,
+    //       content: 1,
+    //       position: [51, 1543, 1172, 1543, 1172, 1558, 51, 1558],
+    //       outline_level: -1,
+    //       text: "1077-2626(c)2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 0,
+    //       page_id: 2,
+    //       content: 1,
+    //       position: [40, 16, 1184, 16, 1184, 42, 40, 42],
+    //       outline_level: -1,
+    //       text: "This article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE Transactions on Visualization and Computer Graphics",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 3,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [89, 106, 592, 106, 592, 222, 89, 222],
+    //       outline_level: -1,
+    //       text: "forts have been paid on the design of sampling strategies, ranging from node-based and edge-based schemes [4,26] to transversal-based and semantic-based schemes [4,23,56]. However, such strategies largely focus on sampling efficiency and randomness of sampling results, pay-ing little attention to the preservation of significant contextual struc-tures.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 4,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [87, 224, 594, 224, 594, 567, 87, 567],
+    //       outline_level: -1,
+    //       text: "Contextual structures, formed by nodes and edges with tight rela-tionships, are always of great significance for the exploration and in-terpretation of networks, such as bridging nodes, connected paths and aggregated communities [19,46].For example, it is quite necessary to identify the contextual structures of crowd movement network for the diagnosis and spread prevention of infectious diseases [44]. Howev-er, it is a tough task to preserve contextual structures in the sampled network based on traditional sampling strategies, because contextual structures often have three characteristics: concealment in location, ir-regularity in scale, and complexity in structure. For example, nodes with tight relationships (in a community) may be difficult to find in large networks due to their concealed locations, because they are eas-ily laid out far away from each other. Also, contextual structures are immune to scale, that is few nodes and edges would rather present a tough contextual structure (a small complete graph). Thus,it is re-ally hard to give a comprehensive definition of contextual structures because their formations are too complicated to find a regular pattern.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 5,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [87, 569, 594, 569, 594, 888, 87, 888],
+    //       outline_level: -1,
+    //       text: "As an effective way to represent and identify contextual structures of large networks [5], GRL has been widely applied in a variety of research areas, such as graph classification, graph query, graph min-ing,et al [12,33]. It transforms nodes into vectors to quantitate the structural features of networks. Numerous GRL models have been pro-posed to train and represent nodes according to their local contexts in the network, such as deepwalk [39],node2vec [11],and struc2vec [42].A family of biased random walks are developed in the course of corpus generation allowing an efficient exploration of diverse neighborhoods for given nodes [32]. Thus,network structures are well represented in a vectroized space obtained by GRL (e.g. a contextual structure of interest is highlighted as shown in Figure la and Figure 1c). We be-lieve that it would be a feasible way to conduct graph sampling in the vectorized space, and the contextual structures would be preserved as far as possible (e.g. the contextual structure is well preserved in the sampled graph as shown in Figure 1d and Figure 1b).",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 6,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [87, 888, 594, 888, 594, 1166, 87, 1166],
+    //       outline_level: -1,
+    //       text: "However,there are still severa problems to overcome for the p-reservation of contextual structures in the vectorized space obtained through GRL.P1: GRL is able to encode the contextual structures with vectorizied representation, but the vectorized space is too compli-cated to gaininsights due to its high dimensions. P2: It is a difficult task to define a graph sampling model to preserve contextual structures captured by GRL,since they are represented with data distributions in the vectorized space rather than topological relationships in the origi-nal network space. P3: It is also difficult to conduct a unified graph sampling scheme to preserve various kinds of contextual structures in the vectorized space due to their respective characteristics. P4: It is another tough task to evaluate the sampled graphs from a variety of perspectives,and further demonstrate that the contextual structures of significance are well retained in the sampled graphs.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 7,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [87, 1170, 594, 1170, 594, 1488, 87, 1488],
+    //       outline_level: -1,
+    //       text: "In this paper, we propose a novel graph sampling method to simpli-fy large graphs, especially with the contextual structures identified and preserved in the sampled graphs. Firstly, a GRL model is employed to encode contextual structures and a dimensionality reduction method is applied to transform the contextual structures into a low-dimensional vectorized space,where nodes sharing similar contextual features are visually distributed close to each other (P1). Then, we propose a novel blue noise sampling model to generate a subset of nodes in the vec-torized space, guaranteeing that nodes with tight relationships are re-tained and the contextual features are well preserved in the sampled graph (P2). A set of desired objectives are further integrated into the sampling model to optimize the sampled graphs, in which topological features of significance are enhanced such as bridging nodes and graph connection (P3). Also, we utilize a group of metrics to evaluate the va-lidity of our sampling method in contextual feature preservation from different perspectives, such as node importance, graph connection and",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 8,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [614, 106, 1119, 106, 1119, 259, 614, 259],
+    //       outline_level: -1,
+    //       text: "community changes (P4). At last, a graph sampling framework is im-plemented to integrate sampling models, GRL and visual designs of metrics, and a rich set of interactions are also provided allowing users to intuitively evaluate different sampling strategies and easily explore structures of interest in large networks. The effectiveness and use-fulness of our system are further demonstrated with case studies and quantitate comparisons based on real-world datasets. In summary, the main contributions of our work are:",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 9,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [639, 287, 1119, 287, 1119, 365, 639, 365],
+    //       outline_level: -1,
+    //       text: "·We utilize a GRL model (node2vec) to quantitate the contextu-al features of networks, offering important clues for graph sam-pling. To the best of our knowledge, it is the first to sample graphs with GRL.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 10,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [641, 381, 1119, 381, 1119, 439, 641, 439],
+    //       outline_level: -1,
+    //       text: "·We design a multi-objective blue noise sampling model to simpli-fy large networks, with the contextual structures and their topo-logical features well retained in the sampled graphs.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 11,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [643, 459, 1119, 459, 1119, 537, 643, 537],
+    //       outline_level: -1,
+    //       text: "We propose a group of specific metrics enabling users to com-pare sampling strategies from different perspectives, and conduct case studies with real-world datasets to demonstrate the validity of our context-aware graph sampling method.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 12,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [612, 557, 782, 557, 782, 581, 612, 581],
+    //       outline_level: 1,
+    //       text: "2 RELATED WORK",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 16,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [612, 586, 1117, 586, 1117, 645, 612, 645],
+    //       outline_level: -1,
+    //       text: "We classify existing methods into four categories,including large graph visualization, graph sampling, metrics for graph evaluation and graph representation learning.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 17,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [612, 661, 884, 661, 884, 684, 612, 684],
+    //       outline_level: 2,
+    //       text: "2.1 Large Graph Visualization",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 18,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [612, 688, 1119, 688, 1119, 1188, 612, 1188],
+    //       outline_level: -1,
+    //       text: "Graph visualization is widely used for network analysis [5].Node-link diagram is a most intuitive layout scheme in which the nodes are rep-resented as points and edges are represented as lines. Force-directed methods are employed to layout the node-link diagrams by optimizing graph drawing aesthetics [10,19,41]. With the increasing size of net-works, the readability of node-link diagrams largely decreases due to visual clutter and scalability issues [9]. Two categories of methods are proposed: (1) Graph clustering methods aggregate groups of nodes and edges with similar properties to reduce the visual complexity of large graphs [7,58]. ASK-GraphView [1] was proposed to organize a large graph into hierarchical structures allowing users to aggregate nodes to reduce visual clutter. To reduce edge crossings and empha-size directional patterns, a set of edge-based clustering methods are proposed in which edges with similar spatial distribution features are bundled together [6,8,15,16]. (2) Graph filtering methods extract subgraphs of interest from original large graphs [20]. Hennessey et al. [14] took a set of graph metrics into account to obtain representa-tive skeletons and simplify the visualization of large graphs, such as shortest path and distance to the central node. Yoghourdjian et al. [51]proposed Graph Thumbnails to enhance the readability of large graph-s with high-level structures described with small icon-like glyphs.It can be seen that the underlying topological structures of networks are changed with clustering methods,which are still not preserved in the simplified graphs with filteringmethods. It might generate a great deal of ambiguity that misleads the exploration of networks [49].",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 19,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [614, 1202, 802, 1202, 802, 1223, 614, 1223],
+    //       outline_level: 2,
+    //       text: "2.2 Graph Sampling",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 20,
+    //       page_id: 2,
+    //       content: 0,
+    //       position: [614, 1231, 1119, 1231, 1119, 1488, 614, 1488],
+    //       outline_level: -1,
+    //       text: "Graph sampling is another kind of filtering method, which also gen-erates a subset of nodes or edges to simplify the original networks.Three categories are covered: (1) Node-based Sampling. Random Node Sampling (RNS) [26] is commonly used to randomly generate nodes from the original network. A set of graph properties are con-sidered to improve the results of node-based sampling. For example,Random PageRank Node (RPN) defines the probability of nodes to be sampled as proportional to their PageRank weights [26,36]. Random Degree Node (RDN) increases the probability of nodes with higher de-gree values to be sampled [4]. Hu et al. [18] designed a graph sampling method based on spectral sparsification, to reduce the number of edges and retain structural properties of original graphs. (2) Edge-based Sampling. Random Edge Sampling (RES) extracts a random subset of",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 21,
+    //       page_id: 2,
+    //       content: 1,
+    //       position: [51, 1543, 1172, 1543, 1172, 1558, 51, 1558],
+    //       outline_level: -1,
+    //       text: "1077-2626 (c) 2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+    //     },
+    //     {
+    //       type: "paragraph",
+    //       tags: [],
+    //       paragraph_id: 23,
+    //       page_id: 2,
+    //       content: 1,
+    //       position: [155, 1558, 1063, 1558, 1063, 1574, 155, 1574],
+    //       outline_level: -1,
+    //       text: "Authorized licensed use limited to: Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+    //     },
+    //   ],
+    //   metrics: [
+    //     {
+    //       angle: 0,
+    //       status: "Success",
+    //       dpi: 144,
+    //       image_id: "",
+    //       page_id: 1,
+    //       duration: 973.52874755859,
+    //       page_image_width: 1224,
+    //       page_image_height: 1584,
+    //     },
+    //     {
+    //       angle: 0,
+    //       status: "Success",
+    //       dpi: 144,
+    //       image_id: "",
+    //       page_id: 2,
+    //       duration: 1236.9835205078,
+    //       page_image_width: 1224,
+    //       page_image_height: 1584,
+    //     },
+    //   ],
+    //   dpi: 144,
+    // },
+    // metrics: [
+    //   {
+    //     angle: 0,
+    //     status: "Success",
+    //     dpi: 144,
+    //     image_id: "",
+    //     page_id: 1,
+    //     duration: 973.52874755859,
+    //     page_image_width: 1224,
+    //     page_image_height: 1584,
+    //   },
+    //   {
+    //     angle: 0,
+    //     status: "Success",
+    //     dpi: 144,
+    //     image_id: "",
+    //     page_id: 2,
+    //     duration: 1236.9835205078,
+    //     page_image_width: 1224,
+    //     page_image_height: 1584,
+    //   },
+    // ],
+    code: 200,
+    version: "3.9.4",
+    data: {
+      id: "744972d6-d8fa-40d1-90ce-b64863df18bd",
+      count_status: 1,
+      ocr_status: 1,
+      cloud_ocr: 0,
+      ctime: "1733305856",
+      utime: "1733305856",
+      status: null,
+      img_name: "测试 两页pdf.pdf",
+      img_uri:
+        "blob:http://localhost:10007/b979e87e-db5a-4f94-b4d7-2494065cf8a5",
+      thumbnail:
+        "blob:http://localhost:10007/b979e87e-db5a-4f94-b4d7-2494065cf8a5",
+      result: {
+        markdown: "",
+        success_count: 2,
+        catalog: {
+          toc: [
+            {
+              pos: [206, 111, 1032, 111, 1032, 197, 206, 197],
+              page_id: 1,
+              hierarchy: 2,
+              pos_list: [
+                [206, 111, 1032, 111, 1032, 153, 206, 153],
+                [428, 157, 810, 157, 810, 197, 428, 197],
+              ],
+              title:
+                "Context-aware Sampling of Large Networks via GraphRepresentation Learning",
+              sub_type: "text_title",
+            },
+            {
+              pos: [104, 1156, 257, 1156, 257, 1179, 104, 1179],
+              page_id: 1,
+              hierarchy: 2,
+              pos_list: [[104, 1156, 257, 1156, 257, 1179, 104, 1179]],
+              title: "1 INTRODUCTION",
+              sub_type: "text_title",
+            },
+            {
+              pos: [610, 557, 780, 557, 780, 581, 610, 581],
+              page_id: 2,
+              hierarchy: 2,
+              pos_list: [[610, 557, 780, 557, 780, 581, 610, 581]],
+              title: "2 RELATED WORK",
+              sub_type: "text_title",
+            },
+            {
+              pos: [610, 661, 882, 661, 882, 684, 610, 684],
+              page_id: 2,
+              hierarchy: 3,
+              pos_list: [[610, 661, 882, 661, 882, 684, 610, 684]],
+              title: "2.1 Large Graph Visualization",
+              sub_type: "text_title",
+            },
+            {
+              pos: [612, 1202, 800, 1202, 800, 1223, 612, 1223],
+              page_id: 2,
+              hierarchy: 3,
+              pos_list: [[612, 1202, 800, 1202, 800, 1223, 612, 1223]],
+              title: "2.2 Graph Sampling",
+              sub_type: "text_title",
+            },
+          ],
+        },
+        // pages: [
+        //   {
+        //     angle: 0,
+        //     page_id: 1,
+        //     content: [
+        //       {
+        //         pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+        //         id: 0,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE",
+        //       },
+        //       {
+        //         pos: [466, 26, 758, 26, 758, 43, 466, 43],
+        //         id: 1,
+        //         score: 0.99800002574921,
+        //         type: "line",
+        //         text: "Transactions on Visualization and Computer Graphics",
+        //       },
+        //       {
+        //         pos: [207, 112, 1035, 114, 1035, 156, 207, 154],
+        //         id: 2,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "Context-aware Sampling of Large Networks via Graph",
+        //       },
+        //       {
+        //         pos: [430, 158, 814, 158, 814, 200, 430, 200],
+        //         id: 3,
+        //         score: 0.9990000128746,
+        //         type: "line",
+        //         text: "Representation Learning",
+        //       },
+        //       {
+        //         pos: [314, 221, 927, 221, 927, 249, 314, 249],
+        //         id: 4,
+        //         score: 0.96399998664856,
+        //         type: "line",
+        //         text: "Zhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,",
+        //       },
+        //       {
+        //         pos: [458, 247, 786, 247, 786, 274, 458, 274],
+        //         id: 5,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "Yuhua Liu,Ying Zhao and Wei Chen",
+        //       },
+        //       {
+        //         pos: [186, 299, 206, 299, 206, 317, 186, 317],
+        //         id: 6,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "a.",
+        //       },
+        //       {
+        //         pos: [541, 299, 562, 299, 562, 317, 541, 317],
+        //         id: 7,
+        //         score: 0.94099998474121,
+        //         type: "line",
+        //         text: "C.",
+        //       },
+        //       {
+        //         pos: [746, 292, 770, 292, 770, 319, 746, 319],
+        //         id: 8,
+        //         score: 0.99599999189377,
+        //         type: "line",
+        //         text: "b.",
+        //       },
+        //       {
+        //         pos: [541, 450, 560, 450, 560, 472, 541, 472],
+        //         id: 9,
+        //         score: 0.91000002622604,
+        //         type: "line",
+        //         text: "d.",
+        //       },
+        //       {
+        //         pos: [183, 606, 201, 606, 201, 623, 183, 623],
+        //         id: 10,
+        //         score: 0.8289999961853,
+        //         type: "line",
+        //         text: "e.",
+        //       },
+        //       {
+        //         pos: [390, 606, 408, 606, 408, 626, 390, 626],
+        //         id: 11,
+        //         score: 0.96499997377396,
+        //         type: "line",
+        //         text: "g.",
+        //       },
+        //       {
+        //         pos: [685, 602, 702, 602, 702, 623, 685, 623],
+        //         id: 12,
+        //         score: 0.98000001907349,
+        //         type: "line",
+        //         text: "f.",
+        //       },
+        //       {
+        //         pos: [889, 602, 913, 602, 913, 625, 889, 625],
+        //         id: 13,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "h.",
+        //       },
+        //       {
+        //         size: [407, 189],
+        //         id: 14,
+        //         pos: [168, 289, 1074, 287, 1078, 710, 171, 712],
+        //         data: {
+        //           base64:
+        //             "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",
+        //           path: "https://web-api.textin.com/ocr_image/external/3be73b381c700b7c.jpg",
+        //           region: [168, 289, 1074, 287, 1078, 710, 171, 712],
+        //         },
+        //         type: "image",
+        //       },
+        //       {
+        //         pos: [153, 729, 1089, 729, 1089, 752, 153, 752],
+        //         id: 15,
+        //         score: 0.98000001907349,
+        //         type: "line",
+        //         text: "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original",
+        //       },
+        //       {
+        //         pos: [153, 749, 1089, 749, 1089, 767, 153, 767],
+        //         id: 16,
+        //         score: 0.98199999332428,
+        //         type: "line",
+        //         text: "graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)",
+        //       },
+        //       {
+        //         pos: [153, 769, 1087, 769, 1087, 787, 153, 787],
+        //         id: 17,
+        //         score: 0.98500001430511,
+        //         type: "line",
+        //         text: "highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in",
+        //       },
+        //       {
+        //         pos: [153, 787, 1087, 787, 1087, 806, 153, 806],
+        //         id: 18,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are",
+        //       },
+        //       {
+        //         pos: [153, 806, 1087, 806, 1087, 824, 153, 824],
+        //         id: 19,
+        //         score: 0.98100000619888,
+        //         type: "line",
+        //         text: "presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with",
+        //       },
+        //       {
+        //         pos: [153, 826, 950, 826, 950, 843, 153, 843],
+        //         id: 20,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).",
+        //       },
+        //       {
+        //         pos: [153, 857, 1089, 857, 1089, 874, 153, 874],
+        //         id: 21,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "Abstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is",
+        //       },
+        //       {
+        //         pos: [153, 876, 1087, 876, 1087, 894, 153, 894],
+        //         id: 22,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because",
+        //       },
+        //       {
+        //         pos: [153, 894, 1089, 894, 1089, 913, 153, 913],
+        //         id: 23,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a",
+        //       },
+        //       {
+        //         pos: [153, 914, 1087, 914, 1087, 931, 153, 931],
+        //         id: 24,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation",
+        //       },
+        //       {
+        //         pos: [153, 933, 1087, 933, 1087, 951, 153, 951],
+        //         id: 25,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and",
+        //       },
+        //       {
+        //         pos: [153, 951, 1087, 951, 1087, 970, 153, 970],
+        //         id: 26,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to",
+        //       },
+        //       {
+        //         pos: [153, 971, 1089, 971, 1089, 988, 153, 988],
+        //         id: 27,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,",
+        //       },
+        //       {
+        //         pos: [153, 990, 1089, 990, 1089, 1009, 153, 1009],
+        //         id: 28,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct",
+        //       },
+        //       {
+        //         pos: [153, 1009, 1089, 1009, 1089, 1027, 153, 1027],
+        //         id: 29,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies",
+        //       },
+        //       {
+        //         pos: [153, 1027, 1087, 1027, 1087, 1046, 153, 1046],
+        //         id: 30,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and",
+        //       },
+        //       {
+        //         pos: [153, 1047, 364, 1047, 364, 1066, 153, 1066],
+        //         id: 31,
+        //         score: 0.99699997901917,
+        //         type: "line",
+        //         text: "exploration of large networks.",
+        //       },
+        //       {
+        //         pos: [152, 1072, 880, 1072, 880, 1095, 152, 1095],
+        //         id: 32,
+        //         score: 0.98199999332428,
+        //         type: "line",
+        //         text: "Index Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation",
+        //       },
+        //       {
+        //         pos: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+        //         id: 33,
+        //         score: 1,
+        //         type: "line",
+        //         text: "",
+        //       },
+        //       {
+        //         size: [194, 10],
+        //         id: 34,
+        //         pos: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+        //         data: {
+        //           base64:
+        //             "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",
+        //           path: "https://web-api.textin.com/ocr_image/external/62552323a502286a.jpg",
+        //           region: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+        //         },
+        //         type: "image",
+        //       },
+        //       {
+        //         pos: [105, 1159, 261, 1159, 261, 1182, 105, 1182],
+        //         id: 35,
+        //         score: 0.99599999189377,
+        //         type: "line",
+        //         text: "1 INTRODUCTION",
+        //       },
+        //       {
+        //         pos: [111, 1230, 596, 1230, 596, 1248, 111, 1248],
+        //         id: 36,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and",
+        //       },
+        //       {
+        //         pos: [130, 1250, 603, 1250, 603, 1267, 130, 1267],
+        //         id: 37,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "Yuhua Liu are with School of Information,Zhejiang University of Finance",
+        //       },
+        //       {
+        //         pos: [130, 1270, 551, 1268, 551, 1287, 130, 1288],
+        //         id: 38,
+        //         score: 0.97699999809265,
+        //         type: "line",
+        //         text: "and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,",
+        //       },
+        //       {
+        //         pos: [130, 1289, 452, 1289, 452, 1306, 130, 1306],
+        //         id: 39,
+        //         score: 0.9990000128746,
+        //         type: "line",
+        //         text: "cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn.",
+        //       },
+        //       {
+        //         pos: [111, 1309, 609, 1309, 609, 1327, 111, 1327],
+        //         id: 40,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn.",
+        //       },
+        //       {
+        //         pos: [111, 1328, 563, 1330, 563, 1349, 111, 1347],
+        //         id: 41,
+        //         score: 0.97600001096725,
+        //         type: "line",
+        //         text: "·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University.",
+        //       },
+        //       {
+        //         pos: [128, 1349, 348, 1349, 348, 1367, 128, 1367],
+        //         id: 42,
+        //         score: 0.9990000128746,
+        //         type: "line",
+        //         text: "E-mail:chenwei@cad.zju.edu.cn.",
+        //       },
+        //       {
+        //         pos: [113, 1369, 466, 1369, 466, 1388, 113, 1388],
+        //         id: 43,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "·Ying Zhao and Wei Chen are corresponding authors.",
+        //       },
+        //       {
+        //         pos: [110, 1395, 609, 1395, 609, 1414, 110, 1414],
+        //         id: 44,
+        //         score: 0.97399997711182,
+        //         type: "line",
+        //         text: "Manuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication",
+        //       },
+        //       {
+        //         pos: [105, 1415, 557, 1415, 557, 1432, 105, 1432],
+        //         id: 45,
+        //         score: 0.96299999952316,
+        //         type: "line",
+        //         text: "xx xxx.201x;date of current version xx xxx. 201x. For information on",
+        //       },
+        //       {
+        //         pos: [105, 1434, 585, 1434, 585, 1453, 105, 1453],
+        //         id: 46,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.",
+        //       },
+        //       {
+        //         pos: [105, 1453, 455, 1453, 455, 1471, 105, 1471],
+        //         id: 47,
+        //         score: 0.9539999961853,
+        //         type: "line",
+        //         text: "Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx",
+        //       },
+        //       {
+        //         pos: [631, 1191, 1135, 1191, 1135, 1210, 631, 1210],
+        //         id: 48,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "As a ubiquitous data structure, network is always employed to encode",
+        //       },
+        //       {
+        //         pos: [631, 1211, 1135, 1211, 1135, 1230, 631, 1230],
+        //         id: 49,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "relationships among entities in a variety of application areas,such as",
+        //       },
+        //       {
+        //         pos: [631, 1231, 1135, 1231, 1135, 1250, 631, 1250],
+        //         id: 50,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "social relationships between people and financial transactions between",
+        //       },
+        //       {
+        //         pos: [631, 1251, 1139, 1251, 1139, 1270, 631, 1270],
+        //         id: 51,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "companies [5,57]. Graph visualization offers an interactive and ex-",
+        //       },
+        //       {
+        //         pos: [631, 1272, 1135, 1272, 1135, 1290, 631, 1290],
+        //         id: 52,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "ploratory means allowing users to gain structural insights [2] and sense",
+        //       },
+        //       {
+        //         pos: [631, 1292, 1135, 1292, 1135, 1310, 631, 1310],
+        //         id: 53,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "implicit contextual features of networks. However, with the increase",
+        //       },
+        //       {
+        //         pos: [631, 1310, 1137, 1312, 1137, 1332, 631, 1330],
+        //         id: 54,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "of data sizes, the visual exploration and analysis of networks are se-",
+        //       },
+        //       {
+        //         pos: [631, 1332, 1135, 1332, 1135, 1350, 631, 1350],
+        //         id: 55,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "riously influenced,because nodes and edges overlap with each other",
+        //       },
+        //       {
+        //         pos: [631, 1352, 1135, 1352, 1135, 1371, 631, 1371],
+        //         id: 56,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "and generate much visual clutter in large graph visualizations, making",
+        //       },
+        //       {
+        //         pos: [631, 1371, 1135, 1371, 1135, 1389, 631, 1389],
+        //         id: 57,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "it a complicated and time-consuming task to visually explore structural",
+        //       },
+        //       {
+        //         pos: [631, 1391, 838, 1391, 838, 1409, 631, 1409],
+        //         id: 58,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "features of significance [50].",
+        //       },
+        //       {
+        //         pos: [650, 1409, 1137, 1409, 1137, 1432, 650, 1432],
+        //         id: 59,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "Graph sampling is commonly used to reduce thevisual clutter and",
+        //       },
+        //       {
+        //         pos: [631, 1431, 1137, 1431, 1137, 1449, 631, 1449],
+        //         id: 60,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "address scalability issues in the visual exploration of large networks,",
+        //       },
+        //       {
+        //         pos: [631, 1451, 1135, 1451, 1135, 1470, 631, 1470],
+        //         id: 61,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "by means of which a subset of nodes and edges are selected on behalf",
+        //       },
+        //       {
+        //         pos: [631, 1471, 1137, 1471, 1137, 1490, 631, 1490],
+        //         id: 62,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "of the original large graph. Over the past few decades, numerous ef-",
+        //       },
+        //       {
+        //         pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+        //         id: 63,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "Authorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+        //       },
+        //       {
+        //         pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+        //         id: 64,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "1077-2626(c)2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+        //       },
+        //     ],
+        //     status: "Success",
+        //     height: 1584,
+        //     structured: [
+        //       {
+        //         pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+        //         blocks: [
+        //           {
+        //             content: [0],
+        //             pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+        //             type: "textblock",
+        //           },
+        //         ],
+        //         type: "header",
+        //       },
+        //       {
+        //         content: [1],
+        //         pos: [466, 26, 758, 26, 758, 43, 466, 43],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [2],
+        //         pos: [207, 112, 1035, 114, 1035, 156, 207, 154],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [3],
+        //         pos: [430, 158, 814, 158, 814, 200, 430, 200],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [4],
+        //         pos: [314, 221, 927, 221, 927, 249, 314, 249],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [5],
+        //         pos: [458, 247, 786, 247, 786, 274, 458, 274],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [14],
+        //         pos: [168, 289, 1074, 287, 1078, 710, 171, 712],
+        //         lines: [6, 7, 8, 9, 10, 11, 12, 13],
+        //         type: "image",
+        //       },
+        //       {
+        //         content: [15, 16, 17, 18, 19, 20],
+        //         pos: [153, 729, 1089, 729, 1089, 843, 153, 843],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+        //         pos: [153, 857, 1089, 857, 1089, 1066, 153, 1066],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [32],
+        //         pos: [152, 1072, 880, 1072, 880, 1095, 152, 1095],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [34],
+        //         pos: [403, 1110, 837, 1109, 837, 1134, 403, 1134],
+        //         lines: [33],
+        //         type: "image",
+        //       },
+        //       {
+        //         content: [35],
+        //         pos: [105, 1159, 261, 1159, 261, 1182, 105, 1182],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [36, 37, 38, 39],
+        //         pos: [111, 1230, 603, 1230, 603, 1306, 111, 1306],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [40],
+        //         pos: [111, 1309, 609, 1309, 609, 1327, 111, 1327],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [41, 42],
+        //         pos: [111, 1328, 563, 1328, 563, 1367, 111, 1367],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [43],
+        //         pos: [113, 1369, 466, 1369, 466, 1388, 113, 1388],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [44, 45, 46, 47],
+        //         pos: [105, 1395, 609, 1395, 609, 1471, 105, 1471],
+        //         continue: true,
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
+        //         pos: [631, 1191, 1139, 1191, 1139, 1409, 631, 1409],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [59, 60, 61, 62],
+        //         pos: [631, 1409, 1137, 1409, 1137, 1490, 631, 1490],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [63],
+        //         pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+        //         blocks: [
+        //           {
+        //             content: [64],
+        //             pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+        //             type: "textblock",
+        //           },
+        //         ],
+        //         type: "footer",
+        //       },
+        //     ],
+        //     durations: 950.29827880859,
+        //     image_id: "",
+        //     width: 1224,
+        //   },
+        //   {
+        //     angle: 0,
+        //     page_id: 2,
+        //     content: [
+        //       {
+        //         pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+        //         id: 0,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "This article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE",
+        //       },
+        //       {
+        //         pos: [466, 26, 758, 26, 758, 43, 466, 43],
+        //         id: 1,
+        //         score: 0.99800002574921,
+        //         type: "line",
+        //         text: "Transactions on Visualization and Computer Graphics",
+        //       },
+        //       {
+        //         pos: [88, 105, 592, 105, 592, 124, 88, 124],
+        //         id: 2,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "forts have been paid on the design of sampling strategies, ranging from",
+        //       },
+        //       {
+        //         pos: [88, 125, 592, 125, 592, 144, 88, 144],
+        //         id: 3,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "node-based and edge-based schemes [4,26] to transversal-based and",
+        //       },
+        //       {
+        //         pos: [88, 145, 592, 145, 592, 164, 88, 164],
+        //         id: 4,
+        //         score: 0.98000001907349,
+        //         type: "line",
+        //         text: "semantic-based schemes [4,23,56]. However, such strategies largely",
+        //       },
+        //       {
+        //         pos: [88, 166, 594, 166, 594, 184, 88, 184],
+        //         id: 5,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "focus on sampling efficiency and randomness of sampling results, pay-",
+        //       },
+        //       {
+        //         pos: [88, 186, 594, 186, 594, 204, 88, 204],
+        //         id: 6,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "ing little attention to the preservation of significant contextual struc-",
+        //       },
+        //       {
+        //         pos: [88, 206, 131, 206, 131, 223, 88, 223],
+        //         id: 7,
+        //         score: 0.9990000128746,
+        //         type: "line",
+        //         text: "tures.",
+        //       },
+        //       {
+        //         pos: [107, 224, 596, 224, 596, 248, 107, 248],
+        //         id: 8,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "Contextual structures, formed by nodes and edges with tight rela-",
+        //       },
+        //       {
+        //         pos: [88, 248, 594, 248, 594, 266, 88, 266],
+        //         id: 9,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "tionships, are always of great significance for the exploration and in-",
+        //       },
+        //       {
+        //         pos: [88, 268, 592, 268, 592, 286, 88, 286],
+        //         id: 10,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "terpretation of networks, such as bridging nodes, connected paths and",
+        //       },
+        //       {
+        //         pos: [87, 285, 594, 285, 594, 308, 87, 308],
+        //         id: 11,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "aggregated communities [19,46].For example, it is quite necessary to",
+        //       },
+        //       {
+        //         pos: [88, 308, 592, 306, 592, 325, 88, 327],
+        //         id: 12,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "identify the contextual structures of crowd movement network for the",
+        //       },
+        //       {
+        //         pos: [88, 327, 594, 325, 594, 345, 88, 347],
+        //         id: 13,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "diagnosis and spread prevention of infectious diseases [44]. Howev-",
+        //       },
+        //       {
+        //         pos: [88, 348, 592, 346, 593, 365, 88, 367],
+        //         id: 14,
+        //         score: 0.98500001430511,
+        //         type: "line",
+        //         text: "er, it is a tough task to preserve contextual structures in the sampled",
+        //       },
+        //       {
+        //         pos: [88, 367, 592, 367, 592, 385, 88, 385],
+        //         id: 15,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "network based on traditional sampling strategies, because contextual",
+        //       },
+        //       {
+        //         pos: [88, 387, 594, 387, 594, 405, 88, 405],
+        //         id: 16,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "structures often have three characteristics: concealment in location, ir-",
+        //       },
+        //       {
+        //         pos: [87, 407, 592, 407, 592, 425, 87, 425],
+        //         id: 17,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "regularity in scale, and complexity in structure. For example, nodes",
+        //       },
+        //       {
+        //         pos: [87, 427, 592, 427, 592, 445, 87, 445],
+        //         id: 18,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "with tight relationships (in a community) may be difficult to find in",
+        //       },
+        //       {
+        //         pos: [88, 444, 596, 446, 596, 466, 88, 464],
+        //         id: 19,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "large networks due to their concealed locations, because they are eas-",
+        //       },
+        //       {
+        //         pos: [88, 466, 592, 466, 592, 484, 88, 484],
+        //         id: 20,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "ily laid out far away from each other. Also, contextual structures are",
+        //       },
+        //       {
+        //         pos: [88, 486, 592, 486, 592, 504, 88, 504],
+        //         id: 21,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "immune to scale, that is few nodes and edges would rather present a",
+        //       },
+        //       {
+        //         pos: [88, 506, 594, 506, 594, 524, 88, 524],
+        //         id: 22,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "tough contextual structure (a small complete graph). Thus,it is re-",
+        //       },
+        //       {
+        //         pos: [88, 526, 592, 526, 592, 545, 88, 545],
+        //         id: 23,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "ally hard to give a comprehensive definition of contextual structures",
+        //       },
+        //       {
+        //         pos: [87, 545, 592, 545, 592, 568, 87, 568],
+        //         id: 24,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "because their formations are too complicated to find a regular pattern.",
+        //       },
+        //       {
+        //         pos: [108, 569, 592, 569, 592, 588, 108, 588],
+        //         id: 25,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "As an effective way to represent and identify contextual structures",
+        //       },
+        //       {
+        //         pos: [88, 589, 592, 589, 592, 608, 88, 608],
+        //         id: 26,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "of large networks [5], GRL has been widely applied in a variety of",
+        //       },
+        //       {
+        //         pos: [88, 609, 594, 609, 594, 628, 88, 628],
+        //         id: 27,
+        //         score: 0.98199999332428,
+        //         type: "line",
+        //         text: "research areas, such as graph classification, graph query, graph min-",
+        //       },
+        //       {
+        //         pos: [87, 626, 594, 626, 594, 650, 87, 650],
+        //         id: 28,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "ing,et al [12,33]. It transforms nodes into vectors to quantitate the",
+        //       },
+        //       {
+        //         pos: [88, 648, 594, 648, 594, 667, 88, 667],
+        //         id: 29,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "structural features of networks. Numerous GRL models have been pro-",
+        //       },
+        //       {
+        //         pos: [88, 668, 592, 668, 592, 687, 88, 687],
+        //         id: 30,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "posed to train and represent nodes according to their local contexts in",
+        //       },
+        //       {
+        //         pos: [87, 685, 596, 685, 596, 708, 87, 708],
+        //         id: 31,
+        //         score: 0.98199999332428,
+        //         type: "line",
+        //         text: "the network, such as deepwalk [39],node2vec [11],and struc2vec [42].",
+        //       },
+        //       {
+        //         pos: [88, 708, 592, 708, 592, 727, 88, 727],
+        //         id: 32,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "A family of biased random walks are developed in the course of corpus",
+        //       },
+        //       {
+        //         pos: [88, 729, 592, 729, 592, 747, 88, 747],
+        //         id: 33,
+        //         score: 0.99599999189377,
+        //         type: "line",
+        //         text: "generation allowing an efficient exploration of diverse neighborhoods",
+        //       },
+        //       {
+        //         pos: [87, 746, 594, 746, 594, 769, 87, 769],
+        //         id: 34,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "for given nodes [32]. Thus,network structures are well represented",
+        //       },
+        //       {
+        //         pos: [87, 766, 594, 766, 594, 789, 87, 789],
+        //         id: 35,
+        //         score: 0.97399997711182,
+        //         type: "line",
+        //         text: "in a vectroized space obtained by GRL (e.g. a contextual structure of",
+        //       },
+        //       {
+        //         pos: [87, 786, 596, 786, 596, 809, 87, 809],
+        //         id: 36,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "interest is highlighted as shown in Figure la and Figure 1c). We be-",
+        //       },
+        //       {
+        //         pos: [87, 806, 594, 806, 594, 829, 87, 829],
+        //         id: 37,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "lieve that it would be a feasible way to conduct graph sampling in the",
+        //       },
+        //       {
+        //         pos: [87, 826, 594, 826, 594, 849, 87, 849],
+        //         id: 38,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "vectorized space, and the contextual structures would be preserved as",
+        //       },
+        //       {
+        //         pos: [88, 848, 592, 848, 592, 866, 88, 866],
+        //         id: 39,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "far as possible (e.g. the contextual structure is well preserved in the",
+        //       },
+        //       {
+        //         pos: [87, 866, 475, 866, 475, 889, 87, 889],
+        //         id: 40,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "sampled graph as shown in Figure 1d and Figure 1b).",
+        //       },
+        //       {
+        //         pos: [107, 888, 596, 888, 596, 911, 107, 911],
+        //         id: 41,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "However,there are still severa problems to overcome for the p-",
+        //       },
+        //       {
+        //         pos: [88, 910, 592, 910, 592, 928, 88, 928],
+        //         id: 42,
+        //         score: 0.99699997901917,
+        //         type: "line",
+        //         text: "reservation of contextual structures in the vectorized space obtained",
+        //       },
+        //       {
+        //         pos: [88, 930, 592, 930, 592, 948, 88, 948],
+        //         id: 43,
+        //         score: 0.97600001096725,
+        //         type: "line",
+        //         text: "through GRL.P1: GRL is able to encode the contextual structures",
+        //       },
+        //       {
+        //         pos: [87, 950, 594, 950, 594, 968, 87, 968],
+        //         id: 44,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "with vectorizied representation, but the vectorized space is too compli-",
+        //       },
+        //       {
+        //         pos: [87, 967, 594, 967, 594, 990, 87, 990],
+        //         id: 45,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "cated to gaininsights due to its high dimensions. P2: It is a difficult",
+        //       },
+        //       {
+        //         pos: [88, 990, 592, 990, 592, 1009, 88, 1009],
+        //         id: 46,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "task to define a graph sampling model to preserve contextual structures",
+        //       },
+        //       {
+        //         pos: [88, 1010, 592, 1010, 592, 1029, 88, 1029],
+        //         id: 47,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "captured by GRL,since they are represented with data distributions in",
+        //       },
+        //       {
+        //         pos: [88, 1030, 594, 1030, 594, 1049, 88, 1049],
+        //         id: 48,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "the vectorized space rather than topological relationships in the origi-",
+        //       },
+        //       {
+        //         pos: [88, 1050, 592, 1050, 592, 1069, 88, 1069],
+        //         id: 49,
+        //         score: 0.97899997234344,
+        //         type: "line",
+        //         text: "nal network space. P3: It is also difficult to conduct a unified graph",
+        //       },
+        //       {
+        //         pos: [88, 1070, 592, 1070, 592, 1089, 88, 1089],
+        //         id: 50,
+        //         score: 0.99599999189377,
+        //         type: "line",
+        //         text: "sampling scheme to preserve various kinds of contextual structures in",
+        //       },
+        //       {
+        //         pos: [87, 1087, 594, 1087, 594, 1111, 87, 1111],
+        //         id: 51,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "the vectorized space due to their respective characteristics. P4: It is",
+        //       },
+        //       {
+        //         pos: [87, 1111, 592, 1111, 592, 1129, 87, 1129],
+        //         id: 52,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "another tough task to evaluate the sampled graphs from a variety of",
+        //       },
+        //       {
+        //         pos: [88, 1129, 592, 1129, 592, 1148, 88, 1148],
+        //         id: 53,
+        //         score: 0.99599999189377,
+        //         type: "line",
+        //         text: "perspectives,and further demonstrate that the contextual structures of",
+        //       },
+        //       {
+        //         pos: [88, 1149, 467, 1149, 467, 1168, 88, 1168],
+        //         id: 54,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "significance are well retained in the sampled graphs.",
+        //       },
+        //       {
+        //         pos: [107, 1169, 596, 1169, 596, 1193, 107, 1193],
+        //         id: 55,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "In this paper, we propose a novel graph sampling method to simpli-",
+        //       },
+        //       {
+        //         pos: [87, 1190, 594, 1190, 594, 1213, 87, 1213],
+        //         id: 56,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "fy large graphs, especially with the contextual structures identified and",
+        //       },
+        //       {
+        //         pos: [87, 1210, 594, 1210, 594, 1233, 87, 1233],
+        //         id: 57,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "preserved in the sampled graphs. Firstly, a GRL model is employed to",
+        //       },
+        //       {
+        //         pos: [87, 1232, 592, 1231, 592, 1250, 87, 1251],
+        //         id: 58,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "encode contextual structures and a dimensionality reduction method is",
+        //       },
+        //       {
+        //         pos: [88, 1253, 592, 1251, 592, 1270, 88, 1272],
+        //         id: 59,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "applied to transform the contextual structures into a low-dimensional",
+        //       },
+        //       {
+        //         pos: [88, 1272, 592, 1270, 592, 1290, 88, 1292],
+        //         id: 60,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "vectorized space,where nodes sharing similar contextual features are",
+        //       },
+        //       {
+        //         pos: [88, 1292, 592, 1292, 592, 1310, 88, 1310],
+        //         id: 61,
+        //         score: 0.97600001096725,
+        //         type: "line",
+        //         text: "visually distributed close to each other (P1). Then, we propose a novel",
+        //       },
+        //       {
+        //         pos: [88, 1312, 594, 1312, 594, 1330, 88, 1330],
+        //         id: 62,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "blue noise sampling model to generate a subset of nodes in the vec-",
+        //       },
+        //       {
+        //         pos: [88, 1332, 594, 1332, 594, 1350, 88, 1350],
+        //         id: 63,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "torized space, guaranteeing that nodes with tight relationships are re-",
+        //       },
+        //       {
+        //         pos: [87, 1349, 594, 1349, 594, 1372, 87, 1372],
+        //         id: 64,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "tained and the contextual features are well preserved in the sampled",
+        //       },
+        //       {
+        //         pos: [87, 1369, 594, 1369, 594, 1392, 87, 1392],
+        //         id: 65,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "graph (P2). A set of desired objectives are further integrated into the",
+        //       },
+        //       {
+        //         pos: [87, 1389, 594, 1389, 594, 1412, 87, 1412],
+        //         id: 66,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "sampling model to optimize the sampled graphs, in which topological",
+        //       },
+        //       {
+        //         pos: [87, 1409, 594, 1409, 594, 1432, 87, 1432],
+        //         id: 67,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "features of significance are enhanced such as bridging nodes and graph",
+        //       },
+        //       {
+        //         pos: [88, 1431, 594, 1431, 594, 1449, 88, 1449],
+        //         id: 68,
+        //         score: 0.97799998521805,
+        //         type: "line",
+        //         text: "connection (P3). Also, we utilize a group of metrics to evaluate the va-",
+        //       },
+        //       {
+        //         pos: [88, 1451, 592, 1451, 592, 1470, 88, 1470],
+        //         id: 69,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "lidity of our sampling method in contextual feature preservation from",
+        //       },
+        //       {
+        //         pos: [88, 1471, 592, 1471, 592, 1490, 88, 1490],
+        //         id: 70,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "different perspectives, such as node importance, graph connection and",
+        //       },
+        //       {
+        //         pos: [613, 105, 1120, 105, 1120, 124, 613, 124],
+        //         id: 71,
+        //         score: 0.98199999332428,
+        //         type: "line",
+        //         text: "community changes (P4). At last, a graph sampling framework is im-",
+        //       },
+        //       {
+        //         pos: [614, 125, 1118, 125, 1118, 144, 614, 144],
+        //         id: 72,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "plemented to integrate sampling models, GRL and visual designs of",
+        //       },
+        //       {
+        //         pos: [614, 145, 1117, 145, 1117, 164, 614, 164],
+        //         id: 73,
+        //         score: 0.97799998521805,
+        //         type: "line",
+        //         text: "metrics, and a rich set of interactions are also provided allowing users",
+        //       },
+        //       {
+        //         pos: [614, 166, 1117, 166, 1117, 184, 614, 184],
+        //         id: 74,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "to intuitively evaluate different sampling strategies and easily explore",
+        //       },
+        //       {
+        //         pos: [613, 186, 1120, 186, 1120, 204, 613, 204],
+        //         id: 75,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "structures of interest in large networks. The effectiveness and use-",
+        //       },
+        //       {
+        //         pos: [614, 206, 1117, 206, 1117, 223, 614, 223],
+        //         id: 76,
+        //         score: 0.99500000476837,
+        //         type: "line",
+        //         text: "fulness of our system are further demonstrated with case studies and",
+        //       },
+        //       {
+        //         pos: [614, 224, 1117, 224, 1117, 243, 614, 243],
+        //         id: 77,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "quantitate comparisons based on real-world datasets. In summary, the",
+        //       },
+        //       {
+        //         pos: [613, 244, 871, 244, 871, 261, 613, 261],
+        //         id: 78,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "main contributions of our work are:",
+        //       },
+        //       {
+        //         pos: [639, 286, 1120, 286, 1120, 305, 639, 305],
+        //         id: 79,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "·We utilize a GRL model (node2vec) to quantitate the contextu-",
+        //       },
+        //       {
+        //         pos: [653, 306, 1120, 306, 1120, 325, 653, 325],
+        //         id: 80,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "al features of networks, offering important clues for graph sam-",
+        //       },
+        //       {
+        //         pos: [651, 323, 1118, 323, 1118, 347, 651, 347],
+        //         id: 81,
+        //         score: 0.98500001430511,
+        //         type: "line",
+        //         text: "pling. To the best of our knowledge, it is the first to sample",
+        //       },
+        //       {
+        //         pos: [651, 344, 787, 342, 788, 365, 651, 367],
+        //         id: 82,
+        //         score: 0.99599999189377,
+        //         type: "line",
+        //         text: "graphs with GRL.",
+        //       },
+        //       {
+        //         pos: [640, 381, 1121, 381, 1121, 404, 640, 404],
+        //         id: 83,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "·We design a multi-objective blue noise sampling model to simpli-",
+        //       },
+        //       {
+        //         pos: [651, 401, 1121, 401, 1121, 424, 651, 424],
+        //         id: 84,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "fy large networks, with the contextual structures and their topo-",
+        //       },
+        //       {
+        //         pos: [653, 422, 1029, 422, 1029, 441, 653, 441],
+        //         id: 85,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "logical features well retained in the sampled graphs.",
+        //       },
+        //       {
+        //         pos: [643, 458, 1121, 458, 1121, 481, 643, 481],
+        //         id: 86,
+        //         score: 0.98400002717972,
+        //         type: "line",
+        //         text: "We propose a group of specific metrics enabling users to com-",
+        //       },
+        //       {
+        //         pos: [653, 481, 1117, 481, 1117, 500, 653, 500],
+        //         id: 87,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "pare sampling strategies from different perspectives, and conduct",
+        //       },
+        //       {
+        //         pos: [651, 500, 1118, 500, 1118, 518, 651, 518],
+        //         id: 88,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "case studies with real-world datasets to demonstrate the validity",
+        //       },
+        //       {
+        //         pos: [653, 520, 982, 520, 982, 538, 653, 538],
+        //         id: 89,
+        //         score: 0.99400001764297,
+        //         type: "line",
+        //         text: "of our context-aware graph sampling method.",
+        //       },
+        //       {
+        //         pos: [611, 557, 784, 557, 784, 582, 611, 582],
+        //         id: 90,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "2 RELATED WORK",
+        //       },
+        //       {
+        //         pos: [611, 585, 1118, 586, 1118, 609, 611, 608],
+        //         id: 91,
+        //         score: 0.99699997901917,
+        //         type: "line",
+        //         text: "We classify existing methods into four categories,including large",
+        //       },
+        //       {
+        //         pos: [613, 608, 1117, 608, 1117, 626, 613, 626],
+        //         id: 92,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "graph visualization, graph sampling, metrics for graph evaluation and",
+        //       },
+        //       {
+        //         pos: [613, 628, 831, 628, 831, 647, 613, 647],
+        //         id: 93,
+        //         score: 0.99699997901917,
+        //         type: "line",
+        //         text: "graph representation learning.",
+        //       },
+        //       {
+        //         pos: [611, 661, 886, 661, 886, 685, 611, 685],
+        //         id: 94,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "2.1 Large Graph Visualization",
+        //       },
+        //       {
+        //         pos: [613, 688, 1120, 688, 1120, 712, 613, 712],
+        //         id: 95,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "Graph visualization is widely used for network analysis [5].Node-link",
+        //       },
+        //       {
+        //         pos: [613, 710, 1120, 710, 1120, 729, 613, 729],
+        //         id: 96,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "diagram is a most intuitive layout scheme in which the nodes are rep-",
+        //       },
+        //       {
+        //         pos: [613, 730, 1118, 730, 1118, 749, 613, 749],
+        //         id: 97,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "resented as points and edges are represented as lines. Force-directed",
+        //       },
+        //       {
+        //         pos: [614, 750, 1117, 750, 1117, 769, 614, 769],
+        //         id: 98,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "methods are employed to layout the node-link diagrams by optimizing",
+        //       },
+        //       {
+        //         pos: [613, 770, 1120, 770, 1120, 789, 613, 789],
+        //         id: 99,
+        //         score: 0.98500001430511,
+        //         type: "line",
+        //         text: "graph drawing aesthetics [10,19,41]. With the increasing size of net-",
+        //       },
+        //       {
+        //         pos: [613, 790, 1118, 790, 1118, 809, 613, 809],
+        //         id: 100,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "works, the readability of node-link diagrams largely decreases due to",
+        //       },
+        //       {
+        //         pos: [611, 807, 1120, 807, 1120, 831, 611, 831],
+        //         id: 101,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "visual clutter and scalability issues [9]. Two categories of methods are",
+        //       },
+        //       {
+        //         pos: [613, 831, 1118, 831, 1118, 849, 613, 849],
+        //         id: 102,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "proposed: (1) Graph clustering methods aggregate groups of nodes",
+        //       },
+        //       {
+        //         pos: [613, 851, 1118, 851, 1118, 869, 613, 869],
+        //         id: 103,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "and edges with similar properties to reduce the visual complexity of",
+        //       },
+        //       {
+        //         pos: [611, 868, 1118, 868, 1118, 891, 611, 891],
+        //         id: 104,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "large graphs [7,58]. ASK-GraphView [1] was proposed to organize",
+        //       },
+        //       {
+        //         pos: [611, 888, 1120, 888, 1120, 911, 611, 911],
+        //         id: 105,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "a large graph into hierarchical structures allowing users to aggregate",
+        //       },
+        //       {
+        //         pos: [613, 910, 1120, 910, 1120, 928, 613, 928],
+        //         id: 106,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "nodes to reduce visual clutter. To reduce edge crossings and empha-",
+        //       },
+        //       {
+        //         pos: [613, 930, 1118, 930, 1118, 948, 613, 948],
+        //         id: 107,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "size directional patterns, a set of edge-based clustering methods are",
+        //       },
+        //       {
+        //         pos: [613, 950, 1117, 950, 1117, 968, 613, 968],
+        //         id: 108,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "proposed in which edges with similar spatial distribution features are",
+        //       },
+        //       {
+        //         pos: [614, 970, 1118, 970, 1118, 988, 614, 988],
+        //         id: 109,
+        //         score: 0.97899997234344,
+        //         type: "line",
+        //         text: "bundled together [6,8,15,16]. (2) Graph filtering methods extract",
+        //       },
+        //       {
+        //         pos: [611, 987, 1120, 987, 1120, 1010, 611, 1010],
+        //         id: 110,
+        //         score: 0.98100000619888,
+        //         type: "line",
+        //         text: "subgraphs of interest from original large graphs [20]. Hennessey et",
+        //       },
+        //       {
+        //         pos: [613, 1009, 1120, 1009, 1120, 1027, 613, 1027],
+        //         id: 111,
+        //         score: 0.97899997234344,
+        //         type: "line",
+        //         text: "al. [14] took a set of graph metrics into account to obtain representa-",
+        //       },
+        //       {
+        //         pos: [613, 1029, 1118, 1029, 1118, 1047, 613, 1047],
+        //         id: 112,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "tive skeletons and simplify the visualization of large graphs, such as",
+        //       },
+        //       {
+        //         pos: [613, 1049, 1118, 1049, 1118, 1067, 613, 1067],
+        //         id: 113,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "shortest path and distance to the central node. Yoghourdjian et al. [51]",
+        //       },
+        //       {
+        //         pos: [613, 1069, 1120, 1067, 1120, 1087, 613, 1089],
+        //         id: 114,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "proposed Graph Thumbnails to enhance the readability of large graph-",
+        //       },
+        //       {
+        //         pos: [613, 1089, 1118, 1089, 1118, 1108, 613, 1108],
+        //         id: 115,
+        //         score: 0.99099999666214,
+        //         type: "line",
+        //         text: "s with high-level structures described with small icon-like glyphs.It",
+        //       },
+        //       {
+        //         pos: [613, 1109, 1117, 1109, 1117, 1128, 613, 1128],
+        //         id: 116,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "can be seen that the underlying topological structures of networks are",
+        //       },
+        //       {
+        //         pos: [613, 1129, 1117, 1129, 1117, 1148, 613, 1148],
+        //         id: 117,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "changed with clustering methods,which are still not preserved in the",
+        //       },
+        //       {
+        //         pos: [613, 1149, 1117, 1149, 1117, 1168, 613, 1168],
+        //         id: 118,
+        //         score: 0.98699998855591,
+        //         type: "line",
+        //         text: "simplified graphs with filteringmethods. It might generate a great deal",
+        //       },
+        //       {
+        //         pos: [611, 1166, 1049, 1166, 1049, 1190, 611, 1190],
+        //         id: 119,
+        //         score: 0.98900002241135,
+        //         type: "line",
+        //         text: "of ambiguity that misleads the exploration of networks [49].",
+        //       },
+        //       {
+        //         pos: [613, 1202, 804, 1202, 804, 1225, 613, 1225],
+        //         id: 120,
+        //         score: 0.98500001430511,
+        //         type: "line",
+        //         text: "2.2 Graph Sampling",
+        //       },
+        //       {
+        //         pos: [613, 1230, 1121, 1230, 1121, 1253, 613, 1253],
+        //         id: 121,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "Graph sampling is another kind of filtering method, which also gen-",
+        //       },
+        //       {
+        //         pos: [613, 1253, 1120, 1253, 1120, 1272, 613, 1272],
+        //         id: 122,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "erates a subset of nodes or edges to simplify the original networks.",
+        //       },
+        //       {
+        //         pos: [614, 1272, 1117, 1272, 1117, 1290, 614, 1290],
+        //         id: 123,
+        //         score: 0.98600000143051,
+        //         type: "line",
+        //         text: "Three categories are covered: (1) Node-based Sampling. Random",
+        //       },
+        //       {
+        //         pos: [614, 1292, 1118, 1292, 1118, 1310, 614, 1310],
+        //         id: 124,
+        //         score: 0.97500002384186,
+        //         type: "line",
+        //         text: "Node Sampling (RNS) [26] is commonly used to randomly generate",
+        //       },
+        //       {
+        //         pos: [613, 1312, 1120, 1312, 1120, 1330, 613, 1330],
+        //         id: 125,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "nodes from the original network. A set of graph properties are con-",
+        //       },
+        //       {
+        //         pos: [613, 1332, 1118, 1332, 1118, 1350, 613, 1350],
+        //         id: 126,
+        //         score: 0.99000000953674,
+        //         type: "line",
+        //         text: "sidered to improve the results of node-based sampling. For example,",
+        //       },
+        //       {
+        //         pos: [614, 1350, 1118, 1350, 1118, 1369, 614, 1369],
+        //         id: 127,
+        //         score: 0.98000001907349,
+        //         type: "line",
+        //         text: "Random PageRank Node (RPN) defines the probability of nodes to be",
+        //       },
+        //       {
+        //         pos: [613, 1372, 1117, 1370, 1117, 1389, 613, 1391],
+        //         id: 128,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "sampled as proportional to their PageRank weights [26,36]. Random",
+        //       },
+        //       {
+        //         pos: [614, 1391, 1120, 1391, 1120, 1409, 614, 1409],
+        //         id: 129,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "Degree Node (RDN) increases the probability of nodes with higher de-",
+        //       },
+        //       {
+        //         pos: [614, 1410, 1117, 1411, 1117, 1431, 614, 1429],
+        //         id: 130,
+        //         score: 0.97399997711182,
+        //         type: "line",
+        //         text: "gree values to be sampled [4]. Hu et al. [18] designed a graph sampling",
+        //       },
+        //       {
+        //         pos: [614, 1431, 1117, 1431, 1117, 1449, 614, 1449],
+        //         id: 131,
+        //         score: 0.99299997091293,
+        //         type: "line",
+        //         text: "method based on spectral sparsification, to reduce the number of edges",
+        //       },
+        //       {
+        //         pos: [613, 1451, 1117, 1451, 1117, 1470, 613, 1470],
+        //         id: 132,
+        //         score: 0.98100000619888,
+        //         type: "line",
+        //         text: "and retain structural properties of original graphs. (2) Edge-based",
+        //       },
+        //       {
+        //         pos: [613, 1471, 1118, 1471, 1118, 1490, 613, 1490],
+        //         id: 133,
+        //         score: 0.98299998044968,
+        //         type: "line",
+        //         text: "Sampling. Random Edge Sampling (RES) extracts a random subset of",
+        //       },
+        //       {
+        //         pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+        //         id: 134,
+        //         score: 0.99199998378754,
+        //         type: "line",
+        //         text: "1077-2626 (c) 2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+        //       },
+        //       {
+        //         pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+        //         id: 135,
+        //         score: 0.9879999756813,
+        //         type: "line",
+        //         text: "Authorized licensed use limited to: Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+        //       },
+        //     ],
+        //     status: "Success",
+        //     height: 1584,
+        //     structured: [
+        //       {
+        //         pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+        //         blocks: [
+        //           {
+        //             content: [0, 1],
+        //             pos: [39, 6, 1185, 6, 1185, 25, 39, 25],
+        //             type: "textblock",
+        //           },
+        //         ],
+        //         type: "header",
+        //       },
+        //       {
+        //         content: [2, 3, 4, 5, 6, 7],
+        //         pos: [88, 105, 594, 105, 594, 223, 88, 223],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [
+        //           8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+        //           24,
+        //         ],
+        //         pos: [87, 224, 596, 224, 596, 568, 87, 568],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [
+        //           25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+        //           40,
+        //         ],
+        //         pos: [87, 569, 596, 569, 596, 889, 87, 889],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [
+        //           41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+        //         ],
+        //         pos: [87, 888, 596, 888, 596, 1168, 87, 1168],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [
+        //           55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+        //           70,
+        //         ],
+        //         pos: [87, 1169, 596, 1169, 596, 1490, 87, 1490],
+        //         continue: true,
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [71, 72, 73, 74, 75, 76, 77, 78],
+        //         pos: [613, 105, 1120, 105, 1120, 261, 613, 261],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [79, 80, 81, 82],
+        //         pos: [639, 286, 1120, 286, 1120, 367, 639, 367],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [83, 84, 85],
+        //         pos: [640, 381, 1121, 381, 1121, 441, 640, 441],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [86, 87, 88, 89],
+        //         pos: [643, 458, 1121, 458, 1121, 538, 643, 538],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [90],
+        //         pos: [611, 557, 784, 557, 784, 582, 611, 582],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [91, 92, 93],
+        //         pos: [611, 585, 1118, 585, 1118, 647, 611, 647],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [94],
+        //         pos: [611, 661, 886, 661, 886, 685, 611, 685],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [
+        //           95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+        //           108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+        //         ],
+        //         pos: [611, 688, 1120, 688, 1120, 1190, 611, 1190],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         content: [120],
+        //         pos: [613, 1202, 804, 1202, 804, 1225, 613, 1225],
+        //         type: "textblock",
+        //         sub_type: "list",
+        //       },
+        //       {
+        //         content: [
+        //           121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,
+        //           133,
+        //         ],
+        //         pos: [613, 1230, 1121, 1230, 1121, 1490, 613, 1490],
+        //         type: "textblock",
+        //       },
+        //       {
+        //         pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+        //         blocks: [
+        //           {
+        //             content: [134],
+        //             pos: [50, 1542, 1174, 1542, 1174, 1559, 50, 1559],
+        //             type: "textblock",
+        //           },
+        //         ],
+        //         type: "footer",
+        //       },
+        //       {
+        //         pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+        //         blocks: [
+        //           {
+        //             content: [135],
+        //             pos: [155, 1558, 1064, 1558, 1064, 1575, 155, 1575],
+        //             type: "textblock",
+        //           },
+        //         ],
+        //         type: "footer",
+        //       },
+        //     ],
+        //     durations: 1213.7530517578,
+        //     image_id: "",
+        //     width: 1224,
+        //   },
+        // ],
+        valid_page_number: 2,
+        total_page_number: 2,
+        total_count: 2,
+        detail: [
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 0,
+            page_id: 1,
+            content: 1,
+            position: [39, 6, 1183, 6, 1183, 24, 39, 24],
+            outline_level: -1,
+            text: "This article has been accepted for publication in a future issue of this journal, but has not been fully edited. Content may chane prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440,IEEE",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 2,
+            page_id: 1,
+            content: 0,
+            position: [466, 26, 757, 26, 757, 42, 466, 42],
+            outline_level: -1,
+            text: "Transactions on Visualization and Computer Graphics",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 3,
+            page_id: 1,
+            content: 0,
+            position: [208, 113, 1034, 113, 1034, 155, 208, 155],
+            outline_level: 0,
+            text: "Context-aware Sampling of Large Networks via Graph",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 4,
+            page_id: 1,
+            content: 0,
+            position: [430, 159, 812, 159, 812, 199, 430, 199],
+            outline_level: -1,
+            text: "Representation Learning",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 5,
+            page_id: 1,
+            content: 0,
+            position: [315, 222, 926, 222, 926, 248, 315, 248],
+            outline_level: -1,
+            text: "Zhiguang Zhou, Chen Shi, Xilong Shen, Lihong Cai, Haoxuan Wang,",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 6,
+            page_id: 1,
+            content: 0,
+            position: [459, 248, 783, 248, 783, 273, 459, 273],
+            outline_level: -1,
+            text: "Yuhua Liu,Ying Zhao and Wei Chen",
+          },
+          {
+            paragraph_id: 7,
+            page_id: 1,
+            content: 0,
+            outline_level: -1,
+            text: "a. C. b. d. e. g. f. h. ",
+            type: "image",
+            position: [168, 288, 1077, 288, 1077, 710, 168, 710],
+            image_url:
+              "https://web-api.textin.com/ocr_image/external/3be73b381c700b7c.jpg",
+            sub_type: "normal",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 8,
+            page_id: 1,
+            content: 0,
+            position: [153, 730, 1088, 730, 1088, 841, 153, 841],
+            outline_level: -1,
+            text: "Fig. 1. A case for a Webbase data (16k nodes, 26k edges) based on our context-aware sampling method. (a) presents the original graph with a node-link diagram. (c) presents scatterplots obtained through GRL (node2vec) and dimensionality reduction (t-SNE). (e)highlights a local structure of interest in (a), and the circled nodes are of significance. (g) presents an aggregated layout of (a), in which each supernode represents a community feature. Our sampling method is conducted on (c), and the sampled scatterplots are presented in (d) with a contextual structure of interest highlighted by a red circle. (b) presents the corresponding sampled graph, with the significant features retained such as bridging nodes highlighted in (f) and graph connections presented in (h).",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 9,
+            page_id: 1,
+            content: 0,
+            position: [153, 857, 1088, 857, 1088, 1065, 153, 1065],
+            outline_level: -1,
+            text: "Abstract-Numerous sampling strategies have been proposed to simplify large-scale networks for highly readable visualizations. It is of great challenge to preserve contextual structures formed by nodes and edges with tight relationships in a sampled graph, because they are easily overlooked during the process of sampling due to their irregular distribution and immunity to scale. In this paper,a new graph sampling method is proposed oriented to the preservation of contextual structures. We first utilize a graph representation learning (GRL) model to transform nodes into vectors so that the contextual structures in a network can be effectively extracted and organized. Then, we propose a multi-objective blue noise sampling model to select a subset of nodes in the vectorized space to preserve contextual structures with the retention of relative data and cluster densities in addition to those features of significance,such as bridging nodes and graph connections. We also design a set of visual interfaces enabling users to interactively conduct context-aware sampling, visually compare results with various sampling strategies, and deeply explore large networks. Case studies and quantitative comparisons based on real-world datasets have demonstrated the effectiveness of our method in the abstraction and exploration of large networks.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 10,
+            page_id: 1,
+            content: 0,
+            position: [153, 1072, 879, 1072, 879, 1094, 153, 1094],
+            outline_level: -1,
+            text: "Index Terms-Graph sampling, Graph representation learning, Blue noise sampling, Graph evaluation",
+          },
+          {
+            paragraph_id: 11,
+            page_id: 1,
+            content: 0,
+            outline_level: -1,
+            text: " ",
+            type: "image",
+            position: [404, 1110, 834, 1110, 834, 1132, 404, 1132],
+            image_url:
+              "https://web-api.textin.com/ocr_image/external/62552323a502286a.jpg",
+            sub_type: "normal",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 12,
+            page_id: 1,
+            content: 0,
+            position: [106, 1159, 259, 1159, 259, 1181, 106, 1181],
+            outline_level: 1,
+            text: "1 INTRODUCTION",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 13,
+            page_id: 1,
+            content: 0,
+            position: [111, 1230, 601, 1230, 601, 1305, 111, 1305],
+            outline_level: -1,
+            text: "·Zhiguang Zhou, Chen Shi,Xilong Shen,Lihong Cai,Haoxuan Wang and Yuhua Liu are with School of Information,Zhejiang University of Finance and Economics. E-mail: {zhgzhou1983, shichen, 180110910420,cailihong,wanghaoxuan,liuyuhua}@zufe.edu.cn.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 14,
+            page_id: 1,
+            content: 0,
+            position: [111, 1310, 608, 1310, 608, 1325, 111, 1325],
+            outline_level: -1,
+            text: "·Ying Zhao is with Central South University. E-mail:zhaoying@csu.edu.cn.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 15,
+            page_id: 1,
+            content: 0,
+            position: [111, 1330, 561, 1330, 561, 1365, 111, 1365],
+            outline_level: -1,
+            text: "·Wei Chen is with State Key Lab of CAD & CG, Zhejiang University.E-mail:chenwei@cad.zju.edu.cn.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 19,
+            page_id: 1,
+            content: 0,
+            position: [113, 1370, 464, 1370, 464, 1387, 113, 1387],
+            outline_level: -1,
+            text: "·Ying Zhao and Wei Chen are corresponding authors.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 20,
+            page_id: 1,
+            content: 0,
+            position: [106, 1396, 608, 1396, 608, 1470, 106, 1470],
+            outline_level: -1,
+            text: "Manuscript received xx xxx. 201x; accepted xx xxx. 201x.Date of Publication xx xxx.201x;date of current version xx xxx. 201x. For information on obtaining reprints ofthis article, please send e-mail to: reprints@ieee.org.Digital Object Identifier: xx.xxxx/TVCG.201x.xxxxxxxx",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 21,
+            page_id: 1,
+            content: 0,
+            position: [632, 1192, 1136, 1192, 1136, 1407, 632, 1407],
+            outline_level: -1,
+            text: "As a ubiquitous data structure, network is always employed to encode relationships among entities in a variety of application areas,such as social relationships between people and financial transactions between companies [5,57]. Graph visualization offers an interactive and ex-ploratory means allowing users to gain structural insights [2] and sense implicit contextual features of networks. However, with the increase of data sizes, the visual exploration and analysis of networks are se-riously influenced,because nodes and edges overlap with each other and generate much visual clutter in large graph visualizations, making it a complicated and time-consuming task to visually explore structural features of significance [50].",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 22,
+            page_id: 1,
+            content: 0,
+            position: [632, 1410, 1136, 1410, 1136, 1487, 632, 1487],
+            outline_level: -1,
+            text: "Graph sampling is commonly used to reduce thevisual clutter and address scalability issues in the visual exploration of large networks,by means of which a subset of nodes and edges are selected on behalf of the original large graph. Over the past few decades, numerous ef-",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 25,
+            page_id: 1,
+            content: 0,
+            position: [155, 1558, 1063, 1558, 1063, 1574, 155, 1574],
+            outline_level: -1,
+            text: "Authorized licensed use limited to:Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 24,
+            page_id: 1,
+            content: 1,
+            position: [51, 1543, 1172, 1543, 1172, 1558, 51, 1558],
+            outline_level: -1,
+            text: "1077-2626(c)2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 0,
+            page_id: 2,
+            content: 1,
+            position: [40, 16, 1184, 16, 1184, 42, 40, 42],
+            outline_level: -1,
+            text: "This article has been accepted for publication in a future issue of tis journal, but has not been fully edited. Content may change prior to final publication. Citation information: DOI 10.1109/TVCG.2020.3030440, IEEE Transactions on Visualization and Computer Graphics",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 3,
+            page_id: 2,
+            content: 0,
+            position: [89, 106, 592, 106, 592, 222, 89, 222],
+            outline_level: -1,
+            text: "forts have been paid on the design of sampling strategies, ranging from node-based and edge-based schemes [4,26] to transversal-based and semantic-based schemes [4,23,56]. However, such strategies largely focus on sampling efficiency and randomness of sampling results, pay-ing little attention to the preservation of significant contextual struc-tures.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 4,
+            page_id: 2,
+            content: 0,
+            position: [87, 224, 594, 224, 594, 567, 87, 567],
+            outline_level: -1,
+            text: "Contextual structures, formed by nodes and edges with tight rela-tionships, are always of great significance for the exploration and in-terpretation of networks, such as bridging nodes, connected paths and aggregated communities [19,46].For example, it is quite necessary to identify the contextual structures of crowd movement network for the diagnosis and spread prevention of infectious diseases [44]. Howev-er, it is a tough task to preserve contextual structures in the sampled network based on traditional sampling strategies, because contextual structures often have three characteristics: concealment in location, ir-regularity in scale, and complexity in structure. For example, nodes with tight relationships (in a community) may be difficult to find in large networks due to their concealed locations, because they are eas-ily laid out far away from each other. Also, contextual structures are immune to scale, that is few nodes and edges would rather present a tough contextual structure (a small complete graph). Thus,it is re-ally hard to give a comprehensive definition of contextual structures because their formations are too complicated to find a regular pattern.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 5,
+            page_id: 2,
+            content: 0,
+            position: [87, 569, 594, 569, 594, 888, 87, 888],
+            outline_level: -1,
+            text: "As an effective way to represent and identify contextual structures of large networks [5], GRL has been widely applied in a variety of research areas, such as graph classification, graph query, graph min-ing,et al [12,33]. It transforms nodes into vectors to quantitate the structural features of networks. Numerous GRL models have been pro-posed to train and represent nodes according to their local contexts in the network, such as deepwalk [39],node2vec [11],and struc2vec [42].A family of biased random walks are developed in the course of corpus generation allowing an efficient exploration of diverse neighborhoods for given nodes [32]. Thus,network structures are well represented in a vectroized space obtained by GRL (e.g. a contextual structure of interest is highlighted as shown in Figure la and Figure 1c). We be-lieve that it would be a feasible way to conduct graph sampling in the vectorized space, and the contextual structures would be preserved as far as possible (e.g. the contextual structure is well preserved in the sampled graph as shown in Figure 1d and Figure 1b).",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 6,
+            page_id: 2,
+            content: 0,
+            position: [87, 888, 594, 888, 594, 1166, 87, 1166],
+            outline_level: -1,
+            text: "However,there are still severa problems to overcome for the p-reservation of contextual structures in the vectorized space obtained through GRL.P1: GRL is able to encode the contextual structures with vectorizied representation, but the vectorized space is too compli-cated to gaininsights due to its high dimensions. P2: It is a difficult task to define a graph sampling model to preserve contextual structures captured by GRL,since they are represented with data distributions in the vectorized space rather than topological relationships in the origi-nal network space. P3: It is also difficult to conduct a unified graph sampling scheme to preserve various kinds of contextual structures in the vectorized space due to their respective characteristics. P4: It is another tough task to evaluate the sampled graphs from a variety of perspectives,and further demonstrate that the contextual structures of significance are well retained in the sampled graphs.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 7,
+            page_id: 2,
+            content: 0,
+            position: [87, 1170, 594, 1170, 594, 1488, 87, 1488],
+            outline_level: -1,
+            text: "In this paper, we propose a novel graph sampling method to simpli-fy large graphs, especially with the contextual structures identified and preserved in the sampled graphs. Firstly, a GRL model is employed to encode contextual structures and a dimensionality reduction method is applied to transform the contextual structures into a low-dimensional vectorized space,where nodes sharing similar contextual features are visually distributed close to each other (P1). Then, we propose a novel blue noise sampling model to generate a subset of nodes in the vec-torized space, guaranteeing that nodes with tight relationships are re-tained and the contextual features are well preserved in the sampled graph (P2). A set of desired objectives are further integrated into the sampling model to optimize the sampled graphs, in which topological features of significance are enhanced such as bridging nodes and graph connection (P3). Also, we utilize a group of metrics to evaluate the va-lidity of our sampling method in contextual feature preservation from different perspectives, such as node importance, graph connection and",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 8,
+            page_id: 2,
+            content: 0,
+            position: [614, 106, 1119, 106, 1119, 259, 614, 259],
+            outline_level: -1,
+            text: "community changes (P4). At last, a graph sampling framework is im-plemented to integrate sampling models, GRL and visual designs of metrics, and a rich set of interactions are also provided allowing users to intuitively evaluate different sampling strategies and easily explore structures of interest in large networks. The effectiveness and use-fulness of our system are further demonstrated with case studies and quantitate comparisons based on real-world datasets. In summary, the main contributions of our work are:",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 9,
+            page_id: 2,
+            content: 0,
+            position: [639, 287, 1119, 287, 1119, 365, 639, 365],
+            outline_level: -1,
+            text: "·We utilize a GRL model (node2vec) to quantitate the contextu-al features of networks, offering important clues for graph sam-pling. To the best of our knowledge, it is the first to sample graphs with GRL.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 10,
+            page_id: 2,
+            content: 0,
+            position: [641, 381, 1119, 381, 1119, 439, 641, 439],
+            outline_level: -1,
+            text: "·We design a multi-objective blue noise sampling model to simpli-fy large networks, with the contextual structures and their topo-logical features well retained in the sampled graphs.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 11,
+            page_id: 2,
+            content: 0,
+            position: [643, 459, 1119, 459, 1119, 537, 643, 537],
+            outline_level: -1,
+            text: "We propose a group of specific metrics enabling users to com-pare sampling strategies from different perspectives, and conduct case studies with real-world datasets to demonstrate the validity of our context-aware graph sampling method.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 12,
+            page_id: 2,
+            content: 0,
+            position: [612, 557, 782, 557, 782, 581, 612, 581],
+            outline_level: 1,
+            text: "2 RELATED WORK",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 16,
+            page_id: 2,
+            content: 0,
+            position: [612, 586, 1117, 586, 1117, 645, 612, 645],
+            outline_level: -1,
+            text: "We classify existing methods into four categories,including large graph visualization, graph sampling, metrics for graph evaluation and graph representation learning.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 17,
+            page_id: 2,
+            content: 0,
+            position: [612, 661, 884, 661, 884, 684, 612, 684],
+            outline_level: 2,
+            text: "2.1 Large Graph Visualization",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 18,
+            page_id: 2,
+            content: 0,
+            position: [612, 688, 1119, 688, 1119, 1188, 612, 1188],
+            outline_level: -1,
+            text: "Graph visualization is widely used for network analysis [5].Node-link diagram is a most intuitive layout scheme in which the nodes are rep-resented as points and edges are represented as lines. Force-directed methods are employed to layout the node-link diagrams by optimizing graph drawing aesthetics [10,19,41]. With the increasing size of net-works, the readability of node-link diagrams largely decreases due to visual clutter and scalability issues [9]. Two categories of methods are proposed: (1) Graph clustering methods aggregate groups of nodes and edges with similar properties to reduce the visual complexity of large graphs [7,58]. ASK-GraphView [1] was proposed to organize a large graph into hierarchical structures allowing users to aggregate nodes to reduce visual clutter. To reduce edge crossings and empha-size directional patterns, a set of edge-based clustering methods are proposed in which edges with similar spatial distribution features are bundled together [6,8,15,16]. (2) Graph filtering methods extract subgraphs of interest from original large graphs [20]. Hennessey et al. [14] took a set of graph metrics into account to obtain representa-tive skeletons and simplify the visualization of large graphs, such as shortest path and distance to the central node. Yoghourdjian et al. [51]proposed Graph Thumbnails to enhance the readability of large graph-s with high-level structures described with small icon-like glyphs.It can be seen that the underlying topological structures of networks are changed with clustering methods,which are still not preserved in the simplified graphs with filteringmethods. It might generate a great deal of ambiguity that misleads the exploration of networks [49].",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 19,
+            page_id: 2,
+            content: 0,
+            position: [614, 1202, 802, 1202, 802, 1223, 614, 1223],
+            outline_level: 2,
+            text: "2.2 Graph Sampling",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 20,
+            page_id: 2,
+            content: 0,
+            position: [614, 1231, 1119, 1231, 1119, 1488, 614, 1488],
+            outline_level: -1,
+            text: "Graph sampling is another kind of filtering method, which also gen-erates a subset of nodes or edges to simplify the original networks.Three categories are covered: (1) Node-based Sampling. Random Node Sampling (RNS) [26] is commonly used to randomly generate nodes from the original network. A set of graph properties are con-sidered to improve the results of node-based sampling. For example,Random PageRank Node (RPN) defines the probability of nodes to be sampled as proportional to their PageRank weights [26,36]. Random Degree Node (RDN) increases the probability of nodes with higher de-gree values to be sampled [4]. Hu et al. [18] designed a graph sampling method based on spectral sparsification, to reduce the number of edges and retain structural properties of original graphs. (2) Edge-based Sampling. Random Edge Sampling (RES) extracts a random subset of",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 21,
+            page_id: 2,
+            content: 1,
+            position: [51, 1543, 1172, 1543, 1172, 1558, 51, 1558],
+            outline_level: -1,
+            text: "1077-2626 (c) 2020 IEEE.Personal use is permitted,but republication/redistribution requires IEEE permission.See http://www.ieee.org/publications_standards/publications/rights/index.html for more information.",
+          },
+          {
+            type: "paragraph",
+            tags: [],
+            paragraph_id: 23,
+            page_id: 2,
+            content: 1,
+            position: [155, 1558, 1063, 1558, 1063, 1574, 155, 1574],
+            outline_level: -1,
+            text: "Authorized licensed use limited to: Carleton University. Downloaded on November 01,2020 at 18:44:07 UTC from IEEE Xplore. Restrictions apply.",
+          },
+        ],
+        metrics: [
+          {
+            angle: 0,
+            status: "Success",
+            dpi: 144,
+            image_id: "",
+            page_id: 1,
+            duration: 973.52874755859,
+            page_image_width: 1224,
+            page_image_height: 1584,
+          },
+          {
+            angle: 0,
+            status: "Success",
+            dpi: 144,
+            image_id: "",
+            page_id: 2,
+            duration: 1236.9835205078,
+            page_image_width: 1224,
+            page_image_height: 1584,
+          },
+        ],
+        dpi: 144,
+      },
+    },
+  });
 }

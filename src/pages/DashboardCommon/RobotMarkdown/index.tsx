@@ -1,12 +1,12 @@
-import { mockRecognize } from "@/mock/recongnize";
 import type { ConnectState, IRobotModelState } from "@/models/connect";
+import { getPaper } from "@/services/paper";
 import { robotRecognize, robotRecognizeHistory } from "@/services/robot";
 import { useMount } from "ahooks";
 import { message } from "antd";
 import { parse } from "querystring";
 import type { FC } from "react";
 import { useEffect, useState } from "react";
-import { connect } from "umi";
+import { connect, useLocation } from "umi";
 import { RobotLayout } from "../components";
 import LeftView from "../RobotStruct/containers/LeftView/Index";
 import MainView from "../RobotStruct/containers/MainView/Index";
@@ -37,6 +37,7 @@ const MarkdownPage: FC<PageProps> = (props) => {
   const {
     currentFile,
     setCurrentFile,
+    setCurrentPaperId,
     setResultJson,
     resultJson,
     markdownMode,
@@ -46,24 +47,28 @@ const MarkdownPage: FC<PageProps> = (props) => {
     saveResultJson,
   } = storeContainer.useContainer();
 
-  // const { formatList } = formatListContainer.useContainer();
+  const location = useLocation();
+  const search = location.search;
+  const params = new URLSearchParams(search);
+  const paper_id = params.get("paper_id");
 
   useMount(() => {
-    // 手动请求paper，初始化
-    mockRecognize().then(async (res) => {
-      console.log("res", res);
-
-      const { pdf_url: pdfUrl } = res.data;
-      console.log("pdfUrl", pdfUrl);
-
-      // 把pdfUrl的pdf地址转为File对象
-      const file = await convertPdfUrlToFile(pdfUrl);
-      console.log("file", file);
-
-      // 这里设置了当前文件，useFormatList中formatList会自动请求数据
-      setFileList([file]);
-      setResultJson(res.data.result);
-    });
+    if (paper_id) {
+      setCurrentPaperId(paper_id || "");
+      // 手动请求paper，初始化
+      getPaper({
+        paper_id: paper_id,
+      }).then(async (res) => {
+        console.log("res", res);
+        const { file_path: pdfUrl, file_title: pdfName } = res;
+        console.log("pdfUrl", pdfUrl);
+        // 把pdfUrl的pdf地址转为File对象
+        const file = await convertPdfUrlToFile(pdfUrl, pdfName);
+        console.log("file", file);
+        // 这里设置了当前文件，useFormatList中formatList会自动请求数据
+        setFileList([file]);
+      });
+    }
   });
 
   useEffect(() => {
@@ -99,6 +104,7 @@ const MarkdownPage: FC<PageProps> = (props) => {
 
   // 单击左侧样本的回调
   const onFileClick = (current: Partial<IFileItem>) => {
+    // console.log("onFileClick", current);
     const { isExample } = current;
 
     // 清空之前识别结果
