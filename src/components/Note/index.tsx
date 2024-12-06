@@ -36,6 +36,7 @@ export default function Note() {
   }, [curUid]);
 
   useMemo(() => {
+    if (!currentPaperId) return;
     getNotes({ paper_id: currentPaperId }).then((res) => {
       // console.log("getNotes", res);
       const notes = res.notes.length ? res.notes : [{ ...defaultNode }];

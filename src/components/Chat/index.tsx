@@ -4,12 +4,15 @@ import { useTheme } from 'antd-style';
 import { useRef } from 'react';
 import { Dropdown,MenuProps,Space} from 'antd';
 import { useLocation } from 'react-router-dom';
+import { storeContainer } from '@/pages/DashboardCommon/RobotStruct/store';
 interface menuType{
   key:string,
   label:string
 }
 
 const ChatComponent = () => {
+  const { currentFile } = storeContainer.useContainer();
+  const pdfName = currentFile?.name;
   const theme = useTheme();
   // const [items,setItems] = useState<MenuProps['items']>([])
   //ref获取
@@ -152,6 +155,7 @@ const ChatComponent = () => {
 
   return (
     <ProChat
+      helloMessage={`哈喽，对于【${pdfName}】的提问，我可以为你提供一些帮助`}
       style={{ height: "100%", width: "100%",paddingBottom:"10px",background: theme.colorBgLayout }}
       request={handleStream}
       chatRef={proChatRef}
