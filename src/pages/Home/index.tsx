@@ -26,8 +26,8 @@ function getItem(
 
 const items: MenuItem[] = [
   getItem("阅读", "read", <PieChartOutlined />),
-  getItem("设置", "setting", <UserOutlined />),
   getItem("笔记", "note", <DesktopOutlined />),
+  getItem("设置", "setting", <UserOutlined />),
 ];
 
 const Home: React.FC = () => {
