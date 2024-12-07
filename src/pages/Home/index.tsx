@@ -2,7 +2,7 @@ import PaperList from "@/components/PaperList";
 import PaperUpload from "@/components/PaperUpload";
 import Setting from "@/components/Setting";
 import NoteList from "@/components/NoteList";
-import { DesktopOutlined, PieChartOutlined } from "@ant-design/icons";
+import { DesktopOutlined, PieChartOutlined, UserOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { Layout, Menu, theme } from "antd";
 import React, { useState } from "react";
@@ -26,7 +26,7 @@ function getItem(
 
 const items: MenuItem[] = [
   getItem("阅读", "read", <PieChartOutlined />),
-  getItem("设置", "setting", <DesktopOutlined />),
+  getItem("设置", "setting", <UserOutlined />),
   getItem("笔记", "note", <DesktopOutlined />),
 ];
 
