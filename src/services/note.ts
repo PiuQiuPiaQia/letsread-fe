@@ -19,6 +19,13 @@ export async function saveNotes(data: any) {
     lrToken: true,
   });
 }
+export async function getAllNotes() {
+  return request<IResponse>(`/notes/listByUser`, {
+    method: "GET",
+    prefix: getLRPrefix(),
+    lrToken: true,
+  });
+}
 
 // 1. 查看论文的所有笔记-GET-notes/list
 // http://127.0.0.1:8000/notes/list?paper_id=1

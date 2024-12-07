@@ -1,6 +1,7 @@
 import PaperList from "@/components/PaperList";
 import PaperUpload from "@/components/PaperUpload";
 import Setting from "@/components/Setting";
+import NoteList from "@/components/NoteList";
 import { DesktopOutlined, PieChartOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { Layout, Menu, theme } from "antd";
@@ -26,6 +27,7 @@ function getItem(
 const items: MenuItem[] = [
   getItem("阅读", "read", <PieChartOutlined />),
   getItem("设置", "setting", <DesktopOutlined />),
+  getItem("笔记", "note", <DesktopOutlined />),
 ];
 
 const Home: React.FC = () => {
@@ -78,7 +80,9 @@ const Home: React.FC = () => {
             </>
           ) : selectKey === "setting" ? (
             <Setting />
-          ) : null}
+          ) : selectKey === "note" ? (
+            <NoteList />
+          ):null}
         </Content>
       </Layout>
     </Layout>
