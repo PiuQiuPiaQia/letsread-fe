@@ -14,6 +14,11 @@ const NoteList: React.FC = () => {
   useMount(() => {
     getNoteList();
   });
+  
+  function stripHtmlTags(htmlString: string): string {
+    return htmlString.replace(/<[^>]*>?/gm, '');
+  }
+
   const getNoteList = async () => {
     setLoading(true);
     getAllNotes().then((res) => {
@@ -28,6 +33,7 @@ const NoteList: React.FC = () => {
             notes: [] as Array<{ note_id: string; note: string }>
           };
         }
+        obj.note = stripHtmlTags(obj.note);
         result[key].notes.push(obj);
         return result;
       }, {} as { [key: string]: { paper_id: string; paper_name: string; notes: Array<{note_id: string; note: string }> } });
