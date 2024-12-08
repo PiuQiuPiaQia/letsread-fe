@@ -1,68 +1,65 @@
-import { Button, Card, Form, FormProps, Input, Layout, message } from "antd";
-import { useMount } from "ahooks";
-import React, { useEffect, useState } from "react";
 import { getKeyByName, storeKeyByName } from "@/services/secret";
+import { useMount } from "ahooks";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  FormProps,
+  Input,
+  Layout,
+  message,
+  Typography,
+} from "antd";
 
+import React, { useState } from "react";
 
 const { Content } = Layout;
+const { Text } = Typography;
 
-const SecretSetting : React.FC = () => {
+const SecretSetting: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [form] = Form.useForm();
+  let [moonshotApiKey, setMoonshotApiKey] = useState("未设置");
+  let [translateAppId, setTranslateAppId] = useState("未设置");
+  let [translateSecretKey, setTranslateSecretKey] = useState("未设置");
 
-  
   useMount(() => {
-    getKey()
+    getKey();
   });
 
   const getKey = async () => {
     setLoading(true);
-    getKeyByName({name:"moonshot_api_key"}).then((res) => {
+    getKeyByName({ name: "moonshot_api_key" }).then((res) => {
       console.log(res);
-      form.setFieldsValue({
-        moonshot_api_key: res.value,  
-      })
+      setMoonshotApiKey(res.value);
     });
-    getKeyByName({name:"appid"}).then((res) => {
+    getKeyByName({ name: "appid" }).then((res) => {
       console.log(res);
-      form.setFieldsValue({
-        appid: res.value,  
-      })
+      setTranslateAppId(res.value);
     });
-    getKeyByName({name:"secret_key"}).then((res) => {
+    getKeyByName({ name: "secret_key" }).then((res) => {
       console.log(res);
-      form.setFieldsValue({
-        secret_key: res.value,  
-      })
+      setTranslateSecretKey(res.value);
     });
     setLoading(false);
   };
 
-  // useEffect(() => {
-  //   if (Object.keys(data).length > 0) {
-  //     form.resetFields(); // 使用接口返回的数据回填表单
-  //   }
-  // }, [data, form]);
-
-  const storeKey = async (values:any) => {
-    storeKeyByName({name:"moonshot_api_key",value:values.moonshot_api_key}).then((res) => {
+  const onFinishMoonshot: FormProps["onFinish"] = (values) => {
+    console.log("Success:", values);
+    storeKeyByName({
+      name: "moonshot_api_key",
+      value: values.moonshot_api_key,
+    }).then((res) => {
       console.log(res);
+      message.success("保存成功");
     });
-    storeKeyByName({name:"appid",value:values.appid}).then((res) => {
-      console.log(res);
-    });
-    storeKeyByName({name:"secret_key",value:values.secret_key}).then((res) => {
-      console.log(res);
-    });
+  };
+  const onFinishTranslate: FormProps["onFinish"] = async (values) => {
+    console.log("Success:", values);
+    await storeKeyByName({ name: "appid", value: values.appid });
+    await storeKeyByName({ name: "secret_key", value: values.secret_key });
     message.success("保存成功");
   };
-
-
-  const onFinish: FormProps["onFinish"] = (values) => {
-    console.log("Success:", values);
-    storeKey(values);
-  };
-
 
   const onFinishFailed: FormProps["onFinishFailed"] = (errorInfo) => {
     console.log("Failed:", errorInfo);
@@ -71,13 +68,18 @@ const SecretSetting : React.FC = () => {
     <>
       <Layout>
         <Content>
+          <Alert
+            message="为保证个人密钥的安全性，不能查看已设置的密钥，只能更新密钥。"
+            type="warning"
+            style={{ marginBottom: "30px" }}
+          />
+
           <Form
             name="basic"
             labelCol={{ span: 4 }}
             wrapperCol={{ span: 16 }}
             style={{ maxWidth: 600 }}
-            form={form}
-            onFinish={onFinish}
+            onFinish={onFinishMoonshot}
             onFinishFailed={onFinishFailed}
             autoComplete="off"
           >
@@ -87,56 +89,78 @@ const SecretSetting : React.FC = () => {
               bordered={false}
               style={{ width: "100%", marginBottom: "30px" }}
             >
-              {/* <Form.Item
-                label="密钥"
-                name="username"
-                rules={[
-                  { required: true, message: "Please input your username!" },
-                ]}
-              >
-                <Input />
-              </Form.Item> */}
+              <Form.Item label="API Key">
+                <Text>{moonshotApiKey}</Text>
+              </Form.Item>
 
               <Form.Item
                 label="API Key"
                 name="moonshot_api_key"
                 rules={[
-                  { required: true, message: "Please input your password!" },
+                  {
+                    required: true,
+                    message: "Please input your moonshot api key!",
+                  },
                 ]}
               >
-                <Input.Password/>
+                <Input />
               </Form.Item>
             </Card>
 
+            <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+              <Button type="primary" htmlType="submit">
+                更新Moonshot
+              </Button>
+            </Form.Item>
+          </Form>
+          <Form
+            name="basic"
+            labelCol={{ span: 4 }}
+            wrapperCol={{ span: 16 }}
+            style={{ maxWidth: 600 }}
+            onFinish={onFinishTranslate}
+            onFinishFailed={onFinishFailed}
+            autoComplete="off"
+          >
             <Card
               size="small"
               title="百度翻译"
               bordered={false}
               style={{ width: "100%", marginBottom: "30px" }}
             >
+              <Form.Item label="APP ID">
+                <Text>{translateAppId}</Text>
+              </Form.Item>
               <Form.Item
                 label="APP ID"
                 name="appid"
                 rules={[
-                  { required: true, message: "Please input your password!" },
+                  { required: true, message: "Please input your APP ID!" },
                 ]}
               >
-                <Input.Password />
+                <Input />
+              </Form.Item>
+
+              <Form.Item label="密钥">
+                <Text>{translateSecretKey}</Text>
               </Form.Item>
               <Form.Item
                 label="密钥"
                 name="secret_key"
                 rules={[
-                  { required: true, message: "Please input your password!" },
+                  {
+                    required: true,
+                    message: "Please input your secret key!",
+                  },
                 ]}
               >
-                <Input.Password />
+                <Input />
               </Form.Item>
             </Card>
 
             <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
               <Button type="primary" htmlType="submit">
-                保存
+                更新百度翻译
               </Button>
             </Form.Item>
           </Form>
