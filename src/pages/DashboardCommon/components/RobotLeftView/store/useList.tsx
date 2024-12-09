@@ -44,6 +44,8 @@ const useList = () => {
       // return robotRecognize(params).then((res) => {
       // return mockRecognize(params).then((res) => {
       return parsePaper({ paper_id: currentPaperId }).then((res) => {
+        console.log("runRecognize res", res);
+
         if (res.code !== 200) {
           return res;
         }
@@ -79,6 +81,13 @@ const useList = () => {
             thumbnail: params.url,
             result: data.result,
           };
+        }
+
+        // 兼容无dpi
+        // @ts-ignore
+        if (!res.data?.result?.dpi) {
+          // @ts-ignore
+          res.data.result.dpi = "144";
         }
         return res;
       });
