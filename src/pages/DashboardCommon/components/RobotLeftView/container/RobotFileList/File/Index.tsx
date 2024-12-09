@@ -73,7 +73,7 @@ export default ({ onClick, ...props }: IFileItem & IProps) => {
           <FileStatus status={status} className={styles.fileStatus} />
           <div className={styles.fileName}>{name}</div>
         </div>
-        <div className={styles.time}>{time}</div>
+        {/* <div className={styles.time}>{time}</div> */}
       </div>
     </div>
   );
