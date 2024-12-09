@@ -35,22 +35,26 @@ export default function Note() {
     console.log("curUid", curUid);
   }, [curUid]);
 
-  useMemo(() => {
+  useMount(() => {
     if (!currentPaperId) return;
     getNotes({ paper_id: currentPaperId }).then((res) => {
       // console.log("getNotes", res);
-      const notes = res.notes.length ? res.notes : [{ ...defaultNode }];
-      setNotes(
-        notes.map((item) => {
-          return {
-            contentId: item.content_id,
-            notesId: item.note_id,
-            content: item.note,
-          };
-        })
-      );
+      if (res.notes.length) {
+        setNotes(
+          res.notes.map((item) => {
+            return {
+              contentId: item.content_id,
+              notesId: item.note_id,
+              content: item.note,
+            };
+          })
+        );
+        setCurrentNoteId(res.notes[0].note_id);
+      } else {
+        handleAddNote();
+      }
     });
-  }, [currentFile]);
+  });
 
   // 处理新增笔记的操作
   const handleAddNote = () => {
@@ -75,6 +79,11 @@ export default function Note() {
     console.log("保存笔记");
     setTimeout(() => {
       const note = notes[0];
+      // 判空
+      if (!note.content.trim()) {
+        message.error("笔记内容不能为空");
+        return;
+      }
       saveNotes({
         paper_id: currentPaperId,
         note_id: note.isNew ? null : note.notesId,
@@ -122,9 +131,12 @@ export default function Note() {
                 const currentNote = notes.find(
                   (item) => item.notesId === note.notesId
                 );
+                console.log("currentNote", currentNote);
+                
                 if (currentNote) {
                   currentNote.content = content;
                 }
+                setNotes([...notes]);
               }}
               onNoteBelong={(contentId) => {
                 const currentNote = notes.find(

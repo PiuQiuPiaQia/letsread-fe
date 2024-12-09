@@ -142,6 +142,16 @@ const useFormatList = (initialState: IProps = {}) => {
       })
     )
       .then((res) => {
+        // 限制上传页数
+        const limitPageCount = 100;
+        if (Array.isArray(res) && res.some((i) => i > limitPageCount)) {
+          message.error(`文件超过${limitPageCount}页，请重新上传`);
+          return;
+        }
+        nextHandle();
+        return;
+
+        // 超过100页的pdf，提示是否需要全部识别
         if (Array.isArray(res) && res.some((i) => i > pageNumber)) {
           ModalConfirm({
             title: "提示",
@@ -252,7 +262,7 @@ const useFormatList = (initialState: IProps = {}) => {
               }
             />
           ),
-          content: "上传中...",
+          content: "文档解析中...",
         },
         1500
       );

@@ -1,8 +1,8 @@
 import { storeContainer } from "@/pages/DashboardCommon/RobotStruct/store";
 import { translateText } from "@/services/util";
 import { useMount } from "ahooks";
+import { Progress } from "antd";
 import { useEffect, useState } from "react";
-import Loading from "../Loading";
 import styles from "./index.less";
 
 export default function Translation(props: any) {
@@ -11,6 +11,7 @@ export default function Translation(props: any) {
   const [loading, setLoading] = useState(false);
   const { resultJson } = storeContainer.useContainer();
   let [original, setOriginal] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
   console.log("resultJson:", resultJson);
   useMount(() => {
     console.log("useMount Translation");
@@ -43,13 +44,31 @@ export default function Translation(props: any) {
   const handleTranslate = () => {
     setLoading(true);
     setTranslations([]);
-    Promise.all(original.map((text) => translateText({ data: text })))
-      .then((res) => {
-        console.log("res:", res);
-        const translations = res.map((item, index) => {
-          const { code } = item;
-          return code === 200 ? item.trans_result : original[index];
+    const total = original.length; // 总任务数
+    let completed = 0; // 已完成的任务数
+    setProgress(0);
+
+    const promises = original.map((text) => {
+      return new Promise((resolve) => {
+        translateText({ data: text }).then((res) => {
+          completed++;
+          console.log(
+            completed,
+            total,
+            Math.floor((completed / total) * 100),
+            progress
+          );
+
+          setProgress(Math.floor((completed / total) * 100));
+          const { code } = res;
+          resolve(code === 200 ? res.trans_result : original[completed - 1]);
         });
+      });
+    });
+
+    Promise.all(promises)
+      .then((translations) => {
+        console.log("res:", translations);
         setTranslations(translations);
       })
       .finally(() => {
@@ -59,7 +78,14 @@ export default function Translation(props: any) {
 
   return (
     <div className={styles.translation}>
-      {loading && <Loading type="loading" text="翻译中。。。" />}
+      {/* {loading && <Loading type={loading ? "loading" : "success"} />} */}
+      {loading && (
+        <Progress
+          format={(percent) => `翻译中 ${percent}%`}
+          percent={progress}
+          status="active"
+        />
+      )}
       {/* {hasContent ? <Button onClick={handleTranslate}>开始翻译</Button> : null} */}
       {translations.map((item, index) => (
         <div className={styles.translation__item} key={index}>
